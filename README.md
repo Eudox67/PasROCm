@@ -206,8 +206,9 @@ project keeps seeing whatever `fpmake install` last wrote.
 
 ## Building the rocPRIM native shim
 
-`librocprim_shim.so` is a build artifact (git-ignored) and is **not** installed
-by any of the three options above — build it once per ROCm/GPU combination:
+`librocprim_shim.so` is a build artifact that is **not** installed
+by any of the three options above because it's build depends on the specific GPU
+and ROCm version. Build it once per ROCm/GPU combination:
 
 ```bash
 cd src/rocprim
@@ -339,8 +340,7 @@ PasROCm/
 
 ## Contributing
 
-- Pascal style: `{$mode objfpc}{$H+}`, one unit per ROCm module, all local
-  variables declared in a `var` block (FPC has no inline declarations).
+- Pascal style: `{$mode objfpc}{$H+}`, one unit per ROCm module.
 - Every new unit needs the MIT header with `Copyright (c) 2024-2026 Eudox67`;
   files derived from AMD sources keep AMD's notice as well.
 - A new unit must be registered in `fpmake.pp` (`P.Targets.AddUnit(...)`) and in
