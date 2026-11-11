@@ -13,6 +13,11 @@ Pascal side needs no external build tool. If you use the rocPRIM units, you
 also build the small C++ shim once with `hipcc` — `hipcc` ships with ROCm, so
 your ROCm install already covers it.
 
+> **Disclaimer** — This is an independent, community project. It is **not**
+> affiliated with, sponsored by, or approved by AMD. ROCm, HIP, rocBLAS,
+> rocSOLVER, rocSPARSE, rocFFT, rocRAND, MIOpen, RCCL and rocPRIM are
+> trademarks or registered trademarks of Advanced Micro Devices, Inc.
+
 **Quick start — three steps:**
 
 ```bash
@@ -20,11 +25,6 @@ source setup_env.sh                    # 1. set every ROCm path for this shell
 fpc @pasrocm.cfg my_rocm_program.pas   # 2. compile your program (from the PasROCm root)
 ./test.sh                              # 3. confirm that your GPU setup works (~12 s)
 ```
-
-> **Disclaimer** — This is an independent, community project. It is **not**
-> affiliated with, sponsored by, or approved by AMD. ROCm, HIP, rocBLAS,
-> rocSOLVER, rocSPARSE, rocFFT, rocRAND, MIOpen, RCCL and rocPRIM are
-> trademarks or registered trademarks of Advanced Micro Devices, Inc.
 
 ## Coverage
 
