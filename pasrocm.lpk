@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Package Version="5">
+    <Name Value="pasrocm"/>
+    <Type Value="RunTime"/>
+    <Author Value="PasROCm Contributors"/>
+    <License Value="MIT / BSD-3-Clause"/>
+    <Description Value="Pascal bindings for AMD ROCm libraries (HIP, rocBLAS, rocSPARSE, rocFFT, rocRAND, rocSOLVER, rocPRIM, MIOpen, RCCL)"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <SearchPaths>
+        <OtherUnitFiles Value="src;src/rocprim"/>
+        <IncludeFiles Value="src"/>
+        <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
+      </SearchPaths>
+      <Parsing>
+        <SyntaxOptions>
+          <Mode Value="ObjFPC"/>
+        </SyntaxOptions>
+      </Parsing>
+      <Other>
+        <CustomOptions Value="-Mobjfpc -Sh"/>
+      </Other>
+    </CompilerOptions>
+    <Files>
+      <!-- src -->
+      <Item>
+        <Filename Value="src/hip_common.pas"/>
+        <UnitName Value="hip_common"/>
+      </Item>
+      <Item>
+        <Filename Value="src/hip_error.pas"/>
+        <UnitName Value="hip_error"/>
+      </Item>
+      <Item>
+        <Filename Value="src/hip_types.pas"/>
+        <UnitName Value="hip_types"/>
+      </Item>
+      <Item>
+        <Filename Value="src/hip_vector_types.pas"/>
+        <UnitName Value="hip_vector_types"/>
+      </Item>
+      <Item>
+        <Filename Value="src/hip_runtime.pas"/>
+        <UnitName Value="hip_runtime"/>
+      </Item>
+      <Item>
+        <Filename Value="src/hiprtc.pas"/>
+        <UnitName Value="hiprtc"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocblas.pas"/>
+        <UnitName Value="rocblas"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocsparse.pas"/>
+        <UnitName Value="rocsparse"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocsolver.pas"/>
+        <UnitName Value="rocsolver"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocrand.pas"/>
+        <UnitName Value="rocrand"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocfft.pas"/>
+        <UnitName Value="rocfft"/>
+      </Item>
+      <Item>
+        <Filename Value="src/miopen.pas"/>
+        <UnitName Value="miopen"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rccl.pas"/>
+        <UnitName Value="rccl"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocprim.pas"/>
+        <UnitName Value="rocprim"/>
+      </Item>
+      <!-- src/rocprim -->
+      <Item>
+        <Filename Value="src/rocprim/hip_bindings.pas"/>
+        <UnitName Value="hip_bindings"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocprim/hip_specialized.pas"/>
+        <UnitName Value="hip_specialized"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocprim/rocprim_bindings.pas"/>
+        <UnitName Value="rocprim_bindings"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocprim/rocprim_block.pas"/>
+        <UnitName Value="rocprim_block"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocprim/rocprim_core.pas"/>
+        <UnitName Value="rocprim_core"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocprim/rocprim_device.pas"/>
+        <UnitName Value="rocprim_device"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocprim/rocprim_intrinsics.pas"/>
+        <UnitName Value="rocprim_intrinsics"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocprim/rocprim_iterator.pas"/>
+        <UnitName Value="rocprim_iterator"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocprim/rocprim_thread.pas"/>
+        <UnitName Value="rocprim_thread"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocprim/rocprim_types.pas"/>
+        <UnitName Value="rocprim_types"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocprim/rocprim_warp.pas"/>
+        <UnitName Value="rocprim_warp"/>
+      </Item>
+    </Files>
+    <RequiredPkgs>
+      <Item>
+        <PackageName Value="FCL"/>
+      </Item>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+      <UseFileFilters Value="True"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>

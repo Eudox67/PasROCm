@@ -1,0 +1,41 @@
+# ---------------------------------------------------------------------------
+# PasROCm - Free Pascal bindings for the AMD ROCm libraries.
+# Copyright (c) 2024-2026 Eudox67. MIT License (see LICENSE).
+#
+# Every pattern here answers to an artefact this project's build actually
+# produces; see README "Building" for the commands.
+# ---------------------------------------------------------------------------
+
+# Free Pascal compiler output
+*.o
+*.ppu
+*.compiled
+
+# Build directories: test suite, fpmake output, Lazarus package output
+/bin/
+/units/
+/lib/
+
+# fpmake: the installer binary, its object file, the package manifest, and the
+# package main unit that Lazarus generates next to pasrocm.lpk
+/fpmake
+/fpmake.o
+/*.fpm
+/pasrocm.pas
+
+# Shared libraries built by hipcc (librocprim_shim.so)
+*.so
+
+# Compiled example programs; the .pas sources are tracked
+/examples/*/*
+!/examples/*/*.pas
+
+# IDE state - opening pasrocm.lpk in Lazarus writes these
+.vscode/
+*.lps
+*.lpi
+ppas.sh
+link.res
+
+# OS clutter
+.DS_Store
