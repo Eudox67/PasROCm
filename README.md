@@ -1,97 +1,137 @@
 # PasROCm
 
-Unofficial **Free Pascal** bindings for the AMD ROCm compute stack, plus a thin
-Pascal wrapper layer for the rocPRIM primitives that only exist as C++ templates.
+PasROCm provides AMD's ROCm GPU stack to Free Pascal developers through Pascal
+bindings. A thin Pascal wrapper covers the rocPRIM primitives, which exist only
+as C++ templates, compiled into a small C++ shim with AMD's `hipcc` compiler.
 
-Works with the plain Free Pascal compiler (CLI) and with Lazarus — no external
-build tool.
+ROCm is AMD's open platform for GPU computing — what CUDA is for NVIDIA GPUs.
+HIP is its C/C++ programming interface, and `hipcc` is its C/C++ compiler.
+PasROCm wraps these parts for you, so you stay in Pascal.
+
+The units work with the plain Free Pascal compiler (CLI) and with Lazarus. The
+Pascal side needs no external build tool. If you use the rocPRIM units, you
+also build the small C++ shim once with `hipcc` — `hipcc` ships with ROCm, so
+your ROCm install already covers it.
+
+**Quick start — three steps:**
+
+```bash
+source setup_env.sh                    # 1. set every ROCm path for this shell
+fpc @pasrocm.cfg my_rocm_program.pas   # 2. compile your program (from the PasROCm root)
+./test.sh                              # 3. confirm that your GPU setup works (~12 s)
+```
 
 > **Disclaimer** — This is an independent, community project. It is **not**
-> affiliated with, sponsored by, or endorsed by AMD. ROCm, HIP, rocBLAS,
+> affiliated with, sponsored by, or approved by AMD. ROCm, HIP, rocBLAS,
 > rocSOLVER, rocSPARSE, rocFFT, rocRAND, MIOpen, RCCL and rocPRIM are
 > trademarks or registered trademarks of Advanced Micro Devices, Inc.
 
 ## Coverage
+
+Each unit wraps one ROCm library, so you import only the parts you need.
 
 | Unit | ROCm library | Notes |
 |---|---|---|
 | `hip_runtime.pas` | HIP runtime (`libamdhip64`) | core API, memory, streams, events |
 | `hip_types.pas` | HIP runtime | vector/`half`/`bfloat16` types, enums |
 | `hip_vector_types.pas` | HIP runtime | `int2`/`float4`/… record types |
-| `hip_error.pas` | HIP runtime | error-code to message mapping helpers |
+| `hip_error.pas` | HIP runtime | error-code to message helpers |
 | `hip_common.pas` | HIP runtime | shared helpers used by the wrappers |
-| `hiprtc.pas` | hipRTC (`libhiprtc`) | runtime kernel compilation |
+| `hiprtc.pas` | hipRTC (`libhiprtc`) | compiles GPU kernels while your program runs |
 | `rocblas.pas` | rocBLAS (`librocblas`) | levels 1-3, batched + strided-batched, `_64` variants |
 | `rocsolver.pas` | rocSOLVER (`librocsolver`) | dense/sparse solvers, factorizations |
-| `rocsparse.pas` | rocSPARSE (`librocsparse`) | SpMV, SpMM, conversions, solver/precond |
+| `rocsparse.pas` | rocSPARSE (`librocsparse`) | sparse matrix products (SpMV/SpMM), conversions, solvers, preconditioners |
 | `rocfft.pas` | rocFFT (`librocfft`) | plans, real/complex transforms |
 | `rocrand.pas` | rocRAND (`librocrand`) | generators, distributions |
 | `miopen.pas` | MIOpen (`libMIOpen`) | convolutions, pooling, activations, RNN |
-| `rccl.pas` | RCCL (`librccl`) | collective communication |
-| `rocprim.pas` | rocPRIM | Pascal facade over the native shim (see below) |
+| `rccl.pas` | RCCL (`librccl`) | collective communication between GPUs |
+| `rocprim.pas` | rocPRIM | Pascal layer over the native shim (see below) |
 
-Under `src/rocprim/` the rocPRIM Pascal layer is split by concern:
-`rocprim_types`, `rocprim_core`, `rocprim_block`, `rocprim_device`,
-`rocprim_warp`, `rocprim_thread`, `rocprim_intrinsics`, `rocprim_iterator`,
-plus the low-level `rocprim_bindings` / `hip_bindings` / `hip_specialized`
-units that link against `librocprim_shim.so`.
+Under `src/rocprim/`, the rocPRIM Pascal layer is split into small units, one
+topic each: `rocprim_types`, `rocprim_core`, `rocprim_block`, `rocprim_device`,
+`rocprim_warp`, `rocprim_thread`, `rocprim_intrinsics` and `rocprim_iterator`.
+Three low-level units — `rocprim_bindings`, `hip_bindings` and
+`hip_specialized` — link against `librocprim_shim.so`.
 
-rocPRIM's actual algorithms are C++ templates, which cannot be instantiated from
-Free Pascal. They are therefore compiled into a small C++ shim
-(`src/rocprim/`) that exposes a flat `extern "C"` ABI. The Pascal units call
-that ABI, so `librocprim_shim.so` must be built and present on the library
-search path before any rocPRIM wrapper can be used.
+The rocPRIM algorithms are C++ templates, and Free Pascal cannot call C++
+templates directly. A small C++ shim in `src/rocprim/` solves this. The shim
+wraps every template as a plain C function (`extern "C"`), and the Pascal units
+call those functions. You build `librocprim_shim.so` once and keep it on the
+library search path; the shim section below shows the steps.
 
 ## Requirements
+
+Your system needs these parts. If you have a working ROCm install and FPC 3.2.2
+or newer, you are ready to start.
 
 | Component | Version / notes |
 |---|---|
 | Linux x86-64 | developed and tested on Linux only |
 | AMD ROCm | 6.x – 10.x (developed and tested on 10.1); expected at `/opt/rocm`, `/opt/rocm-<ver>`, or `$ROCM_PATH` |
-| AMD GPU | any ROCm-supported CDNA/RDNA device; a working `rocm-smi` is a good sanity check |
+| AMD GPU | any ROCm-supported CDNA/RDNA device; if `rocm-smi` lists your GPU, the driver is ready |
 | Free Pascal | 3.2.2 or newer (developed against FPC 3.3.1) |
-| `hipcc` | ships with ROCm; only needed to build the rocPRIM shim |
+| `hipcc` | ships with ROCm; you need it only to build the rocPRIM shim |
 | Lazarus | optional — only for the `.lpk` installation route |
 
-The bindings link the ROCm shared objects through `{$linklib}`, so they must be
-findable **at link time** (`-Fl`, already handled by `pasrocm.cfg` and
-`test.sh`) and **at run time** (`LD_LIBRARY_PATH`, set by `setup_env.sh`).
+Two quick words for readers new to ROCm: CDNA is AMD's data-center GPU family
+(Instinct MI cards), and RDNA is the consumer family (Radeon RX cards).
+`rocm-smi` is ROCm's small tool that lists your GPUs.
+
+The units link directly to the ROCm shared libraries (`{$linklib}`). The
+compiler needs the library folders at link time (`-Fl`); `pasrocm.cfg` and
+`test.sh` already set them for you. The system needs them again at run time
+(`LD_LIBRARY_PATH`); `setup_env.sh` sets that for you too.
 
 ## Environment setup
 
-Load the environment once per shell — before compiling *or* running anything:
+The ROCm tools and libraries live outside the standard system paths, and Unix
+shells keep environment variables inside the session that sets them. So each
+new shell needs the ROCm settings again. `setup_env.sh` sets every path for
+you, and you have two ways to load it:
 
-```bash
-source setup_env.sh
-```
-
-`setup_env.sh` derives everything from its own location and the detected ROCm
-install:
-
-- `ROCM_PATH` / `ROCM_HOME` — honours an existing value, else `$ROCM_HOME`, else
-  `/opt/rocm`, else the newest `/opt/rocm-*` that looks like a real install (one
-  with `bin/hipcc`, or at least `lib*/libamdhip64.so*` for runtime-only setups;
-  header-only leftovers are never picked).
-- `HIP_PLATFORM=amd`, `HIP_PATH`, `HIP_CLANG_PATH`, `HIP_CC`, `HSA_PATH`.
-- `PATH` gains `$ROCM_PATH/bin` and `$ROCM_PATH/llvm/bin`.
-- `HIP_DEVICE_LIB_PATH` / `DEVICE_LIB_PATH` for the device bitcode.
-- `LD_LIBRARY_PATH` gains the ROCm `lib`/`lib64` dirs **and** `src/rocprim` (the shim). It is safe to source repeatedly.
-
-To load it automatically in every new shell:
+**One-time setup (recommended):** add one line to your `~/.bashrc`. You do this
+once, and every future bash shell picks up the settings automatically:
 
 ```bash
 echo "source /path/to/PasROCm/setup_env.sh" >> ~/.bashrc
 ```
 
+(In CI jobs and non-bash shells, run the `source` line directly instead;
+`test.sh` already sets up its own environment.)
+
+**Per shell (manual):** or run this line in each new shell, before you compile
+or run anything:
+
+```bash
+source setup_env.sh
+```
+
+The script looks at its own location and at your ROCm install, then sets every
+path for you:
+
+- `ROCM_PATH` / `ROCM_HOME` — the script uses your current `ROCM_PATH` if it is
+  set, then `ROCM_HOME`, then `/opt/rocm`, then the newest `/opt/rocm-*` that
+  holds a real install. A real install has `bin/hipcc`, or at least
+  `lib*/libamdhip64.so*` for runtime-only setups. Directories with only headers
+  never count.
+- The usual HIP variables: `HIP_PLATFORM=amd`, `HIP_PATH`, `HIP_CLANG_PATH`,
+  `HIP_CC`, `HSA_PATH`.
+- `PATH` gains `$ROCM_PATH/bin` and `$ROCM_PATH/llvm/bin`, so `hipcc` and the
+  other ROCm tools are ready to use.
+- `HIP_DEVICE_LIB_PATH` / `DEVICE_LIB_PATH` point to the device bitcode
+  (ready-made GPU code that the compiler links in).
+- `LD_LIBRARY_PATH` gains the ROCm `lib`/`lib64` folders and `src/rocprim` (the
+  shim folder). It is safe to source the script more than once.
+
 ## How to use PasROCm
 
-Pick the integration that fits your workflow; all three cover ROCm's `-Fl`
-directories already.
+Choose the option that fits your project. All three already carry the ROCm
+`-Fl` library paths for you.
 
 ### Option 1 — native FPC package (`fpmake`)
 
-Compiles the package once and installs the units into an FPC unit directory, so
-projects never carry source paths.
+You compile the package once and install the units into your FPC unit tree.
+After that, no project needs to carry PasROCm source paths.
 
 ```bash
 # 1. Build the installer (once)
@@ -109,39 +149,39 @@ fpc fpmake.pp
 ./fpmake install
 ```
 
-Then make the unit directory visible. Whether that needs an explicit entry
-depends on how your `fpc.cfg` was generated:
+Now make the new unit directory visible to the compiler. What you do depends on
+your `fpc.cfg`:
 
-- **Stock wildcard:** if it still contains
-  `-Fu<prefix>/lib/fpc/$fpcversion/units/$fpctarget/*` and you installed under
-  that same prefix, FPC discovers `pasrocm` by itself — nothing to add.
-- **Explicit package list:** if it names each package directory individually
-  the package stays invisible until you add it — even when it sits inside the
-  compiler's own unit root.
+- **Stock wildcard:** many `fpc.cfg` files contain
+  `-Fu<prefix>/lib/fpc/$fpcversion/units/$fpctarget/*`. If you installed under
+  the same prefix, FPC finds `pasrocm` by itself — nothing to add.
+- **Explicit package list:** some configs name each package directory. Then the
+  compiler does not see the new package until you add one line — even when it
+  sits inside the compiler's own unit root.
 
-Registering it once is always safe. FPC does not expand environment variables
-inside config files, so the path must be absolute:
+Adding the line is always safe. FPC does not expand environment variables in
+config files, so write the absolute path:
 
 ```bash
 UNITDIR="$HOME/.local/lib/fpc/$(fpc -iV)/units/$(fpc -iTP)-$(fpc -iTO)/pasrocm"
 echo "-Fu$UNITDIR" >> ~/.fpc.cfg
 ```
 
-After that, any project can simply say
+After that, any project can simply say:
 
 ```pascal
 uses hip_runtime, rocsparse;
 ```
 
-(Use the same `-Fu` line with your own install path if you chose a different
-prefix — `find "$HOME/.local" /usr -type d -name pasrocm` prints it.) To
-uninstall, delete that `pasrocm` directory plus the matching
-`<prefix>/lib/fpc/<version>/fpmkinst/<target>/pasrocm.fpm` manifest, if present.
+(If you chose a different prefix, use the same `-Fu` line with your own install
+path. `find "$HOME/.local" /usr -type d -name pasrocm` prints it.) To
+uninstall, delete the `pasrocm` unit directory, plus the matching
+`<prefix>/lib/fpc/<version>/fpmkinst/<target>/pasrocm.fpm` manifest if present.
 
+### Option 2 — response file, no install (`pasrocm.cfg`)
 
-### Option 2 — zero-install response file (`pasrocm.cfg`)
-
-Nothing is written outside the checkout — ideal when PasROCm is a git submodule.
+Nothing is written outside the checkout. This option fits well when PasROCm is
+a git submodule of your project.
 
 ```bash
 cd /path/to/PasROCm
@@ -150,20 +190,22 @@ fpc @pasrocm.cfg my_rocm_program.pas
 
 `pasrocm.cfg` supplies `-Mobjfpc -Sh`, `-Fu src`, `-Fu src/rocprim`,
 `-Fl src/rocprim`, `-Fl /opt/rocm/lib`, `-Fl /opt/rocm/lib64` and `-I src`.
-Its paths are relative, so either run `fpc` from the PasROCm root (as above) or
-add the absolute `-Fu`/`-Fl` paths yourself. With a non-standard ROCm prefix,
-override afterwards — later flags win:
+Its paths are relative, so run `fpc` from the PasROCm root (as above), or add
+your own absolute `-Fu`/`-Fl` paths. Later flags override earlier flags, so you
+can correct a non-standard ROCm prefix easily:
 
 ```bash
 fpc @pasrocm.cfg -Fl"$ROCM_PATH/lib" -Fl"$ROCM_PATH/lib64" my_rocm_program.pas
 ```
 
-Remember to `source setup_env.sh` (or set `LD_LIBRARY_PATH`) so the resulting
-binary can find `libamdhip64.so`, `librocblas.so`, … at run time.
+Before you run the program, load `setup_env.sh` (or set `LD_LIBRARY_PATH`
+yourself). The program then finds `libamdhip64.so`, `librocblas.so` and the
+other ROCm libraries at run time.
 
 ### Option 3 — Lazarus package (`pasrocm.lpk`)
 
-For the Lazarus IDE and for headless CI builds.
+This option gives you the Lazarus IDE with full source-level tools, and it also
+serves headless CI builds.
 
 **IDE:** *Package → Open Package File (.lpk)* → `pasrocm.lpk` → **Compile** →
 *Use → Add to Project*.
@@ -176,14 +218,14 @@ lazbuild --add-package pasrocm.lpk my_project.lpi
 lazbuild my_project.lpi
 ```
 
-The package exports its unit paths (`src`, `src/rocprim`) to every project that
-uses it, so `uses hip_runtime, rocprim;` needs no further configuration.
+The package shares its unit paths (`src`, `src/rocprim`) with every project
+that uses it. So `uses hip_runtime, rocprim;` needs no further configuration.
 
 ### Can I use more than one?
 
-Yes — the options are not mutually exclusive. Option 1 **and** Option 3 together
-is the common combination: the installed package serves plain `fpc`/`lazbuild`
-builds, the Lazarus package gives the IDE its source-level tooling.
+Yes, and a popular choice is Option 1 **and** Option 3 together: the installed
+package serves plain `fpc`/`lazbuild` builds, and the Lazarus package gives the
+IDE its source-level tools.
 
 | Setup | `fpc` CLI | `lazbuild` | IDE Code Tools (completion, *Ctrl+Click*) |
 | --- | :-: | :-: | :-: |
@@ -192,23 +234,24 @@ builds, the Lazarus package gives the IDE its source-level tooling.
 | Only Option 3 (`pasrocm.lpk`) | with `-Fu src -Fu src/rocprim` | yes | **yes** |
 | Option 1 + Option 3 | yes | yes | yes |
 
-Why the columns differ: `lazbuild` is a wrapper around `fpc`, so anything that
-resolves on the command line compiles. The IDE's Code Tools, however, parse
-`.pas` sources — a directory of compiled units gives them nothing to complete
-from. That is the main reason `pasrocm.lpk` exists.
+Why do the columns differ? `lazbuild` is a wrapper around `fpc`, so anything
+that resolves on the command line also compiles. The IDE Code Tools are
+different: they read the `.pas` sources, and a directory of compiled units
+gives them nothing to complete from. That is the main reason `pasrocm.lpk`
+exists.
 
-When both are installed, the command line wins: paths passed with `-Fu` take
-precedence over the ones in `fpc.cfg` (the compiler searches command-line paths
-first), so a project requiring the `.lpk` builds against the package output in
-`lib/$(TargetCPU)-$(TargetOS)/`, not against the installed copy. The flip side:
-if you edit PasROCm and rebuild only through the `.lpk`, an unrelated CLI
-project keeps seeing whatever `fpmake install` last wrote.
+When both are installed, the command-line paths come first: `-Fu` flags take
+precedence over the paths in `fpc.cfg`. So a project that uses the `.lpk`
+builds against the fresh output in `lib/$(TargetCPU)-$(TargetOS)/`, not against
+the installed copy. The reverse also applies: if you edit PasROCm and rebuild
+only through the `.lpk`, an unrelated CLI project keeps using the units that
+`fpmake install` last wrote.
 
 ## Building the rocPRIM native shim
 
-`librocprim_shim.so` is a build artifact that is **not** installed
-by any of the three options above because it's build depends on the specific GPU
-and ROCm version. Build it once per ROCm/GPU combination:
+You build `librocprim_shim.so` yourself, once per ROCm/GPU combination. None of
+the three install options installs it, because the correct binary depends on
+your GPU and your ROCm version.
 
 ```bash
 cd src/rocprim
@@ -219,16 +262,18 @@ GFX_ARCH=rdna3;cdna3 ./build.sh             # fat binary across families
 DRY_RUN=1 ./build.sh                        # print resolved toolchain/archs only
 ```
 
-`ROCM_PATH` accepts either layout: ROCm 10.x installs the versioned tree at
-`/opt/rocm/core-<ver>` and points `/opt/rocm` at it through alternatives, while
-6.x/7.x releases installed `/opt/rocm-<ver>` directly. Auto-detection prefers
-`/opt/rocm` whenever it contains an executable `bin/hipcc`, then falls back to
-the newest `/opt/rocm-<ver>` **that also has one** — a stray header-only
-`/opt/rocm-<ver>` directory can never be selected, and if nothing usable exists
-the error tells you to set `ROCM_PATH`.
+`GFX_ARCH` names the GPU architecture, for example `gfx1100` (RDNA 3 — the
+Radeon RX 7000 series). `ROCM_PATH` accepts both install layouts. ROCm 10.x
+keeps the versioned tree at `/opt/rocm/core-<ver>` and points `/opt/rocm` at it
+through alternatives, while 6.x/7.x releases installed `/opt/rocm-<ver>`
+directly. Detection prefers `/opt/rocm` when it holds an executable
+`bin/hipcc`, then takes the newest `/opt/rocm-<ver>` that also has one. A stray
+header-only `/opt/rocm-<ver>` directory can never be selected. If nothing
+usable exists, the error tells you to set `ROCM_PATH`.
 
-Every build prints the toolchain it actually resolved, so a log answers "which
-compiler produced this `.so`?" without tracing symlinks by hand:
+Every build prints the toolchain it actually found. So a build log answers
+"which compiler produced this `.so`?" — and you do not have to follow symlinks
+by hand:
 
 ```text
 == ROCm root : /opt/rocm
@@ -243,26 +288,28 @@ compiler produced this `.so`?" without tracing symlinks by hand:
     libamdhip64.so.7 => /opt/rocm/lib/libamdhip64.so.7
 ```
 
-`DRY_RUN=1 ./build.sh` prints that same header without compiling — the quickest
-way to confirm which install a build would use.
+`DRY_RUN=1 ./build.sh` prints that same header without compiling. It is the
+quickest way to confirm which install a build would use.
 
 The shim sources and `build.sh` live next to the Pascal units they serve, and
-the build emits `librocprim_shim.so` into that same directory — exactly where
-`pasrocm.cfg` (`-Fl src/rocprim`), `test.sh` (both `-Fl` and an rpath) and
-`setup_env.sh` (`LD_LIBRARY_PATH`) point at it. A CMake path (`CMakeLists.txt`)
-exists for IDE integration and builds the same sources.
+the build writes `librocprim_shim.so` into that same directory. Your tools
+already know this place: `pasrocm.cfg` points there with `-Fl src/rocprim`,
+`test.sh` with `-Fl` plus an rpath (a library search path stored inside the
+executable), and `setup_env.sh` with `LD_LIBRARY_PATH`. A CMake path
+(`CMakeLists.txt`) is also there for IDE integration, and it builds the same
+sources.
 
-HIP headers are taken exclusively from the selected ROCm install. Do not drop a
-copied `hip/` header set next to the shim and add it to the include path: mixing
-header versions with the installed `hip/amd_detail/*.h` internals does not
-compile — on ROCm 7.x this surfaced as `unknown type name
-'hipDriverEntryPointQueryResult'`.
+Take the HIP headers only from your selected ROCm install. A copied `hip/`
+header set next to the shim does not work well: mixed header versions do not
+compile together with the installed `hip/amd_detail/*.h` internals. On ROCm 7.x
+this appeared as `unknown type name 'hipDriverEntryPointQueryResult'`.
 
 ## Examples
 
-`examples/rocprim/` holds one self-contained program per wrapped primitive
-(`test_reduce.pas`, `test_radix_sort_keys_asc.pas`, `test_segmented_radix_sort.pas`,
-`test_sort.pas`, `test_scan.pas`, …). Compile whichever one you need:
+The folder `examples/rocprim/` holds one small, complete program for each
+wrapped primitive: `test_reduce.pas`, `test_radix_sort_keys_asc.pas`,
+`test_segmented_radix_sort.pas`, `test_sort.pas`, `test_scan.pas` and more.
+Compile the one you need:
 
 ```bash
 mkdir -p bin/examples
@@ -277,14 +324,14 @@ LD_LIBRARY_PATH="src/rocprim:$ROCM_PATH/lib:$ROCM_PATH/lib64" \
 # -> SUCCESS: GPU result matches CPU result.
 ```
 
-Always pass `-FUbin/examples` (unit output) — without it FPC writes `.ppu` and
-`.o` files next to the `.pas` sources and pollutes the tree. Compiled example
-binaries are git-ignored.
+Always pass `-FUbin/examples` (the unit output folder). Without it, FPC writes
+`.ppu` and `.o` files next to the `.pas` sources; with it, your source tree
+stays clean. Git ignores the compiled example binaries.
 
 ## Running the test suite
 
-The suite uses **FPCUnit** and lives in `tests/`; `TestRunner.pas` registers
-every subsystem's test unit.
+The test suite uses **FPCUnit** and lives in `tests/`; `TestRunner.pas`
+registers the test unit of every subsystem.
 
 ```bash
 ./test.sh                              # full suite
@@ -292,9 +339,10 @@ every subsystem's test unit.
 ./test.sh --list                       # list registered suites
 ```
 
-`test.sh` builds the shim when it is missing, compiles `tests/TestRunner.pas`
-into `bin/` (units in `bin/units/`), exports `LD_LIBRARY_PATH` for ROCm + the
-shim, embeds an rpath, and runs the binary with whatever flags you pass.
+`test.sh` does the housekeeping for you: it builds the shim when it is missing,
+compiles `tests/TestRunner.pas` into `bin/` (units in `bin/units/`), exports
+`LD_LIBRARY_PATH` for ROCm and the shim, embeds an rpath, and runs the binary
+with your extra flags.
 
 The equivalent manual build:
 
@@ -305,20 +353,20 @@ LD_LIBRARY_PATH="src/rocprim:$ROCM_PATH/lib:$ROCM_PATH/lib64" \
 ```
 
 Current status on ROCm 10.1 (HIP 7.16, MIOpen 3.6.1, gfx1100): **1683 tests
-run, 0 errors, 0 failures, 16 ignores**, in about 12 s. Every ignore is an
-expected "not supported by this ROCm build" path and quotes the library's real
-return status, so an unexpected regression surfaces as a failure rather than as
-a silently skipped test.
+run, 0 errors, 0 failures, 16 ignores**, in about 12 s. Each ignore is an
+expected "not supported by this ROCm build" case and quotes the library's real
+return status. So a real regression shows up as a failure — it never hides as a
+silent skip.
 
-> Tests allocate real GPU memory, so they need a working device and — for the
-> rocPRIM suites — a matching `librocprim_shim.so`.
+> The tests allocate real GPU memory. So they need a working device and — for
+> the rocPRIM suites — a matching `librocprim_shim.so`.
 
 ### Leak checking
 
-Add `-gh` to the `fpc` command line (or to the flags in `test.sh`) to build with
-FPC's heaptrc. Note that if the program also links `cmem`, heaptrc's hooks are
-replaced and leak tracking is silently disabled — build without `cmem` while
-chasing leaks.
+Add `-gh` to the `fpc` command line (or to the flags in `test.sh`), and FPC
+builds with the heaptrc leak tracker. One caution: the `cmem` unit replaces the
+memory manager and silently switches leak tracking off. While you look for
+leaks, build without `cmem`.
 
 ## Project layout
 
@@ -340,21 +388,22 @@ PasROCm/
 
 ## Contributing
 
+Contributions are welcome. A few simple rules:
+
 - Pascal style: `{$mode objfpc}{$H+}`, one unit per ROCm module.
-- Every new unit needs the MIT header with `Copyright (c) 2024-2026 Eudox67`;
-  files derived from AMD sources keep AMD's notice as well.
-- A new unit must be registered in `fpmake.pp` (`P.Targets.AddUnit(...)`) and in
-  `pasrocm.lpk` (`<Files>`); `pasrocm.cfg` needs no change because it adds whole
-  directories.
-- Run `./test.sh` and confirm 0 failures before opening a pull request.
+- Every new unit needs the MIT header with `Copyright (c) 2024-2026 Eudox67`.
+  Files derived from AMD sources keep AMD's notice as well.
+- Register a new unit in `fpmake.pp` (`P.Targets.AddUnit(...)`) and in
+  `pasrocm.lpk` (`<Files>`). `pasrocm.cfg` needs no change, because it adds
+  whole directories.
+- Run `./test.sh` and confirm 0 failures. Then open your pull request — it is
+  welcome.
 
 ## License
 
 MIT — see [LICENSE](LICENSE). Copyright (c) 2024-2026 **Eudox67**.
 
-Portions of this project are derived from AMD ROCm headers and reference
-implementations; those files retain AMD's original MIT/LLVM notices alongside
-the project copyright. No AMD code is redistributed in binary form.
-
-
+Portions of this project come from AMD ROCm headers and reference
+implementations. Those files keep AMD's original MIT/LLVM notices next to the
+project copyright. No AMD code ships in binary form.
 
