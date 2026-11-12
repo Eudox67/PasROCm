@@ -37,5 +37,8 @@
 ppas.sh
 link.res
 
+# Generated documentation output (pasdoc / fpdoc renderings)
+/docs/
+
 # OS clutter
 .DS_Store
