@@ -26,6 +26,8 @@
   This is an unofficial project and is not affiliated with or endorsed by AMD.
 ------------------------------------------------------------------------------}
 
+{ Bindings for rocBLAS levels 1-3, batched and strided-batched. }
+{ Bindings for rocBLAS levels 1-3, batched and strided-batched. }
 unit rocblas;
 
 {$mode objfpc}{$H+}
@@ -1342,7 +1344,7 @@ function rocblas_gemm_ex_64(handle: rocblas_handle; transA, transB: rocblas_oper
 function rocblas_gemm_batched_ex(handle: rocblas_handle; transA, transB: rocblas_operation; m, n, k: rocblas_int; const alpha: Pointer; const A: Pointer; a_type: rocblas_datatype; lda: rocblas_int; const B: Pointer; b_type: rocblas_datatype; ldb: rocblas_int; const beta: Pointer; const C: Pointer; c_type: rocblas_datatype; ldc: rocblas_int; D: Pointer; d_type: rocblas_datatype; ldd: rocblas_int; batch_count: rocblas_int; compute_type: rocblas_datatype; algo: rocblas_gemm_algo; solution_index: Integer; flags: Cardinal): rocblas_status; cdecl; external;
 
 { Strided batched GEMM: each batch matrix is at base + batch*stride.
-  This is the natural primitive for attention (Q@K^T, Attn@V) — the
+  This is the natural primitive for attention (Q@@K^T, Attn@@V) — the
   batch stride is just S*head_dim elements, no pointer arrays needed. }
 function rocblas_gemm_strided_batched_ex(handle: rocblas_handle; transA, transB: rocblas_operation; m, n, k: rocblas_int; const alpha: Pointer; const A: Pointer; a_type: rocblas_datatype; lda: rocblas_int; stride_a: rocblas_stride; const B: Pointer; b_type: rocblas_datatype; ldb: rocblas_int; stride_b: rocblas_stride; const beta: Pointer; const C: Pointer; c_type: rocblas_datatype; ldc: rocblas_int; stride_c: rocblas_stride; D: Pointer; d_type: rocblas_datatype; ldd: rocblas_int; stride_d: rocblas_stride; batch_count: rocblas_int; compute_type: rocblas_datatype; algo: rocblas_gemm_algo; solution_index: Integer; flags: Cardinal): rocblas_status; cdecl; external;
 

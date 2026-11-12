@@ -26,6 +26,8 @@
   This is an unofficial project and is not affiliated with or endorsed by AMD.
 ------------------------------------------------------------------------------}
 
+{ Specialised HIP host-side helpers. }
+{ Specialised HIP host-side helpers. }
 unit hip_specialized;
 
 {$MODE OBJFPC}{$H+}

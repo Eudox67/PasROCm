@@ -1,6 +1,8 @@
+{ rocPRIM iterator adaptors. }
+{ rocPRIM iterator adaptors. }
 unit rocprim_iterator;
 
-{< Copyright (c) 2017-2024 Advanced Micro Devices, Inc. All rights reserved.
+{ Copyright (c) 2017-2024 Advanced Micro Devices, Inc. All rights reserved.
   Pascal translation/bindings: Copyright (c) 2024-2026 Eudox67
  
   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -32,7 +34,7 @@ unit rocprim_iterator;
   - rocprim/iterator/texture_cache_iterator.hpp
   - rocprim/iterator/transform_iterator.hpp
   - rocprim/iterator/zip_iterator.hpp
->}
+}
 
 interface
 

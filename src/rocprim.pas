@@ -1,6 +1,8 @@
+{ Pascal facade over the rocPRIM primitives implemented by librocprim_shim. }
+{ Pascal facade over the rocPRIM primitives implemented by librocprim_shim. }
 unit rocprim;
 
-{< Copyright (c) 2017-2024 Advanced Micro Devices, Inc. All rights reserved.
+{ Copyright (c) 2017-2024 Advanced Micro Devices, Inc. All rights reserved.
   Pascal translation/bindings: Copyright (c) 2024-2026 Eudox67
  
   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,7 +24,7 @@ unit rocprim;
   THE SOFTWARE.
  
   This file is a Pascal translation of the rocprim.hpp C++ header file.
->}
+}
 
 interface
 

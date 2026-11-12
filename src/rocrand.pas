@@ -26,6 +26,8 @@
   This is an unofficial project and is not affiliated with or endorsed by AMD.
 ------------------------------------------------------------------------------}
 
+{ Bindings for rocRAND generators and distributions. }
+{ Bindings for rocRAND generators and distributions. }
 unit rocrand;
 
 {$mode objfpc}{$H+}

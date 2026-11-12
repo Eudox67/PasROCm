@@ -26,6 +26,8 @@
   This is an unofficial project and is not affiliated with or endorsed by AMD.
 ------------------------------------------------------------------------------}
 
+{ rocPRIM warp-level primitives. }
+{ rocPRIM warp-level primitives. }
 unit rocprim_warp;
 
 {$mode objfpc}{$H+}

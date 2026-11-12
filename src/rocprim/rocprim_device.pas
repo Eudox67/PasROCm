@@ -26,12 +26,14 @@
   This is an unofficial project and is not affiliated with or endorsed by AMD.
 ------------------------------------------------------------------------------}
 
+{ rocPRIM device-wide algorithms. }
+{ rocPRIM device-wide algorithms. }
 unit rocprim_device;
 
-{< Copyright (c) 2017-2024 Advanced Micro Devices, Inc. All rights reserved.
+{ Copyright (c) 2017-2024 Advanced Micro Devices, Inc. All rights reserved.
   Pascal translation/bindings: Copyright (c) 2024-2026 Eudox67
   ...
->}
+}
 
 interface
 

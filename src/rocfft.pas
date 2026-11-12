@@ -26,6 +26,8 @@
   This is an unofficial project and is not affiliated with or endorsed by AMD.
 ------------------------------------------------------------------------------}
 
+{ Bindings for rocFFT plans and real/complex transforms. }
+{ Bindings for rocFFT plans and real/complex transforms. }
 unit rocfft;
 
 {$mode objfpc}{$H+}

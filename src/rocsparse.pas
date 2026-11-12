@@ -26,6 +26,8 @@
   This is an unofficial project and is not affiliated with or endorsed by AMD.
 ------------------------------------------------------------------------------}
 
+{ Bindings for rocSPARSE SpMV, SpMM, conversions and preconditioners. }
+{ Bindings for rocSPARSE SpMV, SpMM, conversions and preconditioners. }
 unit rocsparse;
 
 {$mode objfpc}{$H+}

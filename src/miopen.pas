@@ -26,6 +26,8 @@
   This is an unofficial project and is not affiliated with or endorsed by AMD.
 ------------------------------------------------------------------------------}
 
+{ Bindings for MIOpen: convolutions, pooling, activations and RNNs. }
+{ Bindings for MIOpen: convolutions, pooling, activations and RNNs. }
 unit miopen;
 
 {$mode objfpc}{$H+}

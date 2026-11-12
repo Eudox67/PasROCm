@@ -23,6 +23,18 @@
  * THE SOFTWARE.
  *}
 
+{ @abstract(This unit provides base macros, platform detection, version information, and math constants for HIP.)
+  @bold(Group: Base HIP Definitions)
+
+  @note(This unit combines content from hip_common.h, hip_version.h, and hip_math_constants.h.
+  It defines platform macros, version constants, and math constants. Platform detection is handled via FPC directives.
+  Define exactly one of HIP_PLATFORM_AMD or HIP_PLATFORM_NVIDIA externally @(e.g., via compiler option -dHIP_PLATFORM_AMD@)
+  to match HIP's requirement, or an error will be raised at compile time.)
+
+  See also: hip_types.pas for types that build on these definitions.
+
+}
+{ Base macros, platform detection, version and math constants for HIP. }
 unit hip_common;
 
 {$MODE OBJFPC}{$H+}
@@ -31,17 +43,6 @@ unit hip_common;
 
 interface
 
-{ @abstract(This unit provides base macros, platform detection, version information, and math constants for HIP.)
-  @groupbegin(Base HIP Definitions)
-
-  @note(This unit combines content from hip_common.h, hip_version.h, and hip_math_constants.h.
-  It defines platform macros, version constants, and math constants. Platform detection is handled via FPC directives.
-  Define exactly one of HIP_PLATFORM_AMD or HIP_PLATFORM_NVIDIA externally (e.g., via compiler option -dHIP_PLATFORM_AMD)
-  to match HIP's requirement, or an error will be raised at compile time.)
-
-  @see(hip_types.pas for types that build on these definitions.)
-  @groupend
-}
 
 // Platform Detection (translated from hip_common.h)
 // Auto-define based on common FPC symbols or environment; can be overridden.
@@ -59,19 +60,19 @@ interface
 
 const
   // Visibility Macros (from hip_common.h; in Pascal, these are for info only, as FPC handles visibility differently)
-  { @brief Visibility attribute for public HIP APIs (equivalent to __attribute__((visibility("default"))) in C). }
+  { Visibility attribute for public HIP APIs (equivalent to __attribute__((visibility("default"))) in C). }
   HIP_PUBLIC_API = '';  // Placeholder; use for exported functions if building a shared lib
 
-  { @brief Internal exported API visibility (similar to public). }
+  { Internal exported API visibility (similar to public). }
   HIP_INTERNAL_EXPORTED_API = '';
 
   // Device Compile Check (from hip_common.h; set to 0 for host-side, as FPC is host-only)
-  { @brief Indicates if compiling in device mode (1) or host mode (0). In FPC, this is always 0 unless targeting GPU. }
+  { Indicates if compiling in device mode (1) or host mode (0). In FPC, this is always 0 unless targeting GPU. }
   __HIP_DEVICE_COMPILE__ = 0;
   
 const
   {
-    @brief Defines the name of the HIP runtime shared library for the target platform.
+    Defines the name of the HIP runtime shared library for the target platform.
     
     This constant is used in all `external` declarations to ensure that the
     Pascal wrappers link to the correct library. It is set conditionally
@@ -103,8 +104,8 @@ const
     
 const
   // Architecture Flags (from hip_common.h; defaults to 0 for host-side)
-  { @groupbegin(Architecture Feature Flags)
-    @brief 32-bit atomic support flags (0 = unsupported on host). }
+  { @bold(Group: Architecture Feature Flags)
+    32-bit atomic support flags (0 = unsupported on host). }
   __HIP_ARCH_HAS_GLOBAL_INT32_ATOMICS__ = 0;
   __HIP_ARCH_HAS_GLOBAL_FLOAT_ATOMIC_EXCH__ = 0;
   __HIP_ARCH_HAS_SHARED_INT32_ATOMICS__ = 0;
@@ -112,66 +113,63 @@ const
   __HIP_ARCH_HAS_FLOAT_ATOMIC_ADD__ = 0;
 
 const
-  { @brief 64-bit atomic support flags. }
+  { 64-bit atomic support flags. }
   __HIP_ARCH_HAS_GLOBAL_INT64_ATOMICS__ = 0;
   __HIP_ARCH_HAS_SHARED_INT64_ATOMICS__ = 0;
 
 const
-  { @brief Double-precision support. }
+  { Double-precision support. }
   __HIP_ARCH_HAS_DOUBLES__ = 0;
 
 const
-  { @brief Warp operations support. }
+  { Warp operations support. }
   __HIP_ARCH_HAS_WARP_VOTE__ = 0;
   __HIP_ARCH_HAS_WARP_BALLOT__ = 0;
   __HIP_ARCH_HAS_WARP_SHUFFLE__ = 0;
   __HIP_ARCH_HAS_WARP_FUNNEL_SHIFT__ = 0;
 
 const
-  { @brief Synchronization support. }
+  { Synchronization support. }
   __HIP_ARCH_HAS_THREAD_FENCE_SYSTEM__ = 0;
   __HIP_ARCH_HAS_SYNC_THREAD_EXT__ = 0;
 
 const
-  { @brief Miscellaneous architecture flags. }
+  { Miscellaneous architecture flags. }
   __HIP_ARCH_HAS_SURFACE_FUNCS__ = 0;
   __HIP_ARCH_HAS_3DGRID__ = 0;
   __HIP_ARCH_HAS_DYNAMIC_PARALLEL__ = 0;
-  { @groupend }
 
 const
   // Version Constants (from hip_version.h)
-  { @groupbegin(HIP Version Information)
-    @brief Major version of the HIP runtime. }
+  { @bold(Group: HIP Version Information)
+    Major version of the HIP runtime. }
   HIP_VERSION_MAJOR = 6;
 
-  { @brief Minor version of the HIP runtime. }
+  { Minor version of the HIP runtime. }
   HIP_VERSION_MINOR = 3;
 
-  { @brief Patch version of the HIP runtime. }
+  { Patch version of the HIP runtime. }
   HIP_VERSION_PATCH = 42134;
 
-  { @brief Git hash for the HIP version. }
+  { Git hash for the HIP version. }
   HIP_VERSION_GITHASH = 'a9a80e791';
 
-  { @brief Build ID for the HIP version. }
+  { Build ID for the HIP version. }
   HIP_VERSION_BUILD_ID = 0;
 
-  { @brief Build name for the HIP version. }
+  { Build name for the HIP version. }
   HIP_VERSION_BUILD_NAME = '';
 
-  { @brief Combined HIP version (major * 10000000 + minor * 100000 + patch). }
+  { Combined HIP version (major * 10000000 + minor * 100000 + patch). }
   HIP_VERSION = (HIP_VERSION_MAJOR * 10000000 + HIP_VERSION_MINOR * 100000 + HIP_VERSION_PATCH);
 
-  { @brief Flag indicating if HIP has precompiled headers support (1 = yes). }
+  { Flag indicating if HIP has precompiled headers support (1 = yes). }
   __HIP_HAS_GET_PCH = 1;
-  { @groupend }
 
 
   // Other common macros from hip_common.h (translated to constants where possible)
-  { @brief Equivalent to __HIPCC__ in HIP (set to 1 if in HIP compiler mode; here 0 for FPC host). }
+  { Equivalent to __HIPCC__ in HIP (set to 1 if in HIP compiler mode; here 0 for FPC host). }
   __HIPCC__ = 0;  // FPC is host-side; adjust if you add GPU support  
-  { @groupend }
 
 implementation
 

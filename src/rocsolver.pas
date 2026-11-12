@@ -26,6 +26,8 @@
   This is an unofficial project and is not affiliated with or endorsed by AMD.
 ------------------------------------------------------------------------------}
 
+{ Bindings for rocSOLVER dense and sparse factorizations and solvers. }
+{ Bindings for rocSOLVER dense and sparse factorizations and solvers. }
 unit rocsolver;
 
 {$mode objfpc}{$H+}

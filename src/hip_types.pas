@@ -38,6 +38,8 @@
  * from hip_runtime_api.h to create a single, foundational Types unit.
  *}
 
+{ Core HIP handle, enum and record types. }
+{ Core HIP handle, enum and record types. }
 unit hip_types;
 
 {$MODE OBJFPC}{$H+}
@@ -54,17 +56,16 @@ Type
   THipCtx = record end;
   hipCtx_t = ^THipCtx;
   
-  { @groupbegin(Stream, Event, and Callback Types) }
-  { @brief Opaque handle for a HIP Stream. }
+  { @bold(Group: Stream, Event, and Callback Types) }
+  { Opaque handle for a HIP Stream. }
   THipStream = record end;
   hipStream_t = ^THipStream;
-  { @brief Opaque handle for a HIP Event. }
+  { Opaque handle for a HIP Event. }
   THipEvent = record end;
   hipEvent_t = ^THipEvent;
   
-  { @brief HIP stream callback function pointer type. }
+  { HIP stream callback function pointer type. }
   THipStreamCallback = procedure(stream: hipStream_t; status: THipError; userData: Pointer); cdecl;  
-  { @groupend }
   
   THipModule = record end;
   hipModule_t = ^THipModule;
@@ -117,7 +118,7 @@ Type
 
 Type
   {
-    @brief HIP limit (enum as Int32).
+    HIP limit (enum as Int32).
   }
   THipLimit = Int32;
 
@@ -128,29 +129,28 @@ const
   hipLimitRange = 3;
 
 
-{ @groupbegin(IPC Handle Types) }
+{ @bold(Group: IPC Handle Types) }
 const
-  { @brief Size of the IPC handle. Essential for record layout. }
+  { Size of the IPC handle. Essential for record layout. }
   HIP_IPC_HANDLE_SIZE = 64;
 
 Type
-  { @brief HIP IPC memory handle. }
+  { HIP IPC memory handle. }
   THipIpcMemHandle = record
     reserved: array[0..HIP_IPC_HANDLE_SIZE - 1] of Char;
   end;
 
-  { @brief HIP IPC event handle. }
+  { HIP IPC event handle. }
   THipIpcEventHandle = record
     reserved: array[0..HIP_IPC_HANDLE_SIZE - 1] of Char;
   end;
-{ @groupend }
 
-{ @groupbegin(Core Execution and Device Types) }
+{ @bold(Group: Core Execution and Device Types) }
 Type
-  { @brief HIP device (integer alias). }
+  { HIP device (integer alias). }
   hipDevice_t = Int32;
 
-  { @brief Grid and block dimensions struct. }
+  { Grid and block dimensions struct. }
   dim3 = record
     x: UInt32;
     y: UInt32;
@@ -159,7 +159,7 @@ Type
   
   TDim3 = dim3; // Alias for consistency
 
-  { @brief HIP device architecture features (bitfield struct). }
+  { HIP device architecture features (bitfield struct). }
   THipDeviceArch = record
     case Byte of
       0: ( // Full 32-bit value
@@ -186,12 +186,12 @@ Type
         { Remaining unused bits can be accessed via Value }
       );
   end;
-  { @brief HIP UUID (16-byte array). }
+  { HIP UUID (16-byte array). }
   THipUUID = record
     bytes: array[0..15] of AnsiChar;
   end;
 
-  { @brief HIP device properties. }
+  { HIP device properties. }
   THipDeviceProp = record
     name: array[0..255] of AnsiChar;
     uuid: THipUUID;
@@ -305,11 +305,10 @@ Type
   hipDeviceProp_t = THipDeviceProp;
   PHipDeviceProp = ^THipDeviceProp;
 
-{ @groupend }
 
-{ @groupbegin(Function and Kernel Attributes) }
+{ @bold(Group: Function and Kernel Attributes) }
 Type
-  { @brief HIP function attributes. }
+  { HIP function attributes. }
   THipFuncAttributes = record
     binaryVersion: Int32;
     cacheModeCA: Int32;
@@ -323,7 +322,7 @@ Type
     sharedSizeBytes: SizeUInt;
   end;
 
-  { @brief HIP function attribute enum (from driver_Types.h). }
+  { HIP function attribute enum (from driver_Types.h). }
   THipFunctionAttribute = Type Integer;
   
 const
@@ -340,7 +339,7 @@ const
   hipFuncAttributeMax = 10;
 
 Type
-  { @brief HIP function cache preference. }
+  { HIP function cache preference. }
   THipFuncCache = Type Integer;
   
 const
@@ -350,7 +349,7 @@ const
   hipFuncCachePreferEqual = 3;
 
 Type
-  { @brief HIP shared memory configuration. }
+  { HIP shared memory configuration. }
   THipSharedMemConfig = Type Integer;
   
 const
@@ -359,7 +358,7 @@ const
   hipSharedMemBankSizeEightByte = 2;
 
 Type
-  { @brief JIT compilation options. }
+  { JIT compilation options. }
   THipJitOption = Type Integer;
   PHipJitOption = ^THipJitOption;
 const
@@ -379,11 +378,10 @@ const
   hipJitOptionGenerateLineInfo = 13;
   hipJitOptionCacheMode = 14;
   hipJitOptionNumOptions = 15;
-{ @groupend }
 
-{ @groupbegin(Channel and Format Types) }
+{ @bold(Group: Channel and Format Types) }
 Type
-  { @brief HIP channel format kind. }
+  { HIP channel format kind. }
   THipChannelFormatKind = Type Integer;
   
 const
@@ -393,7 +391,7 @@ const
   hipChannelFormatKindNone     = 3;
 
 Type
-  { @brief HIP channel format descriptor. }
+  { HIP channel format descriptor. }
   THipChannelFormatDesc = record
     x: Int32;
     y: Int32;
@@ -403,15 +401,14 @@ Type
   end;
   
   PHipChannelFormatDesc = ^THipChannelFormatDesc;
-{ @groupend }
 
-{ @groupbegin(Array and Mipmap Types) }
+{ @bold(Group: Array and Mipmap Types) }
 Type
   THipArray = record end;
   hipArray_t = ^THipArray;
   hipArray_const_t = ^THipArray;
 
-  { @brief HIP array format. }
+  { HIP array format. }
   THipArray_Format = Type Integer;
 
   THipMipmappedArray_st = record
@@ -443,7 +440,7 @@ const
   HIP_AD_FORMAT_FLOAT          = $20;
 
 Type
-  { @brief HIP array descriptor. }
+  { HIP array descriptor. }
   THIP_ARRAY_DESCRIPTOR = record
     Width: SizeUInt;
     Height: SizeUInt;
@@ -452,7 +449,7 @@ Type
   end;
   PHIP_ARRAY_DESCRIPTOR = ^THIP_ARRAY_DESCRIPTOR;
 
-  { @brief HIP 3D array descriptor. }
+  { HIP 3D array descriptor. }
   THIP_ARRAY3D_DESCRIPTOR = record
     Width: SizeUInt;
     Height: SizeUInt;
@@ -463,11 +460,10 @@ Type
   end;
   
   PHIP_ARRAY3D_DESCRIPTOR = ^THIP_ARRAY3D_DESCRIPTOR;
-{ @groupend }
 
-{ @groupbegin(Resource and View Types) }
+{ @bold(Group: Resource and View Types) }
 Type
-  { @brief HIP resource Type. }
+  { HIP resource Type. }
   THipResourceType = Type Integer;
   
 const
@@ -486,7 +482,7 @@ const
   HIP_RESOURCE_TYPE_PITCH2D         = $03;
 
 Type
-  { @brief HIP resource view format. }
+  { HIP resource view format. }
   THipResourceViewFormat = Type Integer;
   
 const
@@ -527,7 +523,7 @@ const
   hipResViewFormatUnsignedBlockCompressed7 = $22;
 
 type
-  { @brief HIP resource descriptor. }
+  { HIP resource descriptor. }
   PHipArray = ^THipArray;     // THipArray defined above
 
   PHipMipmappedArray = ^THipMipmappedArray;
@@ -562,7 +558,7 @@ type
 
   PHipResourceDesc = ^THipResourceDesc;
 
-  { @brief HIP resource view descriptor. }
+  { HIP resource view descriptor. }
   THipResourceViewDesc = record
     format: THipResourceViewFormat;
     width: SizeUInt;
@@ -575,16 +571,15 @@ type
   end;
   
   PHipResourceViewDesc = ^THipResourceViewDesc;
-{ @groupend }
 
-{ @groupbegin(Memory and Copy Types) }
+{ @bold(Group: Memory and Copy Types) }
 Type
   hipDeviceptr_t = Pointer;
   PhipDeviceptr_t = ^hipDeviceptr_t;
   hipDeviceptr_array = PhipDeviceptr_t;
 
 
-  { @brief HIP memory Types. }
+  { HIP memory Types. }
   THipMemoryType = Type Integer;
   
 const
@@ -594,7 +589,7 @@ const
   hipMemoryTypeUnified = 2; // Alias for managed
 
 Type
-  { @brief HIP memcpy kind. }
+  { HIP memcpy kind. }
   THipMemcpyKind = Type Integer;
   
 const
@@ -606,7 +601,7 @@ const
   hipMemcpyDeviceToDeviceNoCU = 1024;
 
 Type
-  { @brief HIP pointer attributes. }
+  { HIP pointer attributes. }
   THipPointerAttribute = record
     memoryType: THipMemoryType;
     device: Int32;
@@ -643,72 +638,72 @@ type
 
   PHipMemcpy2D = ^THipMemcpy2D;
 
-  { @brief HIP pointer attribute enum. }
+  { HIP pointer attribute enum. }
   THipPointerAttributeEnum = Type Integer;
   PHipPointerAttributeEnum = ^THipPointerAttributeEnum;
   
 const
-  { @brief The context on which a pointer was allocated
+  { The context on which a pointer was allocated
     @warning Not supported in HIP }
   HIP_POINTER_ATTRIBUTE_CONTEXT = 1;
 
-  { @brief Memory type describing location of a pointer }
+  { Memory type describing location of a pointer }
   HIP_POINTER_ATTRIBUTE_MEMORY_TYPE = 2;
 
-  { @brief Address at which the pointer is allocated on device }
+  { Address at which the pointer is allocated on device }
   HIP_POINTER_ATTRIBUTE_DEVICE_POINTER = 3;
 
-  { @brief Address at which the pointer is allocated on host }
+  { Address at which the pointer is allocated on host }
   HIP_POINTER_ATTRIBUTE_HOST_POINTER = 4;
 
-  { @brief A pair of tokens for use with Linux kernel interface
+  { A pair of tokens for use with Linux kernel interface
     @warning Not supported in HIP }
   HIP_POINTER_ATTRIBUTE_P2P_TOKENS = 5;
 
-  { @brief Synchronize every synchronous memory operation initiated on this region }
+  { Synchronize every synchronous memory operation initiated on this region }
   HIP_POINTER_ATTRIBUTE_SYNC_MEMOPS = 6;
 
-  { @brief Unique ID for an allocated memory region }
+  { Unique ID for an allocated memory region }
   HIP_POINTER_ATTRIBUTE_BUFFER_ID = 7;
 
-  { @brief Indicates if the pointer points to managed memory }
+  { Indicates if the pointer points to managed memory }
   HIP_POINTER_ATTRIBUTE_IS_MANAGED = 8;
 
-  { @brief Device ordinal of a device on which a pointer was allocated or registered }
+  { Device ordinal of a device on which a pointer was allocated or registered }
   HIP_POINTER_ATTRIBUTE_DEVICE_ORDINAL = 9;
 
-  { @brief If this pointer maps to an allocation suitable for hipIpcGetMemHandle
+  { If this pointer maps to an allocation suitable for hipIpcGetMemHandle
     @warning Not supported in HIP }
   HIP_POINTER_ATTRIBUTE_IS_LEGACY_HIP_IPC_CAPABLE = 10;
 
-  { @brief Starting address for this requested pointer }
+  { Starting address for this requested pointer }
   HIP_POINTER_ATTRIBUTE_RANGE_START_ADDR = 11;
 
-  { @brief Size of the address range for this requested pointer }
+  { Size of the address range for this requested pointer }
   HIP_POINTER_ATTRIBUTE_RANGE_SIZE = 12;
 
-  { @brief Tells if this pointer is in a valid address range that is mapped to a backing allocation }
+  { Tells if this pointer is in a valid address range that is mapped to a backing allocation }
   HIP_POINTER_ATTRIBUTE_MAPPED = 13;
 
-  { @brief Bitmask of allowed hipmemAllocationHandleType for this allocation
+  { Bitmask of allowed hipmemAllocationHandleType for this allocation
     @warning Not supported in HIP }
   HIP_POINTER_ATTRIBUTE_ALLOWED_HANDLE_TYPES = 14;
 
-  { @brief Returns if the memory referenced by this pointer can be used with the GPUDirect RDMA API
+  { Returns if the memory referenced by this pointer can be used with the GPUDirect RDMA API
     @warning Not supported in HIP }
   HIP_POINTER_ATTRIBUTE_IS_GPU_DIRECT_RDMA_CAPABLE = 15;
 
-  { @brief Returns the access flags the device associated with for the corresponding memory referenced by the pointer }
+  { Returns the access flags the device associated with for the corresponding memory referenced by the pointer }
   HIP_POINTER_ATTRIBUTE_ACCESS_FLAGS = 16;
 
-  { @brief Returns the mempool handle for the allocation if it was allocated from a mempool
+  { Returns the mempool handle for the allocation if it was allocated from a mempool
     @warning Not supported in HIP }
   HIP_POINTER_ATTRIBUTE_MEMPOOL_HANDLE = 17;
-{ @groupbegin(Device Attributes and Other Enums) }
+{ @bold(Group: Device Attributes and Other Enums) }
 
 type
   {
-    @brief HIP device attribute (enum as Int32 with constants).
+    HIP device attribute (enum as Int32 with constants).
   }
   THipDeviceAttribute = Int32;
 
@@ -829,7 +824,7 @@ const
   HIP_DEVICE_ATTRIBUTE_VENDOR_SPECIFIC_BEGIN = 20000;Type
 
   {
-    @brief HIP device P2P attribute (enum as Int32).
+    HIP device P2P attribute (enum as Int32).
   }
   THipDeviceP2PAttr = Int32;
 
@@ -841,7 +836,7 @@ const
 
 Type
   {
-    @brief HIP driver proc address query result (enum as Int32).
+    HIP driver proc address query result (enum as Int32).
   }
   THipDriverProcAddressQueryResult = Int32;
 
@@ -852,7 +847,7 @@ const
 
 Type
   {
-    @brief HIP compute mode (enum as Int32).
+    HIP compute mode (enum as Int32).
   }
   THipComputeMode = Int32;
 
@@ -864,7 +859,7 @@ const
 
 Type
   {
-    @brief HIP flush GPU direct RDMA writes options (enum as Int32).
+    HIP flush GPU direct RDMA writes options (enum as Int32).
   }
   THipFlushGPUDirectRDMAWritesOptions = Int32;
 
@@ -874,7 +869,7 @@ const
 
 Type
   {
-    @brief HIP GPU direct RDMA writes ordering (enum as Int32).
+    HIP GPU direct RDMA writes ordering (enum as Int32).
   }
   THipGPUDirectRDMAWritesOrdering = Int32;
 
@@ -883,10 +878,9 @@ const
   hipGPUDirectRDMAWritesOrderingOwner = 100;
   hipGPUDirectRDMAWritesOrderingAllDevices = 200;
 
-{ @groupend }
 
 Type
-  { @brief HIP pitched pointer. }
+  { HIP pitched pointer. }
   THipPitchedPtr = record
     ptr: Pointer;
     pitch: SizeUInt;
@@ -894,21 +888,21 @@ Type
     ysize: SizeUInt;
   end;
 
-  { @brief HIP extent (dimensions). }
+  { HIP extent (dimensions). }
   THipExtent = record
     width: SizeUInt;
     height: SizeUInt;
     depth: SizeUInt;
   end;
 
-  { @brief HIP position. }
+  { HIP position. }
   THipPos = record
     x: SizeUInt;
     y: SizeUInt;
     z: SizeUInt;
   end;
 
-  { @brief HIP memcpy 3D parameters. }
+  { HIP memcpy 3D parameters. }
   THipMemcpy3DParms = record
     srcArray: hipArray_t;
     srcPos: THipPos;
@@ -921,11 +915,10 @@ Type
   end;
   
   PHipMemcpy3DParms = ^THipMemcpy3DParms;
-{ @groupend }
 
-{ @groupbegin(Library and Data Types from library_Types.h) }
+{ @bold(Group: Library and Data Types from library_Types.h) }
 Type
-  { @brief HIP data Type. }
+  { HIP data Type. }
   HipDataType = Type Integer;
   
 const
@@ -963,16 +956,15 @@ const
   HIP_R_8F_E5M2_FNUZ = 1001;
 
 Type
-  { @brief HIP library property Type. }
+  { HIP library property Type. }
   THipLibraryPropertyType = Type Integer;
   
 const
   HIP_LIBRARY_MAJOR_VERSION = 0;
   HIP_LIBRARY_MINOR_VERSION = 1;
   HIP_LIBRARY_PATCH_LEVEL   = 2;
-{ @groupend }
 
-{ @groupbegin(Surface and Texture Types) }
+{ @bold(Group: Surface and Texture Types) }
 Type
   THipSurface = record end;
   hipSurfaceObject_t = ^THipSurface;
@@ -1050,11 +1042,10 @@ Type
   end;
   
   PHipTextureDesc = ^THipTextureDesc;
-{ @groupend }
 
-{ @groupbegin(Graph Management Types) }
+{ @bold(Group: Graph Management Types) }
 Type
-  { @brief HIP graph node Types. }
+  { HIP graph node Types. }
   THipGraphNodeType = Type Integer;
   
 const
@@ -1073,7 +1064,7 @@ const
   hipGraphNodeTypeCount = 12;
 
 Type
-  { @brief Graph memory attribute types }
+  { Graph memory attribute types }
   THipGraphMemAttributeType = type Integer;
 
 const
@@ -1087,7 +1078,7 @@ const
   HIP_GRAPH_MEM_ATTR_BUFFER_PROPS = 7;
 
 Type
-  { @brief Parameters for a kernel node in a HIP graph. }
+  { Parameters for a kernel node in a HIP graph. }
   THipKernelNodeParams = record
     func: Pointer;
     gridDim: TDim3;
@@ -1099,7 +1090,7 @@ Type
   
   PHipKernelNodeParams = ^THipKernelNodeParams;
 
-  { @brief Parameters for a memset node in a HIP graph. }
+  { Parameters for a memset node in a HIP graph. }
   THipMemsetParams = record
     dst: Pointer;
     value: UInt32;
@@ -1111,10 +1102,10 @@ Type
   
   PHipMemsetParams = ^THipMemsetParams;
 
-  { @brief Host callback function pointer Type. }
+  { Host callback function pointer Type. }
   THipHostFn = procedure(userData: Pointer); cdecl;
 
-  { @brief Parameters for a host node in a HIP graph. }
+  { Parameters for a host node in a HIP graph. }
   THipHostNodeParams = record
     fn: THipHostFn;
     userData: Pointer;
@@ -1122,7 +1113,7 @@ Type
   
   PHipHostNodeParams = ^THipHostNodeParams;
 
-  { @brief Parameters for an external semaphore signal node. }
+  { Parameters for an external semaphore signal node. }
   THipExternalSemaphoreSignalNodeParams = record
     extSemArray: PhipExternalSemaphore_t;
     paramsArray: Pointer; // PHipExternalSemaphoreSignalParams
@@ -1131,7 +1122,7 @@ Type
   
   PHipExternalSemaphoreSignalNodeParams = ^THipExternalSemaphoreSignalNodeParams;
 
-  { @brief Parameters for an external semaphore wait node. }
+  { Parameters for an external semaphore wait node. }
   THipExternalSemaphoreWaitNodeParams = record
     extSemArray: PhipExternalSemaphore_t;
     paramsArray: Pointer; // PHipExternalSemaphoreWaitParams
@@ -1147,7 +1138,7 @@ type
   THipMemAllocationType = type Integer;
   THipMemAllocationHandleType = type Integer;
   THipGraphExecUpdateResult = type Integer;
-  { @brief Attribute IDs for a kernel node. }
+  { Attribute IDs for a kernel node. }
   THipKernelNodeAttrID = Type Integer;
 //  THipGraphNodeType = type Integer;
 
@@ -1161,21 +1152,21 @@ type
   PHipKernelNodeAttrID = ^THipKernelNodeAttrID;
 
 const
-  { @brief HIP memory location type constants }
+  { HIP memory location type constants }
   hipMemLocationTypeInvalid = 0;
   hipMemLocationTypeDevice = 1;
 
-  { @brief HIP memory access flags constants }
+  { HIP memory access flags constants }
   hipMemAccessFlagsProtNone = 0;
   hipMemAccessFlagsProtRead = 1;
   hipMemAccessFlagsProtReadWrite = 3;
 
-  { @brief HIP memory allocation type constants }
+  { HIP memory allocation type constants }
   hipMemAllocationTypeInvalid = $0;
   hipMemAllocationTypePinned = $1;
   hipMemAllocationTypeMax = $7FFFFFFF;
 
-  { @brief HIP memory allocation handle type constants }
+  { HIP memory allocation handle type constants }
   hipMemHandleTypeNone = $0;
   hipMemHandleTypePosixFileDescriptor = $1;
   hipMemHandleTypeWin32 = $2;
@@ -1195,7 +1186,7 @@ type
     reserved: array[0..63] of Byte;
   end;
 
-  { @brief Parameters for a memory allocation node in a HIP graph. }
+  { Parameters for a memory allocation node in a HIP graph. }
   THipMemAllocNodeParams = record
     poolProps: THipMemPoolProps;
     dptr: ^Pointer;
@@ -1204,7 +1195,7 @@ type
   end;
   PHipMemAllocNodeParams = ^THipMemAllocNodeParams;
 
-  { @brief Graph instantiation parameters. }
+  { Graph instantiation parameters. }
   THipGraphInstantiateParams = record
     flags: UInt64;
     stream: hipStream_t;
@@ -1237,7 +1228,7 @@ type
     missProp: THipAccessProperty;
   end;
 
-  { @brief Value for a kernel node attribute. Union handled by variant record. }
+  { Value for a kernel node attribute. Union handled by variant record. }
   THipKernelNodeAttrValue = record
     case Integer of
       0: (accessPolicyWindow: THipAccessPolicyWindow);
@@ -1245,12 +1236,11 @@ type
   end;
 
   PHipKernelNodeAttrValue = ^THipKernelNodeAttrValue;
-{ @groupend }
 
-{ @groupbegin(Module, Launch, and Sparse Memory Types) }
+{ @bold(Group: Module, Launch, and Sparse Memory Types) }
 
 type
-  { @brief Launch parameters for a cooperative kernel. }
+  { Launch parameters for a cooperative kernel. }
   THipLaunchParams = record
     func: Pointer;
     gridDim: TDim3;
@@ -1261,25 +1251,25 @@ type
   end;
   PHipLaunchParams = ^THipLaunchParams;
 
-  { @brief (Identical to THipLaunchParams) Launch parameters for a cooperative kernel from a module. }
+  { (Identical to THipLaunchParams) Launch parameters for a cooperative kernel from a module. }
   THipFunctionLaunchParams = THipLaunchParams;
   PHipFunctionLaunchParams = ^THipFunctionLaunchParams;
 
   {
-    @brief Specifies the type of sparse subresource for array mapping.
-    @see(THipArrayMapInfo)
+    Specifies the type of sparse subresource for array mapping.
+    @seeAlso(THipArrayMapInfo)
   }
   THipArraySparseSubresourceType = type Integer;
 
 const
-  { @brief The subresource is a sparse mipmap level. }
+  { The subresource is a sparse mipmap level. }
   hipArraySparseSubresourceTypeSparseLevel = 0;
-  { @brief The subresource is the mipmap tail. }
+  { The subresource is the mipmap tail. }
   hipArraySparseSubresourceTypeMiptail     = 1;
 
 type
   {
-    @brief Defines a sparse memory mapping operation for a HIP array or mipmapped array.
+    Defines a sparse memory mapping operation for a HIP array or mipmapped array.
     This record is used with the hipMemMapArrayAsync function.
   }
   { Define the nested record types first }
@@ -1301,50 +1291,49 @@ type
   end;
 
   THipArrayMapInfo = record
-    { @brief The type of the resource (e.g., hipResourceTypeArray). }
+    { The type of the resource (e.g., hipResourceTypeArray). }
     resourceType: THipResourceType;
 
-    { @brief A pointer to the resource, which can be either a hipArray_t or hipMipmappedArray_t. }
+    { A pointer to the resource, which can be either a hipArray_t or hipMipmappedArray_t. }
     resource: Pointer;
 
-    { @brief The type of the subresource to be mapped, which determines which part of the union is valid. }
+    { The type of the subresource to be mapped, which determines which part of the union is valid. }
     subresourceType: THipArraySparseSubresourceType;
 
-    { @brief A variant record that holds the specific subresource information. }
+    { A variant record that holds the specific subresource information. }
 
-    { @brief The type of memory usage for this mapping (e.g., hipMemoryTypeDevice). }
+    { The type of memory usage for this mapping (e.g., hipMemoryTypeDevice). }
     memUsage: THipMemoryType;
 
-    { @brief Flags for the mapping operation (must be zero). }
+    { Flags for the mapping operation (must be zero). }
     flags: UInt32;
 
-    { @brief The device pointer to the memory to be mapped. }
+    { The device pointer to the memory to be mapped. }
     devicePtr: hipDeviceptr_t;
 
-    { @brief The memory pool from which the memory was allocated. }
+    { The memory pool from which the memory was allocated. }
     memPool: hipMemPool_t;
 
-    { @brief The offset within the physical memory allocation. }
+    { The offset within the physical memory allocation. }
     offset: UInt64;
 
     case Integer of
       hipArraySparseSubresourceTypeSparseLevel: (
-        { @brief Describes a specific sparse mipmap level to map. }
+        { Describes a specific sparse mipmap level to map. }
         sparseLevel: THipArraySparseLevel
       );
       hipArraySparseSubresourceTypeMiptail: (
-        { @brief Describes the mipmap tail to map. }
+        { Describes the mipmap tail to map. }
         miptail: THipArrayMiptail
       );
 
   end;
 
   PHipArrayMapInfo = ^THipArrayMapInfo;
-{ @groupend }
 
-{ @groupbegin(Stream Capture Types) }
+{ @bold(Group: Stream Capture Types) }
 Type
-  { @brief Stream capture status. }
+  { Stream capture status. }
   THipStreamCaptureStatus = Type Integer;
   
 const
@@ -1353,7 +1342,7 @@ const
   hipStreamCaptureStatusInvalidated = 2;
 
 type
-  { @brief Stream capture mode. }
+  { Stream capture mode. }
   THipStreamCaptureMode = Type Integer;
   
 const
@@ -1362,18 +1351,17 @@ const
   hipStreamCaptureModeRelaxed = 2;
 
 type
-  { @brief Flags for updating stream capture dependencies. }
+  { Flags for updating stream capture dependencies. }
   THipStreamUpdateCaptureDependenciesFlags = Type Integer;
   
 const
   hipStreamAddCaptureDependencies = 0;
   hipStreamSetCaptureDependencies = 1;
   
-{ @groupend }
 
-{ @groupbegin(Graph Execution and Update Types) }
+{ @bold(Group: Graph Execution and Update Types) }
 //Type
-  { @brief Result of a graph execution update. }
+  { Result of a graph execution update. }
 //  THipGraphExecUpdateResult = Type Integer;
   
 const
@@ -1386,11 +1374,10 @@ const
   hipGraphExecUpdateErrorNotSupported = 6;
   hipGraphExecUpdateErrorUnsupportedFunctionChange = 7;
   hipGraphExecUpdateErrorAttributesChanged = 8;
-{ @groupend }
 
-{ @groupbegin(External Resource Interop Types) }
+{ @bold(Group: External Resource Interop Types) }
 Type
-  { @brief External memory handle Types. }
+  { External memory handle Types. }
   THipExternalMemoryHandleType = Type Integer;
   
 const
@@ -1414,7 +1401,7 @@ type
     1: (win32: TWin32Handle);
   end;
 
-  { @brief External memory handle descriptor. }
+  { External memory handle descriptor. }
   THipExternalMemoryHandleDesc = record
     &Type: THipExternalMemoryHandleType;
     handle:THipExternalMemoryHandle;
@@ -1423,7 +1410,7 @@ type
   end;
   PHipExternalMemoryHandleDesc = ^THipExternalMemoryHandleDesc;
 
-  { @brief External memory buffer descriptor. }
+  { External memory buffer descriptor. }
   THipExternalMemoryBufferDesc = record
     offset: UInt64;
     size: UInt64;
@@ -1432,7 +1419,7 @@ type
   
   PHipExternalMemoryBufferDesc = ^THipExternalMemoryBufferDesc;
 
-  { @brief External memory mipmapped array descriptor. }
+  { External memory mipmapped array descriptor. }
   THipExternalMemoryMipmappedArrayDesc = record
     offset: UInt64;
     formatDesc: THipChannelFormatDesc;
@@ -1442,7 +1429,7 @@ type
   end;
   PHipExternalMemoryMipmappedArrayDesc = ^THipExternalMemoryMipmappedArrayDesc;
 
-  { @brief External semaphore handle Types. }
+  { External semaphore handle Types. }
   THipExternalSemaphoreHandleType = Type Integer;
   
 const
@@ -1464,7 +1451,7 @@ type
     1: (win32: TWin32Handle);
   end;
 
-  { @brief External semaphore handle descriptor. }
+  { External semaphore handle descriptor. }
   THipExternalSemaphoreHandleDesc = record
     &Type: THipExternalSemaphoreHandleType;
     handle: THipExternalSemaphoreHandle;
@@ -1473,7 +1460,7 @@ type
   
   PHipExternalSemaphoreHandleDesc = ^THipExternalSemaphoreHandleDesc;
 
-  { @brief External semaphore signal parameters. }
+  { External semaphore signal parameters. }
   THipExternalSemaphoreSignalParams = record
     params: record
       fence: record value: UInt64; end;
@@ -1486,7 +1473,7 @@ type
   
   PHipExternalSemaphoreSignalParams = ^THipExternalSemaphoreSignalParams;
 
-  { @brief External semaphore wait parameters. }
+  { External semaphore wait parameters. }
   THipExternalSemaphoreWaitParams = record
     params: record
       fence: record value: UInt64; end;
@@ -1498,11 +1485,10 @@ type
   end;
   
   PHipExternalSemaphoreWaitParams = ^THipExternalSemaphoreWaitParams;
-{ @groupend }
 
-{ @groupbegin(Virtual Memory Management Types) }
+{ @bold(Group: Virtual Memory Management Types) }
 //Type
-//  { @brief Memory allocation handle Types. }
+//  { Memory allocation handle Types. }
 //  THipMemAllocationHandleType = Type Integer;
 //  
 //const
@@ -1512,21 +1498,21 @@ type
 //  hipMemHandleTypeWin32Kmt = 3;
 
 //type
-//  { @brief Memory allocation Types. }
+//  { Memory allocation Types. }
 //  THipMemAllocationType = Type Integer;
 //
 //const
 //  hipMemAllocationTypeInvalid = 0;
 //  hipMemAllocationTypePinned = 1;
 //
-//  { @brief Memory location Types. }
+//  { Memory location Types. }
 //  THipMemLocationType = Type Integer;
   
 //const
 //  hipMemLocationTypeInvalid = 0;
 //  hipMemLocationTypeDevice = 1;
 //
-//  { @brief Memory location descriptor. }
+//  { Memory location descriptor. }
 //  THipMemLocation = record
 //    &Type: THipMemLocationType;
 //    id: Int32;
@@ -1534,7 +1520,7 @@ type
   
   PHipMemLocation = ^THipMemLocation;
 
-  { @brief Memory allocation properties. }
+  { Memory allocation properties. }
   THipMemAllocationProp = record
     &type: THipMemAllocationType;
     requestedHandleTypes: THipMemAllocationHandleType;
@@ -1549,7 +1535,7 @@ type
   
   PHipMemAllocationProp = ^THipMemAllocationProp;
 
-  { @brief Memory allocation granularity flags. }
+  { Memory allocation granularity flags. }
   THipMemAllocationGranularityFlags = Type Integer;
   
 const
@@ -1557,13 +1543,12 @@ const
   hipMemAllocationGranularityRecommended = 1;
 
 type
-  { @brief Memory access descriptor. }
+  { Memory access descriptor. }
   THipMemAccessDesc = record
     location: THipMemLocation;
     flags: THipMemAccessFlags;
   end;
   PHipMemAccessDesc = ^THipMemAccessDesc;
-{ @groupend }
 
 implementation
 

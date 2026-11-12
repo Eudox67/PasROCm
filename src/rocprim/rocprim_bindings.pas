@@ -26,6 +26,8 @@
   This is an unofficial project and is not affiliated with or endorsed by AMD.
 ------------------------------------------------------------------------------}
 
+{ Low-level extern declarations into librocprim_shim. }
+{ Low-level extern declarations into librocprim_shim. }
 unit rocprim_bindings;
 
 interface

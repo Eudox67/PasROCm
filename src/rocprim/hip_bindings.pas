@@ -26,6 +26,8 @@
   This is an unofficial project and is not affiliated with or endorsed by AMD.
 ------------------------------------------------------------------------------}
 
+{ Low-level HIP extern declarations used by the wrappers. }
+{ Low-level HIP extern declarations used by the wrappers. }
 unit hip_bindings;
 
 interface

@@ -26,6 +26,20 @@
  * THE SOFTWARE.
  *}
 
+{ @abstract(This unit provides vector types for HIP, translated from hip_vector_types.h, and their associated constructor functions.)
+  @bold(Group: HIP Vector Types)
+
+  @note(This unit defines vector types that are commonly used in GPU programming.
+  These are simple records with fields x, y, z, w as appropriate for the vector dimension.
+  Platform-specific differences @(AMD vs. NVIDIA@) are handled via conditionals.
+  It also includes the `make_*` helper functions to construct these types, making
+  this unit self-contained.)
+
+
+  See also: hip_types.pas for other core types.
+
+}
+{ @bold(Group: 1-component vector types) }
 unit hip_vector_types;
 
 {$MODE OBJFPC}{$H+}
@@ -33,164 +47,148 @@ unit hip_vector_types;
 
 interface
 
-{ @abstract(This unit provides vector types for HIP, translated from hip_vector_types.h, and their associated constructor functions.)
-  @groupbegin(HIP Vector Types)
 
-  @note(This unit defines vector types that are commonly used in GPU programming.
-  These are simple records with fields x, y, z, w as appropriate for the vector dimension.
-  Platform-specific differences (AMD vs. NVIDIA) are handled via conditionals.
-  It also includes the `make_*` helper functions to construct these types, making
-  this unit self-contained.)
-
-
-  @see(hip_types.pas for other core types.)
-  @groupend
-}
-
-{ @groupbegin(1-component vector types) }
 
 type
-  { @brief 1-component signed char vector. }
+  { 1-component signed char vector. }
   char1 = record
     x: Int8;
   end;
   PChar1 = ^char1;
 
-  { @brief 1-component unsigned char vector. }
+  { 1-component unsigned char vector. }
   uchar1 = record
     x: UInt8;
   end;
   PUChar1 = ^uchar1;
 
-  { @brief 1-component signed short vector. }
+  { 1-component signed short vector. }
   short1 = record
     x: Int16;
   end;
   PShort1 = ^short1;
 
-  { @brief 1-component unsigned short vector. }
+  { 1-component unsigned short vector. }
   ushort1 = record
     x: UInt16;
   end;
   PUShort1 = ^ushort1;
 
-  { @brief 1-component signed int vector. }
+  { 1-component signed int vector. }
   int1 = record
     x: Int32;
   end;
   PInt1 = ^int1;
 
-  { @brief 1-component unsigned int vector. }
+  { 1-component unsigned int vector. }
   uint1 = record
     x: UInt32;
   end;
   PUInt1 = ^uint1;
 
-  { @brief 1-component signed long vector. }
+  { 1-component signed long vector. }
   long1 = record
     x: Int64;
   end;
   PLong1 = ^long1;
 
-  { @brief 1-component unsigned long vector. }
+  { 1-component unsigned long vector. }
   ulong1 = record
     x: UInt64;
   end;
   PULong1 = ^ulong1;
 
-  { @brief 1-component float vector. }
+  { 1-component float vector. }
   float1 = record
     x: Single;
   end;
   PFloat1 = ^float1;
 
-  { @brief 1-component double vector. }
+  { 1-component double vector. }
   double1 = record
     x: Double;
   end;
   PDouble1 = ^double1;
 
-{ @groupend }
 
-{ @groupbegin(2-component vector types) }
+{ @bold(Group: 2-component vector types) }
 
 type
-  { @brief 2-component signed char vector. }
+  { 2-component signed char vector. }
   char2 = record
     x: Int8;
     y: Int8;
   end;
   PChar2 = ^char2;
 
-  { @brief 2-component unsigned char vector. }
+  { 2-component unsigned char vector. }
   uchar2 = record
     x: UInt8;
     y: UInt8;
   end;
   PUChar2 = ^uchar2;
 
-  { @brief 2-component signed short vector. }
+  { 2-component signed short vector. }
   short2 = record
     x: Int16;
     y: Int16;
   end;
   PShort2 = ^short2;
 
-  { @brief 2-component unsigned short vector. }
+  { 2-component unsigned short vector. }
   ushort2 = record
     x: UInt16;
     y: UInt16;
   end;
   PUShort2 = ^ushort2;
 
-  { @brief 2-component signed int vector. }
+  { 2-component signed int vector. }
   int2 = record
     x: Int32;
     y: Int32;
   end;
   PInt2 = ^int2;
 
-  { @brief 2-component unsigned int vector. }
+  { 2-component unsigned int vector. }
   uint2 = record
     x: UInt32;
     y: UInt32;
   end;
   PUInt2 = ^uint2;
 
-  { @brief 2-component signed long vector. }
+  { 2-component signed long vector. }
   long2 = record
     x: Int64;
     y: Int64;
   end;
   PLong2 = ^long2;
 
-  { @brief 2-component unsigned long vector. }
+  { 2-component unsigned long vector. }
   ulong2 = record
     x: UInt64;
     y: UInt64;
   end;
   PULong2 = ^ulong2;
 
-  { @brief 2-component float vector. }
+  { 2-component float vector. }
   float2 = record
     x: Single;
     y: Single;
   end;
   PFloat2 = ^float2;
 
-  { @brief 2-component double vector. }
+  { 2-component double vector. }
   double2 = record
     x: Double;
     y: Double;
   end;
   PDouble2 = ^double2;
 
-{ @groupend }
 
-{ @groupbegin(3-component vector types) }
+{ @bold(Group: 3-component vector types) }
 
 type
-  { @brief 3-component signed char vector. }
+  { 3-component signed char vector. }
   char3 = record
     x: Int8;
     y: Int8;
@@ -198,7 +196,7 @@ type
   end;
   PChar3 = ^char3;
 
-  { @brief 3-component unsigned char vector. }
+  { 3-component unsigned char vector. }
   uchar3 = record
     x: UInt8;
     y: UInt8;
@@ -206,7 +204,7 @@ type
   end;
   PUChar3 = ^uchar3;
 
-  { @brief 3-component signed short vector. }
+  { 3-component signed short vector. }
   short3 = record
     x: Int16;
     y: Int16;
@@ -214,7 +212,7 @@ type
   end;
   PShort3 = ^short3;
 
-  { @brief 3-component unsigned short vector. }
+  { 3-component unsigned short vector. }
   ushort3 = record
     x: UInt16;
     y: UInt16;
@@ -222,7 +220,7 @@ type
   end;
   PUShort3 = ^ushort3;
 
-  { @brief 3-component signed int vector. }
+  { 3-component signed int vector. }
   int3 = record
     x: Int32;
     y: Int32;
@@ -230,7 +228,7 @@ type
   end;
   PInt3 = ^int3;
 
-  { @brief 3-component unsigned int vector. }
+  { 3-component unsigned int vector. }
   uint3 = record
     x: UInt32;
     y: UInt32;
@@ -238,7 +236,7 @@ type
   end;
   PUInt3 = ^uint3;
 
-  { @brief 3-component signed long vector. }
+  { 3-component signed long vector. }
   long3 = record
     x: Int64;
     y: Int64;
@@ -246,7 +244,7 @@ type
   end;
   PLong3 = ^long3;
 
-  { @brief 3-component unsigned long vector. }
+  { 3-component unsigned long vector. }
   ulong3 = record
     x: UInt64;
     y: UInt64;
@@ -254,7 +252,7 @@ type
   end;
   PULong3 = ^ulong3;
 
-  { @brief 3-component float vector. }
+  { 3-component float vector. }
   float3 = record
     x: Single;
     y: Single;
@@ -262,7 +260,7 @@ type
   end;
   PFloat3 = ^float3;
 
-  { @brief 3-component double vector. }
+  { 3-component double vector. }
   double3 = record
     x: Double;
     y: Double;
@@ -270,12 +268,11 @@ type
   end;
   PDouble3 = ^double3;
 
-{ @groupend }
 
-{ @groupbegin(4-component vector types) }
+{ @bold(Group: 4-component vector types) }
 
 type
-  { @brief 4-component signed char vector. }
+  { 4-component signed char vector. }
   char4 = record
     x: Int8;
     y: Int8;
@@ -284,7 +281,7 @@ type
   end;
   PChar4 = ^char4;
 
-  { @brief 4-component unsigned char vector. }
+  { 4-component unsigned char vector. }
   uchar4 = record
     x: UInt8;
     y: UInt8;
@@ -293,7 +290,7 @@ type
   end;
   PUChar4 = ^uchar4;
 
-  { @brief 4-component signed short vector. }
+  { 4-component signed short vector. }
   short4 = record
     x: Int16;
     y: Int16;
@@ -302,7 +299,7 @@ type
   end;
   PShort4 = ^short4;
 
-  { @brief 4-component unsigned short vector. }
+  { 4-component unsigned short vector. }
   ushort4 = record
     x: UInt16;
     y: UInt16;
@@ -311,7 +308,7 @@ type
   end;
   PUShort4 = ^ushort4;
 
-  { @brief 4-component signed int vector. }
+  { 4-component signed int vector. }
   int4 = record
     x: Int32;
     y: Int32;
@@ -320,7 +317,7 @@ type
   end;
   PInt4 = ^int4;
 
-  { @brief 4-component unsigned int vector. }
+  { 4-component unsigned int vector. }
   uint4 = record
     x: UInt32;
     y: UInt32;
@@ -329,7 +326,7 @@ type
   end;
   PUInt4 = ^uint4;
 
-  { @brief 4-component signed long vector. }
+  { 4-component signed long vector. }
   long4 = record
     x: Int64;
     y: Int64;
@@ -338,7 +335,7 @@ type
   end;
   PLong4 = ^long4;
 
-  { @brief 4-component unsigned long vector. }
+  { 4-component unsigned long vector. }
   ulong4 = record
     x: UInt64;
     y: UInt64;
@@ -347,7 +344,7 @@ type
   end;
   PULong4 = ^ulong4;
 
-  { @brief 4-component float vector. }
+  { 4-component float vector. }
   float4 = record
     x: Single;
     y: Single;
@@ -356,7 +353,7 @@ type
   end;
   PFloat4 = ^float4;
 
-  { @brief 4-component double vector. }
+  { 4-component double vector. }
   double4 = record
     x: Double;
     y: Double;
@@ -365,9 +362,8 @@ type
   end;
   PDouble4 = ^double4;
 
-{ @groupend }
 
-{ @groupbegin(Vector Type Constructors) }
+{ @bold(Group: Vector Type Constructors) }
 // These functions correspond to the make_* C++ functions in amd_hip_vector_types.h
 
 function make_uchar1(x: UInt8): uchar1; inline;
@@ -411,11 +407,10 @@ function make_double2(x, y: Double): double2; inline;
 function make_double3(x, y, z: Double): double3; inline;
 function make_double4(x, y, z, w: Double): double4; inline;
 
-{ @groupend }
 
 implementation
 
-{ @groupbegin(Vector Type Constructors Implementation) }
+{ @bold(Group: Vector Type Constructors Implementation) }
 function make_uchar1(x: uint8): uchar1;
 begin
   Result.x := x;
@@ -675,6 +670,5 @@ begin
   Result.z := z;
   Result.w := w;
 end;
-{ @groupend }
 
 end.

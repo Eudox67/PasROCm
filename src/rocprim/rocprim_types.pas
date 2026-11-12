@@ -1,3 +1,5 @@
+{ Types shared by the rocPRIM layer. }
+{ Types shared by the rocPRIM layer. }
 unit rocprim_types;
 
 {$modeswitch advancedrecords}
@@ -6,7 +8,7 @@ unit rocprim_types;
 {$MODE OBJFPC}{$H+}
 {$modeswitch advancedrecords}
 
-{< Copyright (c) 2017-2024 Advanced Micro Devices, Inc. All rights reserved.
+{ Copyright (c) 2017-2024 Advanced Micro Devices, Inc. All rights reserved.
   Pascal translation/bindings: Copyright (c) 2024-2026 Eudox67
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -35,7 +37,7 @@ unit rocprim_types;
   - rocprim/types/key_value_pair.hpp
   - rocprim/types/tuple.hpp
   - rocprim/types/uninitialized_array.hpp
->}
+}
 
 interface
 
@@ -76,7 +78,7 @@ type
   // using the max size is the safest approach.
   lane_mask_type = QWord;
 
-  { @brief Binary operator for reductions/scans (e.g., + for sum).
+  { Binary operator for reductions/scans (e.g., + for sum).
   Type for function pointers like rocPRIM's BinaryOp. Use LongInt for FPC compatibility. }
   TBinaryOpInt = function(a, b: LongInt): LongInt;
 

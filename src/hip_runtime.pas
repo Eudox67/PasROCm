@@ -26,6 +26,8 @@
  * THE SOFTWARE.
  *}
 
+{ @bold(Group: Flags and Constants) }
+{ HIP runtime API: devices, memory, streams, events, graphs, textures. }
 unit hip_runtime;
 
 {$MODE OBJFPC}{$H+}
@@ -42,205 +44,203 @@ uses
 {
   @abstract(This unit provides the main host API signatures for HIP, translated from 
   hip_runtime_api.h and hip_runtime.h)
-  @groupbegin(HIP Runtime)
+  @bold(Group: HIP Runtime)
 
   @note(This is a complete translation of the public API. Handles like streams and
   events are defined as opaque pointers for type-safety. All external functions link
   against the HIP runtime library defined by the HIP_LIB_NAME constant.)
 
-  @see(hip_types.pas for core types; hip_error.pas for error codes.)
-  @groupend
+  See also: hip_types.pas for core types; hip_error.pas for error codes.
+
 }
 
 //Type
   //hipError_t      = Int32;
 
 
-{ @groupbegin(Flags and Constants) }
 
 const
   HIP_SUCCESS = 0;
   
-  { @brief Default stream creation flags. }
+  { Default stream creation flags. }
   hipStreamDefault = $00;
 
-  { @brief Stream does not implicitly synchronize with null stream. }
+  { Stream does not implicitly synchronize with null stream. }
   hipStreamNonBlocking = $01;
 
-  { @brief Default event flags. }
+  { Default event flags. }
   hipEventDefault = $0;
 
-  { @brief Waiting will yield CPU. }
+  { Waiting will yield CPU. }
   hipEventBlockingSync = $1;
 
-  { @brief Disable event's timing. }
+  { Disable event's timing. }
   hipEventDisableTiming = $2;
 
-  { @brief Event can support IPC. }
+  { Event can support IPC. }
   hipEventInterprocess = $4;
 
-  { @brief Disable system fence for event. }
+  { Disable system fence for event. }
   hipEventDisableSystemFence = $20000000;
 
-  { @brief Use device-scope release for event. }
+  { Use device-scope release for event. }
   hipEventReleaseToDevice = $40000000;
 
-  { @brief Use system-scope release for event. }
+  { Use system-scope release for event. }
   hipEventReleaseToSystem = $80000000;
 
-  { @brief Default host malloc flags. }
+  { Default host malloc flags. }
   hipHostMallocDefault = $0;
   hipHostAllocDefault = $0;
 
-  { @brief Memory is portable. }
+  { Memory is portable. }
   hipHostMallocPortable = $1;
   hipHostAllocPortable = $1;
 
-  { @brief Memory is mapped. }
+  { Memory is mapped. }
   hipHostMallocMapped = $2;
   hipHostAllocMapped = $2;
 
-  { @brief Memory is write-combined. }
+  { Memory is write-combined. }
   hipHostMallocWriteCombined = $4;
   hipHostAllocWriteCombined = $4;
 
-  { @brief Host memory allocation follows NUMA policy (Linux-specific). }
+  { Host memory allocation follows NUMA policy (Linux-specific). }
   hipHostMallocNumaUser = $20000000;
 
-  { @brief Allocate coherent memory. }
+  { Allocate coherent memory. }
   hipHostMallocCoherent = $40000000;
 
-  { @brief Allocate non-coherent memory. }
+  { Allocate non-coherent memory. }
   hipHostMallocNonCoherent = $80000000;
 
-  { @brief Memory attach global. }
+  { Memory attach global. }
   hipMemAttachGlobal = $01;
 
-  { @brief Memory attach host. }
+  { Memory attach host. }
   hipMemAttachHost = $02;
 
-  { @brief Memory attach single. }
+  { Memory attach single. }
   hipMemAttachSingle = $04;
 
-  { @brief Default device malloc flags. }
+  { Default device malloc flags. }
   hipDeviceMallocDefault = $0;
 
-  { @brief Fine-grained device malloc. }
+  { Fine-grained device malloc. }
   hipDeviceMallocFinegrained = $1;
 
-  { @brief Malloc for HSA signal memory. }
+  { Malloc for HSA signal memory. }
   hipMallocSignalMemory = $2;
 
-  { @brief Uncached device malloc. }
+  { Uncached device malloc. }
   hipDeviceMallocUncached = $3;
 
-  { @brief Contiguous device malloc. }
+  { Contiguous device malloc. }
   hipDeviceMallocContiguous = $4;
 
-  { @brief Default host register flags. }
+  { Default host register flags. }
   hipHostRegisterDefault = $0;
 
-  { @brief Portable host register. }
+  { Portable host register. }
   hipHostRegisterPortable = $1;
 
-  { @brief Mapped host register. }
+  { Mapped host register. }
   hipHostRegisterMapped = $2;
 
-  { @brief IO memory host register. }
+  { IO memory host register. }
   hipHostRegisterIoMemory = $4;
 
-  { @brief Read-only host register. }
+  { Read-only host register. }
   hipHostRegisterReadOnly = $08;
 
-  { @brief Coarse-grained external host register. }
+  { Coarse-grained external host register. }
   hipExtHostRegisterCoarseGrained = $8;
 
-  { @brief Auto device schedule. }
+  { Auto device schedule. }
   hipDeviceScheduleAuto = $0;
 
-  { @brief Spin device schedule. }
+  { Spin device schedule. }
   hipDeviceScheduleSpin = $1;
 
-  { @brief Yield device schedule. }
+  { Yield device schedule. }
   hipDeviceScheduleYield = $2;
 
-  { @brief Blocking sync device schedule. }
+  { Blocking sync device schedule. }
   hipDeviceScheduleBlockingSync = $4;
 
-  { @brief Device schedule mask. }
+  { Device schedule mask. }
   hipDeviceScheduleMask = $7;
 
-  { @brief Device map host. }
+  { Device map host. }
   hipDeviceMapHost = $8;
 
-  { @brief Device local memory resize to max. }
+  { Device local memory resize to max. }
   hipDeviceLmemResizeToMax = $10;
 
-  { @brief Default array allocation flag. }
+  { Default array allocation flag. }
   hipArrayDefault = $00;
 
-  { @brief Layered array. }
+  { Layered array. }
   hipArrayLayered = $01;
 
-  { @brief Surface load/store array. }
+  { Surface load/store array. }
   hipArraySurfaceLoadStore = $02;
 
-  { @brief Cubemap array. }
+  { Cubemap array. }
   hipArrayCubemap = $04;
 
-  { @brief Texture gather array. }
+  { Texture gather array. }
   hipArrayTextureGather = $08;
 
-  { @brief Default occupancy flag. }
+  { Default occupancy flag. }
   hipOccupancyDefault = $00;
 
-  { @brief Disable caching override for occupancy. }
+  { Disable caching override for occupancy. }
   hipOccupancyDisableCachingOverride = $01;
 
-  { @brief Multi-device cooperative launch no pre-sync. }
+  { Multi-device cooperative launch no pre-sync. }
   hipCooperativeLaunchMultiDeviceNoPreSync = $01;
 
-  { @brief Multi-device cooperative launch no post-sync. }
+  { Multi-device cooperative launch no post-sync. }
   hipCooperativeLaunchMultiDeviceNoPostSync = $02;
 
-  { @brief CPU device ID. }
+  { CPU device ID. }
   hipCpuDeviceId = -1;
 
-  { @brief Invalid device ID. }
+  { Invalid device ID. }
   hipInvalidDeviceId = -2;
 
-  { @brief Any order launch flag. }
+  { Any order launch flag. }
   hipExtAnyOrderLaunch = $01;
 
-  { @brief Stream wait value greater than or equal. }
+  { Stream wait value greater than or equal. }
   hipStreamWaitValueGte = $0;
 
-  { @brief Stream wait value equal. }
+  { Stream wait value equal. }
 hipStreamWaitValueEq = $1;
 
-  { @brief Stream wait value AND. }
+  { Stream wait value AND. }
   hipStreamWaitValueAnd = $2;
 
-  { @brief Stream wait value NOR. }
+  { Stream wait value NOR. }
   hipStreamWaitValueNor = $3;
 
-  { @brief Per-thread stream. }
+  { Per-thread stream. }
   hipStreamPerThread: hipStream_t = Pointer(2);
 
-  { @brief Legacy stream. }
+  { Legacy stream. }
   hipStreamLegacy: hipStream_t = Pointer(1);
 
-  { @brief External memory dedicated flag. }
+  { External memory dedicated flag. }
   hipExternalMemoryDedicated = $1;
 
-{ @groupend }
 
-{ @groupbegin(Device Management) }
+{ @bold(Group: Device Management) }
 
 {
-  @brief Explicitly initializes the HIP runtime.
+  Explicitly initializes the HIP runtime.
   
-  @param(flags Initialization flags (should be 0).)
+  @param(flags Initialization flags @(should be 0@).)
   
   @returns(hipSuccess, hipErrorInvalidValue)
 }
@@ -248,7 +248,7 @@ function hipInit(flags: UInt32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'Init';
 
 {
-  @brief Returns the approximate HIP driver version.
+  Returns the approximate HIP driver version.
   
   @param(driverVersion Pointer to driver version.)
   
@@ -258,7 +258,7 @@ function hipDriverGetVersion(var driverVersion: Int32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DriverGetVersion';
 
 {
-  @brief Returns the approximate HIP runtime version.
+  Returns the approximate HIP runtime version.
   
   @param(runtimeVersion Pointer to runtime version.)
   
@@ -268,7 +268,7 @@ function hipRuntimeGetVersion(var runtimeVersion: Int32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'RuntimeGetVersion';
 
 {
-  @brief Returns a handle to a compute device.
+  Returns a handle to a compute device.
   
   @param(device Pointer to device handle.)
   @param(ordinal Device ordinal.)
@@ -279,7 +279,7 @@ function hipDeviceGet(var device: hipDevice_t; ordinal: Int32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceGet';
 
 {
-  @brief Returns the compute capability of the device.
+  Returns the compute capability of the device.
   
   @param(major Pointer to major version.)
   @param(minor Pointer to minor version.)
@@ -291,7 +291,7 @@ function hipDeviceComputeCapability(var major: Int32; var minor: Int32; device: 
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceComputeCapability';
 
 {
-  @brief Returns an identifier string for the device.
+  Returns an identifier string for the device.
   
   @param(name Pointer to name string.)
   @param(len Maximum length of name.)
@@ -303,7 +303,7 @@ function hipDeviceGetName(name: PChar; len: Int32; device: hipDevice_t): THipErr
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceGetName';
 
 {
-  @brief Returns a UUID for the device (BETA).
+  Returns a UUID for the device (BETA).
   
   @param(uuid Returns the UUID for the device.)
   @param(device The device ordinal.)
@@ -314,7 +314,7 @@ function hipDeviceGetUuid(var uuid: THipUUID; device: hipDevice_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceGetUuid';
 
 {
-  @brief Returns a value for an attribute of the link between two devices.
+  Returns a value for an attribute of the link between two devices.
   
   @param(value Returns the attribute's value.)
   @param(attr The P2P attribute to query.)
@@ -327,7 +327,7 @@ function hipDeviceGetP2PAttribute(var value: Int32; attr: THipDeviceP2PAttr; src
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceGetP2PAttribute';
 
 {
-  @brief Returns a PCI Bus ID string for the device.
+  Returns a PCI Bus ID string for the device.
   
   @param(pciBusId Pointer to a buffer to store the PCI Bus ID string.)
   @param(len The maximum length of the buffer.)
@@ -339,7 +339,7 @@ function hipDeviceGetPCIBusId(pciBusId: PChar; len: Int32; device: Int32): THipE
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceGetPCIBusId';
 
 {
-  @brief Returns a device handle from a PCI Bus ID string.
+  Returns a device handle from a PCI Bus ID string.
   
   @param(device Returns the device handle.)
   @param(pciBusId The PCI Bus ID string.)
@@ -350,7 +350,7 @@ function hipDeviceGetByPCIBusId(var device: Int32; pciBusId: PChar): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceGetByPCIBusId';
 
 {
-  @brief Returns the total amount of memory on the device.
+  Returns the total amount of memory on the device.
   
   @param(bytes Returns the size of memory in bytes.)
   @param(device The device ordinal.)
@@ -361,7 +361,7 @@ function hipDeviceTotalMem(var bytes: SizeUInt; device: hipDevice_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceTotalMem';
 
 {
-  @brief Waits for all activity on the current device to complete.
+  Waits for all activity on the current device to complete.
   
   @returns(hipSuccess)
 }
@@ -369,7 +369,7 @@ function hipDeviceSynchronize: THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceSynchronize';
 
 {
-  @brief Resets the current device, destroying all allocations and streams.
+  Resets the current device, destroying all allocations and streams.
   
   @returns(hipSuccess)
 }
@@ -377,7 +377,7 @@ function hipDeviceReset: THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceReset';
 
 {
-  @brief Sets the default device for the calling host thread.
+  Sets the default device for the calling host thread.
   
   @param(deviceId The device ID to set as current.)
   
@@ -387,7 +387,7 @@ function hipSetDevice(deviceId: Int32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'SetDevice';
 
 {
-  @brief Sets the list of valid devices for the application to use.
+  Sets the list of valid devices for the application to use.
   
   @param(device_arr An array of device IDs.)
   @param(len The number of devices in the array.)
@@ -398,7 +398,7 @@ function hipSetValidDevices(device_arr: PInt32; len: Int32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'SetValidDevices';
 
 {
-  @brief Returns the default device ID for the calling host thread.
+  Returns the default device ID for the calling host thread.
   
   @param(deviceId Returns the current device ID.)
   
@@ -408,7 +408,7 @@ function hipGetDevice(var deviceId: Int32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetDevice';
 
 {
-  @brief Returns the number of compute-capable devices.
+  Returns the number of compute-capable devices.
   
   @param(count Returns the number of devices.)
   
@@ -418,7 +418,7 @@ function hipGetDeviceCount(var count: Int32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetDeviceCount';
 
 {
-  @brief Queries for a specific device attribute.
+  Queries for a specific device attribute.
   
   @param(pi Returns the attribute's value.)
   @param(attr The attribute to query.)
@@ -430,7 +430,7 @@ function hipDeviceGetAttribute(var pi: Int32; attr: THipDeviceAttribute; deviceI
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceGetAttribute';
 
 {
-  @brief Returns the default memory pool of a device.
+  Returns the default memory pool of a device.
   
   @param(mem_pool Returns the default memory pool.)
   @param(device The device index to query.)
@@ -443,7 +443,7 @@ function hipDeviceGetDefaultMemPool(var mem_pool: hipMemPool_t; device: Int32): 
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceGetDefaultMemPool';
 
 {
-  @brief Sets the current memory pool for a device.
+  Sets the current memory pool for a device.
   
   @param(device The device index to update.)
   @param(mem_pool The memory pool to set as current.)
@@ -456,7 +456,7 @@ function hipDeviceSetMemPool(device: Int32; mem_pool: hipMemPool_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceSetMemPool';
 
 {
-  @brief Gets the current memory pool for a device.
+  Gets the current memory pool for a device.
   
   @param(mem_pool Returns the current memory pool.)
   @param(device The device index to query.)
@@ -469,7 +469,7 @@ function hipDeviceGetMemPool(var mem_pool: hipMemPool_t; device: Int32): THipErr
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceGetMemPool';
 
 {
-  @brief Returns properties for a specific device.
+  Returns properties for a specific device.
   
   @param(prop A structure to be filled with the device properties.)
   @param(deviceId The device to query.)
@@ -480,7 +480,7 @@ function hipGetDeviceProperties(var prop: THipDeviceProp; deviceId: Int32): THip
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetDevicePropertiesR0600';
 
 {
-  @brief Sets the preferred cache configuration for the current device.
+  Sets the preferred cache configuration for the current device.
   
   @param(cacheConfig The cache configuration to set.)
   
@@ -492,7 +492,7 @@ function hipDeviceSetCacheConfig(cacheConfig: THipFuncCache): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceSetCacheConfig';
 
 {
-  @brief Gets the current cache configuration for a device.
+  Gets the current cache configuration for a device.
   
   @param(cacheConfig Returns the current cache configuration.)
   
@@ -502,7 +502,7 @@ function hipDeviceGetCacheConfig(var cacheConfig: THipFuncCache): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceGetCacheConfig';
 
 {
-  @brief Gets a resource limit for the current device.
+  Gets a resource limit for the current device.
   
   @param(pValue Returns the size of the limit in bytes.)
   @param(limit The limit to query.)
@@ -513,7 +513,7 @@ function hipDeviceGetLimit(var pValue: SizeUInt; limit: THipLimit): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceGetLimit';
 
 {
-  @brief Sets a resource limit for the current device.
+  Sets a resource limit for the current device.
   
   @param(limit The limit to set.)
   @param(value The new size of the limit in bytes.)
@@ -524,7 +524,7 @@ function hipDeviceSetLimit(limit: THipLimit; value: SizeUInt): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceSetLimit';
 
 {
-  @brief Gets the shared memory banking configuration for the current device.
+  Gets the shared memory banking configuration for the current device.
   
   @param(pConfig Returns the shared memory configuration.)
   
@@ -536,7 +536,7 @@ function hipDeviceGetSharedMemConfig(var pConfig: THipSharedMemConfig): THipErro
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceGetSharedMemConfig';
 
 {
-  @brief Sets the shared memory banking configuration for the current device.
+  Sets the shared memory banking configuration for the current device.
   
   @param(config The shared memory configuration to set.)
   
@@ -548,7 +548,7 @@ function hipDeviceSetSharedMemConfig(config: THipSharedMemConfig): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceSetSharedMemConfig';
 
 {
-  @brief Gets the flags set for the current device.
+  Gets the flags set for the current device.
   
   @param(flags Returns the flags.)
   
@@ -558,7 +558,7 @@ function hipGetDeviceFlags(var flags: UInt32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetDeviceFlags';
 
 {
-  @brief Sets flags to control the behavior of the current device.
+  Sets flags to control the behavior of the current device.
   
   @param(flags The flags to set.)
   
@@ -568,7 +568,7 @@ function hipSetDeviceFlags(flags: UInt32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'SetDeviceFlags';
 
 {
-  @brief Chooses a device that best matches the given properties.
+  Chooses a device that best matches the given properties.
   
   @param(device Returns the ID of the chosen device.)
   @param(prop The desired device properties.)
@@ -579,7 +579,7 @@ function hipChooseDevice(var device: Int32; const prop: PHipDeviceProp): THipErr
   cdecl; external HIP_LIB_NAME name PREFIX + 'ChooseDeviceR0600';
 
 {
-  @brief Returns the link type and hop count between two devices.
+  Returns the link type and hop count between two devices.
   
   @param(device1 The first device ordinal.)
   @param(device2 The second device ordinal.)
@@ -596,7 +596,7 @@ function hipExtGetLinkTypeAndHopCount(device1: Int32; device2: Int32; var linkty
 {$ENDIF}
 
 {
-  @brief Gets an interprocess memory handle for an existing device memory allocation.
+  Gets an interprocess memory handle for an existing device memory allocation.
   
   @param(handle Returns the IPC memory handle.)
   @param(devPtr The base pointer of the allocated device memory.)
@@ -607,11 +607,11 @@ function hipIpcGetMemHandle(var handle: THipIpcMemHandle; devPtr: Pointer): THip
   cdecl; external HIP_LIB_NAME name PREFIX + 'IpcGetMemHandle';
 
 {
-  @brief Opens an interprocess memory handle to get a device pointer.
+  Opens an interprocess memory handle to get a device pointer.
   
   @param(devPtr Returns the device pointer usable in the local process.)
   @param(handle The IPC memory handle to open.)
-  @param(flags Flags for the operation (e.g., hipIpcMemLazyEnablePeerAccess).)
+  @param(flags Flags for the operation @(e.g., hipIpcMemLazyEnablePeerAccess@).)
   
   @returns(hipSuccess, hipErrorInvalidValue, hipErrorInvalidContext, hipErrorInvalidDevicePointer)
 }
@@ -619,7 +619,7 @@ function hipIpcOpenMemHandle(var devPtr: Pointer; handle: THipIpcMemHandle; flag
   cdecl; external HIP_LIB_NAME name PREFIX + 'IpcOpenMemHandle';
 
 {
-  @brief Closes memory that was opened with hipIpcOpenMemHandle.
+  Closes memory that was opened with hipIpcOpenMemHandle.
   
   @param(devPtr The device pointer returned by hipIpcOpenMemHandle.)
   
@@ -629,7 +629,7 @@ function hipIpcCloseMemHandle(devPtr: Pointer): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'IpcCloseMemHandle';
 
 {
-  @brief Gets an opaque interprocess handle for an event.
+  Gets an opaque interprocess handle for an event.
   
   @param(handle Returns the IPC event handle.)
   @param(event The event to get a handle for.)
@@ -640,7 +640,7 @@ function hipIpcGetEventHandle(var handle: THipIpcEventHandle; event: hipEvent_t)
   cdecl; external HIP_LIB_NAME name PREFIX + 'IpcGetEventHandle';
 
 {
-  @brief Opens an interprocess event handle.
+  Opens an interprocess event handle.
   
   @param(event Returns the event handle usable in the local process.)
   @param(handle The IPC event handle to open.)
@@ -650,12 +650,11 @@ function hipIpcGetEventHandle(var handle: THipIpcEventHandle; event: hipEvent_t)
 function hipIpcOpenEventHandle(var event: hipEvent_t; handle: THipIpcEventHandle): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'IpcOpenEventHandle';
 
-{ @groupend }
 
-{ @groupbegin(Execution Control) }
+{ @bold(Group: Execution Control) }
 
 {
-  @brief Sets an attribute for a specific function.
+  Sets an attribute for a specific function.
   
   @param(func A pointer to the function.)
   @param(attr The attribute to set.)
@@ -669,7 +668,7 @@ function hipFuncSetAttribute(func: Pointer; attr: THipFuncAttributes; value: Int
   cdecl; external HIP_LIB_NAME name PREFIX + 'FuncSetAttribute';
 
 {
-  @brief Sets the cache configuration for a specific function.
+  Sets the cache configuration for a specific function.
   
   @param(func A pointer to the function.)
   @param(config The cache configuration to set.)
@@ -682,7 +681,7 @@ function hipFuncSetCacheConfig(func: Pointer; config: THipFuncCache): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'FuncSetCacheConfig';
 
 {
-  @brief Sets the shared memory configuration for a specific function.
+  Sets the shared memory configuration for a specific function.
   
   @param(func A pointer to the function.)
   @param(config The shared memory configuration to set.)
@@ -694,12 +693,11 @@ function hipFuncSetCacheConfig(func: Pointer; config: THipFuncCache): THipError;
 function hipFuncSetSharedMemConfig(func: Pointer; config: THipSharedMemConfig): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'FuncSetSharedMemConfig';
 
-{ @groupend }
 
-{ @groupbegin(Error Handling) }
+{ @bold(Group: Error Handling) }
 
 {
-  @brief Returns the last error from a HIP runtime call and resets it.
+  Returns the last error from a HIP runtime call and resets it.
   
   @returns(The last error code from the active host thread.)
 }
@@ -707,7 +705,7 @@ function hipGetLastError: THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetLastError';
 
 {
-  @brief Returns the last error from a HIP runtime call and resets it (extended version).
+  Returns the last error from a HIP runtime call and resets it (extended version).
   
   @returns(The last error code from the active host thread.)
 }
@@ -715,7 +713,7 @@ function hipExtGetLastError: THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'ExtGetLastError';
 
 {
-  @brief Returns the last error from a HIP runtime call without resetting it.
+  Returns the last error from a HIP runtime call without resetting it.
   
   @returns(The last error code from the active host thread.)
 }
@@ -723,7 +721,7 @@ function hipPeekAtLastError: THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'PeekAtLastError';
 
 {
-  @brief Returns the string name of a HIP error code.
+  Returns the string name of a HIP error code.
   
   @param(hip_error The error code.)
   
@@ -733,7 +731,7 @@ function hipGetErrorName(hip_error: hip_error.THipError): PChar;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetErrorName';
 
 {
-  @brief Returns a descriptive string for a HIP error code.
+  Returns a descriptive string for a HIP error code.
   
   @param(hipError The error code.)
   
@@ -743,7 +741,7 @@ function hipGetErrorString(hipError: hip_error.THipError): PChar;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetErrorString';
 
 {
-  @brief Gets the string name of a HIP error code (driver version).
+  Gets the string name of a HIP error code (driver version).
   
   @param(hipError The error code.)
   @param(errorString Returns a pointer to the null-terminated error string.)
@@ -754,7 +752,7 @@ function hipDrvGetErrorName(hipError: THipError; var errorString: PChar): THipEr
   cdecl; external HIP_LIB_NAME name PREFIX + 'DrvGetErrorName';
 
 {
-  @brief Gets a descriptive string for a HIP error code (driver version).
+  Gets a descriptive string for a HIP error code (driver version).
   
   @param(hipError The error code.)
   @param(errorString Returns a pointer to the null-terminated error string.)
@@ -764,12 +762,11 @@ function hipDrvGetErrorName(hipError: THipError; var errorString: PChar): THipEr
 function hipDrvGetErrorString(hipError: THipError; var errorString: PChar): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DrvGetErrorString';
 
-{ @groupend }
 
-{ @groupbegin(Stream Management) }
+{ @bold(Group: Stream Management) }
 
 {
-  @brief Creates an asynchronous stream.
+  Creates an asynchronous stream.
   
   @param(stream Returns the newly created stream.)
   
@@ -779,7 +776,7 @@ function hipStreamCreate(var stream: hipStream_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamCreate';
 
 {
-  @brief Creates an asynchronous stream with flags.
+  Creates an asynchronous stream with flags.
   
   @param(stream Returns the newly created stream.)
   @param(flags Flags to control stream creation.)
@@ -790,7 +787,7 @@ function hipStreamCreateWithFlags(var stream: hipStream_t; flags: UInt32): THipE
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamCreateWithFlags';
 
 {
-  @brief Creates an asynchronous stream with a specified priority.
+  Creates an asynchronous stream with a specified priority.
   
   @param(stream Returns the newly created stream.)
   @param(flags Flags to control stream creation.)
@@ -802,7 +799,7 @@ function hipStreamCreateWithPriority(var stream: hipStream_t; flags: UInt32; pri
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamCreateWithPriority';
 
 {
-  @brief Returns the range of valid stream priorities.
+  Returns the range of valid stream priorities.
   
   @param(leastPriority Returns the least priority.)
   @param(greatestPriority Returns the greatest priority.)
@@ -813,7 +810,7 @@ function hipDeviceGetStreamPriorityRange(var leastPriority: Int32; var greatestP
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceGetStreamPriorityRange';
 
 {
-  @brief Destroys a stream.
+  Destroys a stream.
   
   @param(stream The stream to destroy.)
   
@@ -823,7 +820,7 @@ function hipStreamDestroy(stream: hipStream_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamDestroy';
 
 {
-  @brief Queries the status of a stream.
+  Queries the status of a stream.
   
   @param(stream The stream to query.)
   
@@ -833,7 +830,7 @@ function hipStreamQuery(stream: hipStream_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamQuery';
 
 {
-  @brief Waits for all commands in a stream to complete.
+  Waits for all commands in a stream to complete.
   
   @param(stream The stream to synchronize.)
   
@@ -843,7 +840,7 @@ function hipStreamSynchronize(stream: hipStream_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamSynchronize';
 
 {
-  @brief Makes a stream wait for an event.
+  Makes a stream wait for an event.
   
   @param(stream The stream that will wait.)
   @param(event The event to wait on.)
@@ -855,7 +852,7 @@ function hipStreamWaitEvent(stream: hipStream_t; event: hipEvent_t; flags: UInt3
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamWaitEvent';
 
 {
-  @brief Returns the flags associated with a stream.
+  Returns the flags associated with a stream.
   
   @param(stream The stream to query.)
   @param(flags Returns the stream's flags.)
@@ -866,7 +863,7 @@ function hipStreamGetFlags(stream: hipStream_t; var flags: UInt32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamGetFlags';
 
 {
-  @brief Queries the priority of a stream.
+  Queries the priority of a stream.
   
   @param(stream The stream to query.)
   @param(priority Returns the stream's priority.)
@@ -877,7 +874,7 @@ function hipStreamGetPriority(stream: hipStream_t; var priority: Int32): THipErr
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamGetPriority';
 
 {
-  @brief Gets the device associated with a stream.
+  Gets the device associated with a stream.
   
   @param(stream The stream to query.)
   @param(device Returns the device associated with the stream.)
@@ -888,7 +885,7 @@ function hipStreamGetDevice(stream: hipStream_t; var device: hipDevice_t): THipE
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamGetDevice';
 
 {
-  @brief Creates an asynchronous stream with a specified CU mask.
+  Creates an asynchronous stream with a specified CU mask.
   
   @param(stream Returns the newly created stream.)
   @param(cuMaskSize The size of the CU mask array.)
@@ -904,7 +901,7 @@ function hipExtStreamCreateWithCUMask(var stream: hipStream_t; cuMaskSize: UInt3
 {$ENDIF}
 
 {
-  @brief Gets the CU mask associated with a stream.
+  Gets the CU mask associated with a stream.
   
   @param(stream The stream to query.)
   @param(cuMaskSize The size of the buffer for the CU mask.)
@@ -921,12 +918,12 @@ function hipExtStreamGetCUMask(stream: hipStream_t; cuMaskSize: UInt32; cuMask: 
 
 type
   {
-    @brief HIP stream callback function pointer type.
+    HIP stream callback function pointer type.
   }
   THipStreamCallback = procedure(stream: hipStream_t; status: THipError; userData: Pointer); cdecl;
 
 {
-  @brief Adds a callback to be executed on the host after stream completion.
+  Adds a callback to be executed on the host after stream completion.
   
   @param(stream The stream to add the callback to.)
   @param(callback The function to call.)
@@ -938,18 +935,17 @@ type
 function hipStreamAddCallback(stream: hipStream_t; callback: THipStreamCallback; userData: Pointer; flags: UInt32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamAddCallback';
 
-{ @groupend }
 
-{ @groupbegin(Stream Memory Operations) }
+{ @bold(Group: Stream Memory Operations) }
 { @abstract(This section describes Stream Memory Wait and Write functions of the HIP runtime API.) }
 
 {
-  @brief Enqueues a command to wait on a 32-bit memory location. [BETA]
+  Enqueues a command to wait on a 32-bit memory location. [BETA]
   
   @param(stream The stream to enqueue the wait on.)
   @param(ptr The device memory address to monitor.)
   @param(value The value to compare against.)
-  @param(flags The comparison operation (e.g., hipStreamWaitValueGte).)
+  @param(flags The comparison operation @(e.g., hipStreamWaitValueGte@).)
   @param(mask A bitmask to apply to the value at ptr before comparison.)
   
   @returns(hipSuccess, hipErrorInvalidValue)
@@ -960,7 +956,7 @@ function hipStreamWaitValue32(stream: hipStream_t; ptr: Pointer; value: UInt32; 
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamWaitValue32';
 
 {
-  @brief Enqueues a command to wait on a 64-bit memory location. [BETA]
+  Enqueues a command to wait on a 64-bit memory location. [BETA]
   
   @param(stream The stream to enqueue the wait on.)
   @param(ptr The device memory address to monitor.)
@@ -976,7 +972,7 @@ function hipStreamWaitValue64(stream: hipStream_t; ptr: Pointer; value: UInt64; 
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamWaitValue64';
 
 {
-  @brief Enqueues a command to write a 32-bit value to memory. [BETA]
+  Enqueues a command to write a 32-bit value to memory. [BETA]
   
   @param(stream The stream to enqueue the write in.)
   @param(ptr The device memory address to write to.)
@@ -991,7 +987,7 @@ function hipStreamWriteValue32(stream: hipStream_t; ptr: Pointer; value: UInt32;
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamWriteValue32';
 
 {
-  @brief Enqueues a command to write a 64-bit value to memory. [BETA]
+  Enqueues a command to write a 64-bit value to memory. [BETA]
   
   @param(stream The stream to enqueue the write in.)
   @param(ptr The device memory address to write to.)
@@ -1005,13 +1001,12 @@ function hipStreamWriteValue32(stream: hipStream_t; ptr: Pointer; value: UInt32;
 function hipStreamWriteValue64(stream: hipStream_t; ptr: Pointer; value: UInt64; flags: UInt32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamWriteValue64';
 
-{ @groupend }
 
-{ @groupbegin(Event Management) }
+{ @bold(Group: Event Management) }
 { @abstract(This section describes the event management functions of the HIP runtime API.) }
 
 {
-  @brief Creates an event with specified flags.
+  Creates an event with specified flags.
   
   @param(event Returns the newly created event.)
   @param(flags Flags to control event behavior.)
@@ -1022,7 +1017,7 @@ function hipEventCreateWithFlags(var event: hipEvent_t; flags: UInt32): THipErro
   cdecl; external HIP_LIB_NAME name PREFIX + 'EventCreateWithFlags';
 
 {
-  @brief Creates an event.
+  Creates an event.
   
   @param(event Returns the newly created event.)
   
@@ -1032,10 +1027,10 @@ function hipEventCreate(var event: hipEvent_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'EventCreate';
 
 {
-  @brief Records an event in a stream.
+  Records an event in a stream.
   
   @param(event The event to record.)
-  @param(stream The stream in which to record the event (nil for default stream).
+  @param(stream The stream in which to record the event @(nil for default stream@).)
   
   @returns(hipSuccess, hipErrorInvalidValue, hipErrorNotInitialized, hipErrorInvalidHandle, hipErrorLaunchFailure)
 }
@@ -1043,7 +1038,7 @@ function hipEventRecord(event: hipEvent_t; stream: hipStream_t = nil): THipError
   cdecl; external HIP_LIB_NAME name PREFIX + 'EventRecord';
 
 {
-  @brief Destroys an event.
+  Destroys an event.
   
   @param(event The event to destroy.)
   
@@ -1053,7 +1048,7 @@ function hipEventDestroy(event: hipEvent_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'EventDestroy';
 
 {
-  @brief Waits for an event to complete.
+  Waits for an event to complete.
   
   @param(event The event to wait for.)
   
@@ -1063,7 +1058,7 @@ function hipEventSynchronize(event: hipEvent_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'EventSynchronize';
 
 {
-  @brief Computes the elapsed time between two events.
+  Computes the elapsed time between two events.
   
   @param(ms Returns the elapsed time in milliseconds.)
   @param(start The start event.)
@@ -1075,7 +1070,7 @@ function hipEventElapsedTime(var ms: Single; start: hipEvent_t; stop: hipEvent_t
   cdecl; external HIP_LIB_NAME name PREFIX + 'EventElapsedTime';
 
 {
-  @brief Queries an event's status.
+  Queries an event's status.
   
   @param(event The event to query.)
   
@@ -1084,13 +1079,12 @@ function hipEventElapsedTime(var ms: Single; start: hipEvent_t; stop: hipEvent_t
 function hipEventQuery(event: hipEvent_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'EventQuery';
 
-{ @groupend }
 
-{ @groupbegin(Memory Management) }
+{ @bold(Group: Memory Management) }
 { @abstract(This section describes the memory management functions of the HIP runtime API.) }
 
 {
-  @brief Sets an attribute for a specified pointer. [BETA]
+  Sets an attribute for a specified pointer. [BETA]
   
   @param(value A pointer to the value to set for the attribute.)
   @param(attribute The attribute to set.)
@@ -1104,7 +1098,7 @@ function hipPointerSetAttribute(value: Pointer; attribute: THipPointerAttributeE
   cdecl; external HIP_LIB_NAME name PREFIX + 'PointerSetAttribute';
 
 {
-  @brief Returns attributes for a specified pointer.
+  Returns attributes for a specified pointer.
   
   @param(attributes A structure to be filled with the pointer's attributes.)
   @param(ptr The pointer to get attributes for.)
@@ -1115,7 +1109,7 @@ function hipPointerGetAttributes(var attributes: THipPointerAttribute; ptr: Poin
   cdecl; external HIP_LIB_NAME name PREFIX + 'PointerGetAttributes';
 
 {
-  @brief Returns a single attribute for a specified pointer. [BETA]
+  Returns a single attribute for a specified pointer. [BETA]
   
   @param(data A pointer to memory where the attribute value will be returned.)
   @param(attribute The attribute to query.)
@@ -1133,7 +1127,7 @@ function hipPointerGetAttribute(data: Pointer; attribute: THipPointerAttributeEn
 {$ENDIF}
 
 {
-  @brief Returns multiple attributes for a specified pointer (driver version). [BETA]
+  Returns multiple attributes for a specified pointer (driver version). [BETA]
   
   @param(numAttributes The number of attributes to query.)
   @param(attributes An array of attributes to query.)
@@ -1147,14 +1141,13 @@ function hipPointerGetAttribute(data: Pointer; attribute: THipPointerAttributeEn
 function hipDrvPointerGetAttributes(numAttributes: UInt32; attributes: PHipPointerAttributeEnum; data: PPChar; ptr: hipDeviceptr_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DrvPointerGetAttributes';
 
-{ @groupend }
 
 
-{ @groupbegin(External Resource Interoperability) }
+{ @bold(Group: External Resource Interoperability) }
 { @abstract(This section describes external resource interoperability functions.) }
 
 {
-  @brief Imports an external semaphore.
+  Imports an external semaphore.
   
   @param(extSem_out Returns the imported external semaphore handle.)
   @param(semHandleDesc The semaphore import handle descriptor.)
@@ -1165,7 +1158,7 @@ function hipImportExternalSemaphore(var extSem_out: hipExternalSemaphore_t; cons
   cdecl; external HIP_LIB_NAME name PREFIX + 'ImportExternalSemaphore';
 
 {
-  @brief Asynchronously signals a set of external semaphore objects.
+  Asynchronously signals a set of external semaphore objects.
   
   @param(extSemArray An array of external semaphore handles to signal.)
   @param(paramsArray An array of signal parameters.)
@@ -1178,7 +1171,7 @@ function hipSignalExternalSemaphoresAsync(extSemArray: PhipExternalSemaphore_t; 
   cdecl; external HIP_LIB_NAME name PREFIX + 'SignalExternalSemaphoresAsync';
 
 {
-  @brief Asynchronously waits on a set of external semaphore objects.
+  Asynchronously waits on a set of external semaphore objects.
   
   @param(extSemArray An array of external semaphore handles to wait on.)
   @param(paramsArray An array of wait parameters.)
@@ -1191,7 +1184,7 @@ function hipWaitExternalSemaphoresAsync(extSemArray: PhipExternalSemaphore_t; co
   cdecl; external HIP_LIB_NAME name PREFIX + 'WaitExternalSemaphoresAsync';
 
 {
-  @brief Destroys an external semaphore object.
+  Destroys an external semaphore object.
   
   @param(extSem The external semaphore handle to destroy.)
   
@@ -1201,7 +1194,7 @@ function hipDestroyExternalSemaphore(extSem: hipExternalSemaphore_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DestroyExternalSemaphore';
 
 {
-  @brief Imports an external memory object.
+  Imports an external memory object.
   
   @param(extMem_out Returns the imported external memory handle.)
   @param(memHandleDesc The memory import handle descriptor.)
@@ -1212,7 +1205,7 @@ function hipImportExternalMemory(var extMem_out: hipExternalMemory_t; const memH
   cdecl; external HIP_LIB_NAME name PREFIX + 'ImportExternalMemory';
 
 {
-  @brief Maps a buffer onto an imported external memory object.
+  Maps a buffer onto an imported external memory object.
   
   @param(devPtr Returns the device pointer to the mapped buffer.)
   @param(extMem The external memory handle.)
@@ -1224,7 +1217,7 @@ function hipExternalMemoryGetMappedBuffer(var devPtr: Pointer; extMem: hipExtern
   cdecl; external HIP_LIB_NAME name PREFIX + 'ExternalMemoryGetMappedBuffer';
 
 {
-  @brief Destroys an external memory object.
+  Destroys an external memory object.
   
   @param(extMem The external memory object to destroy.)
   
@@ -1234,7 +1227,7 @@ function hipDestroyExternalMemory(extMem: hipExternalMemory_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DestroyExternalMemory';
 
 {
-  @brief Maps a mipmapped array onto an external memory object.
+  Maps a mipmapped array onto an external memory object.
   
   @param(mipmap Returns the mapped mipmapped array.)
   @param(extMem The external memory handle.)
@@ -1245,12 +1238,11 @@ function hipDestroyExternalMemory(extMem: hipExternalMemory_t): THipError;
 function hipExternalMemoryGetMappedMipmappedArray(var mipmap: hipMipmappedArray_t; extMem: hipExternalMemory_t; const mipmapDesc: PHipExternalMemoryMipmappedArrayDesc): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'ExternalMemoryGetMappedMipmappedArray';
 
-{ @groupend }
 
-{ @groupbegin(Memory Allocation) }
+{ @bold(Group: Memory Allocation) }
 
 {
-  @brief Allocates memory on the default device.
+  Allocates memory on the default device.
   
   @param(ptr Returns a pointer to the allocated memory.)
   @param(size The size of the allocation in bytes.)
@@ -1261,7 +1253,7 @@ function hipMalloc(var ptr: Pointer; size: SizeUInt): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'Malloc';
 
 {
-  @brief Allocates memory on the default device with flags.
+  Allocates memory on the default device with flags.
   
   @param(ptr Returns a pointer to the allocated memory.)
   @param(sizeBytes The size of the allocation in bytes.)
@@ -1276,12 +1268,11 @@ function hipExtMallocWithFlags(var ptr: Pointer; sizeBytes: SizeUInt; flags: UIn
   // This is an AMD-specific extension.
 {$ENDIF}
 
-{ @groupend }
 
-{ @groupbegin(Deprecated Memory Management) }
+{ @bold(Group: Deprecated Memory Management) }
 
 {
-  @brief Allocates pinned host memory [DEPRECATED].
+  Allocates pinned host memory [DEPRECATED].
 
   @param(ptr Returns a pointer to the allocated host memory.)
   @param(size The size of the allocation in bytes.)
@@ -1294,7 +1285,7 @@ function hipMallocHost(var ptr: Pointer; size: SizeUInt): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MallocHost'; deprecated;
 
 {
-  @brief Allocates pinned host memory [DEPRECATED].
+  Allocates pinned host memory [DEPRECATED].
   
   @param(ptr Returns a pointer to the allocated host memory.)
   @param(size The size of the allocation in bytes.)
@@ -1306,12 +1297,11 @@ function hipMallocHost(var ptr: Pointer; size: SizeUInt): THipError;
 function hipMemAllocHost(var ptr: Pointer; size: SizeUInt): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemAllocHost'; deprecated;
 
-{ @groupend }
 
-{ @groupbegin(Host Memory Management) }
+{ @bold(Group: Host Memory Management) }
 
 {
-  @brief Allocates page-locked (pinned) host memory.
+  Allocates page-locked (pinned) host memory.
   
   @param(ptr Returns a pointer to the allocated host memory.)
   @param(size The size of the allocation in bytes.)
@@ -1323,7 +1313,7 @@ function hipHostMalloc(var ptr: Pointer; size: SizeUInt; flags: UInt32): THipErr
   cdecl; external HIP_LIB_NAME name PREFIX + 'HostMalloc';
 
 {
-  @brief Allocates page-locked (pinned) host memory.
+  Allocates page-locked (pinned) host memory.
   
   @param(ptr Returns a pointer to the allocated host memory.)
   @param(size The size of the allocation in bytes.)
@@ -1335,7 +1325,7 @@ function hipHostAlloc(var ptr: Pointer; size: SizeUInt; flags: UInt32): THipErro
   cdecl; external HIP_LIB_NAME name PREFIX + 'HostAlloc';
 
 {
-  @brief Gets the device pointer for a host pointer allocated with hipHostMalloc.
+  Gets the device pointer for a host pointer allocated with hipHostMalloc.
   
   @param(devPtr Returns the device pointer.)
   @param(hstPtr The host pointer.)
@@ -1347,7 +1337,7 @@ function hipHostGetDevicePointer(var devPtr: Pointer; hstPtr: Pointer; flags: UI
   cdecl; external HIP_LIB_NAME name PREFIX + 'HostGetDevicePointer';
 
 {
-  @brief Returns the flags associated with a host pointer.
+  Returns the flags associated with a host pointer.
   
   @param(flagsPtr Returns the flags used to allocate the memory.)
   @param(hostPtr The host pointer to query.)
@@ -1358,7 +1348,7 @@ function hipHostGetFlags(var flagsPtr: UInt32; hostPtr: Pointer): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'HostGetFlags';
 
 {
-  @brief Registers host memory for device access.
+  Registers host memory for device access.
   
   @param(hostPtr The host memory to register.)
   @param(sizeBytes The size of the memory region in bytes.)
@@ -1370,7 +1360,7 @@ function hipHostRegister(hostPtr: Pointer; sizeBytes: SizeUInt; flags: UInt32): 
   cdecl; external HIP_LIB_NAME name PREFIX + 'HostRegister';
 
 {
-  @brief Unregisters a region of host memory.
+  Unregisters a region of host memory.
   
   @param(hostPtr The host pointer to unregister.)
   
@@ -1379,12 +1369,11 @@ function hipHostRegister(hostPtr: Pointer; sizeBytes: SizeUInt; flags: UInt32): 
 function hipHostUnregister(hostPtr: Pointer): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'HostUnregister';
 
-{ @groupend }
 
-{ @groupbegin(Pitched and 3D Memory) }
+{ @bold(Group: Pitched and 3D Memory) }
 
 {
-  @brief Allocates pitched linear memory on the device.
+  Allocates pitched linear memory on the device.
   
   @param(ptr Returns a pointer to the allocated memory.)
   @param(pitch Returns the allocated pitch in bytes.)
@@ -1397,25 +1386,24 @@ function hipMallocPitch(var ptr: Pointer; var pitch: SizeUInt; width: SizeUInt; 
   cdecl; external HIP_LIB_NAME name PREFIX + 'MallocPitch';
 
 {
-  @brief Allocates pitched linear memory on the device.
+  Allocates pitched linear memory on the device.
   
   @param(dptr Returns a device pointer to the allocated memory.)
   @param(pitch Returns the allocated pitch in bytes.)
   @param(widthInBytes The requested width of the allocation in bytes.)
   @param(height The requested height of the allocation.)
-  @param(elementSizeBytes The size of each element in bytes (e.g., 4 for float).
+  @param(elementSizeBytes The size of each element in bytes @(e.g., 4 for float@).)
   
   @returns(Error code)
 }
 function hipMemAllocPitch(var dptr: hipDeviceptr_t; var pitch: SizeUInt; widthInBytes: SizeUInt; height: SizeUInt; elementSizeBytes: UInt32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemAllocPitch';
 
-{ @groupend }
 
-{ @groupbegin(Memory Freeing) }
+{ @bold(Group: Memory Freeing) }
 
 {
-  @brief Frees memory allocated by hipMalloc.
+  Frees memory allocated by hipMalloc.
   
   @param(ptr The pointer to the memory to be freed.)
   
@@ -1425,7 +1413,7 @@ function hipFree(ptr: Pointer): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'Free';
 
 {
-  @brief Frees page-locked host memory.
+  Frees page-locked host memory.
   
   @param(ptr The pointer to the memory to be freed.)
   
@@ -1435,7 +1423,7 @@ function hipFreeHost(ptr: Pointer): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'FreeHost';
 
 {
-  @brief Frees page-locked host memory (alias for hipFreeHost).
+  Frees page-locked host memory (alias for hipFreeHost).
   
   @param(ptr The pointer to the memory to be freed.)
   
@@ -1444,17 +1432,16 @@ function hipFreeHost(ptr: Pointer): THipError;
 function hipHostFree(ptr: Pointer): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'HostFree';
 
-{ @groupend }
 
-{ @groupbegin(Memory Copy) }
+{ @bold(Group: Memory Copy) }
 
 {
-  @brief Copies data between host and device.
+  Copies data between host and device.
   
   @param(dst The destination pointer.)
   @param(src The source pointer.)
   @param(sizeBytes The size of the copy in bytes.)
-  @param(kind The kind of transfer (e.g., HostToDevice).
+  @param(kind The kind of transfer @(e.g., HostToDevice@).)
   
   @returns(hipSuccess, hipErrorInvalidValue, hipErrorUnknown)
 }
@@ -1462,7 +1449,7 @@ function hipMemcpy(dst: Pointer; src: Pointer; sizeBytes: SizeUInt; kind: THipMe
   cdecl; external HIP_LIB_NAME name PREFIX + 'Memcpy';
 
 {
-  @brief Copies data on a specific stream.
+  Copies data on a specific stream.
   
   @param(dst The destination pointer.)
   @param(src The source pointer.)
@@ -1476,7 +1463,7 @@ function hipMemcpyWithStream(dst: Pointer; src: Pointer; sizeBytes: SizeUInt; ki
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyWithStream';
 
 {
-  @brief Copies data from Host to Device.
+  Copies data from Host to Device.
   
   @param(dst The destination device pointer.)
   @param(src The source host pointer.)
@@ -1488,7 +1475,7 @@ function hipMemcpyHtoD(dst: hipDeviceptr_t; src: Pointer; sizeBytes: SizeUInt): 
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyHtoD';
 
 {
-  @brief Copies data from Device to Host.
+  Copies data from Device to Host.
   
   @param(dst The destination host pointer.)
   @param(src The source device pointer.)
@@ -1500,7 +1487,7 @@ function hipMemcpyDtoH(dst: Pointer; src: hipDeviceptr_t; sizeBytes: SizeUInt): 
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyDtoH';
 
 {
-  @brief Copies data from Device to Device.
+  Copies data from Device to Device.
   
   @param(dst The destination device pointer.)
   @param(src The source device pointer.)
@@ -1512,7 +1499,7 @@ function hipMemcpyDtoD(dst: hipDeviceptr_t; src: hipDeviceptr_t; sizeBytes: Size
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyDtoD';
 
 {
-  @brief Asynchronously copies data.
+  Asynchronously copies data.
   
   @param(dst The destination pointer.)
   @param(src The source pointer.)
@@ -1526,7 +1513,7 @@ function hipMemcpyAsync(dst: Pointer; src: Pointer; sizeBytes: SizeUInt; kind: T
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyAsync';
 
 {
-  @brief Asynchronously copies data from Host to Device.
+  Asynchronously copies data from Host to Device.
   
   @param(dst The destination device pointer.)
   @param(src The source host pointer.)
@@ -1539,7 +1526,7 @@ function hipMemcpyHtoDAsync(dst: hipDeviceptr_t; src: Pointer; sizeBytes: SizeUI
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyHtoDAsync';
 
 {
-  @brief Asynchronously copies data from Device to Host.
+  Asynchronously copies data from Device to Host.
   
   @param(dst The destination host pointer.)
   @param(src The source device pointer.)
@@ -1552,7 +1539,7 @@ function hipMemcpyDtoHAsync(dst: Pointer; src: hipDeviceptr_t; sizeBytes: SizeUI
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyDtoHAsync';
 
 {
-  @brief Asynchronously copies data from Device to Device.
+  Asynchronously copies data from Device to Device.
   
   @param(dst The destination device pointer.)
   @param(src The source device pointer.)
@@ -1564,12 +1551,11 @@ function hipMemcpyDtoHAsync(dst: Pointer; src: hipDeviceptr_t; sizeBytes: SizeUI
 function hipMemcpyDtoDAsync(dst: hipDeviceptr_t; src: hipDeviceptr_t; sizeBytes: SizeUInt; stream: hipStream_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyDtoDAsync';
 
-{ @groupend }
 
-{ @groupbegin(Symbol Memory Operations) }
+{ @bold(Group: Symbol Memory Operations) }
 
 {
-  @brief Gets the device pointer associated with a symbol.
+  Gets the device pointer associated with a symbol.
   
   @param(devPtr Returns the device pointer.)
   @param(symbol A pointer to the symbol in host memory.)
@@ -1580,7 +1566,7 @@ function hipGetSymbolAddress(var devPtr: Pointer; symbol: Pointer): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetSymbolAddress';
 
 {
-  @brief Gets the size of a symbol.
+  Gets the size of a symbol.
   
   @param(size Returns the size of the symbol in bytes.)
   @param(symbol A pointer to the symbol in host memory.)
@@ -1591,7 +1577,7 @@ function hipGetSymbolSize(var size: SizeUInt; symbol: Pointer): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetSymbolSize';
 
 {
-  @brief Copies data to a symbol on the device.
+  Copies data to a symbol on the device.
   
   @param(symbol The destination device symbol.)
   @param(src The source data pointer.)
@@ -1605,7 +1591,7 @@ function hipMemcpyToSymbol(symbol: Pointer; src: Pointer; sizeBytes: SizeUInt; o
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyToSymbol';
 
 {
-  @brief Asynchronously copies data to a symbol on the device.
+  Asynchronously copies data to a symbol on the device.
   
   @param(symbol The destination device symbol.)
   @param(src The source data pointer.)
@@ -1620,7 +1606,7 @@ function hipMemcpyToSymbolAsync(symbol: Pointer; src: Pointer; sizeBytes: SizeUI
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyToSymbolAsync';
 
 {
-  @brief Copies data from a symbol on the device.
+  Copies data from a symbol on the device.
   
   @param(dst The destination data pointer.)
   @param(symbol The source device symbol.)
@@ -1634,7 +1620,7 @@ function hipMemcpyFromSymbol(dst: Pointer; symbol: Pointer; sizeBytes: SizeUInt;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyFromSymbol';
 
 {
-  @brief Asynchronously copies data from a symbol on the device.
+  Asynchronously copies data from a symbol on the device.
   
   @param(dst The destination data pointer.)
   @param(symbol The source device symbol.)
@@ -1648,12 +1634,11 @@ function hipMemcpyFromSymbol(dst: Pointer; symbol: Pointer; sizeBytes: SizeUInt;
 function hipMemcpyFromSymbolAsync(dst: Pointer; symbol: Pointer; sizeBytes: SizeUInt; offset: SizeUInt; kind: THipMemcpyKind; stream: hipStream_t = nil): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyFromSymbolAsync';
 
-{ @groupend }
 
-{ @groupbegin(Memory Set Operations) }
+{ @bold(Group: Memory Set Operations) }
 
 {
-  @brief Fills a region of device memory with a byte value.
+  Fills a region of device memory with a byte value.
   
   @param(dst The destination device pointer.)
   @param(value The byte value to set.)
@@ -1665,7 +1650,7 @@ function hipMemset(dst: Pointer; value: Int32; sizeBytes: SizeUInt): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'Memset';
 
 {
-  @brief Fills a memory area with a constant 8-bit value.
+  Fills a memory area with a constant 8-bit value.
   
   @param(dest The destination device pointer.)
   @param(value The byte value to set.)
@@ -1677,7 +1662,7 @@ function hipMemsetD8(dest: hipDeviceptr_t; value: Byte; count: SizeUInt): THipEr
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemsetD8';
 
 {
-  @brief Asynchronously fills a memory area with a constant 8-bit value.
+  Asynchronously fills a memory area with a constant 8-bit value.
   
   @param(dest The destination device pointer.)
   @param(value The byte value to set.)
@@ -1690,7 +1675,7 @@ function hipMemsetD8Async(dest: hipDeviceptr_t; value: Byte; count: SizeUInt; st
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemsetD8Async';
 
 {
-  @brief Fills a memory area with a constant 16-bit value.
+  Fills a memory area with a constant 16-bit value.
   
   @param(dest The destination device pointer.)
   @param(value The short value to set.)
@@ -1702,7 +1687,7 @@ function hipMemsetD16(dest: hipDeviceptr_t; value: UInt16; count: SizeUInt): THi
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemsetD16';
 
 {
-  @brief Asynchronously fills a memory area with a constant 16-bit value.
+  Asynchronously fills a memory area with a constant 16-bit value.
   
   @param(dest The destination device pointer.)
   @param(value The short value to set.)
@@ -1715,7 +1700,7 @@ function hipMemsetD16Async(dest: hipDeviceptr_t; value: UInt16; count: SizeUInt;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemsetD16Async';
 
 {
-  @brief Fills a memory area with a constant 32-bit integer value.
+  Fills a memory area with a constant 32-bit integer value.
   
   @param(dest The destination device pointer.)
   @param(value The integer value to set.)
@@ -1727,7 +1712,7 @@ function hipMemsetD32(dest: hipDeviceptr_t; value: Int32; count: SizeUInt): THip
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemsetD32';
 
 {
-  @brief Asynchronously fills a region of device memory with a byte value.
+  Asynchronously fills a region of device memory with a byte value.
   
   @param(dst The destination device pointer.)
   @param(value The byte value to set.)
@@ -1740,7 +1725,7 @@ function hipMemsetAsync(dst: Pointer; value: Int32; sizeBytes: SizeUInt; stream:
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemsetAsync';
 
 {
-  @brief Asynchronously fills a memory area with a constant 32-bit integer value.
+  Asynchronously fills a memory area with a constant 32-bit integer value.
   
   @param(dst The destination device pointer.)
   @param(value The integer value to set.)
@@ -1753,7 +1738,7 @@ function hipMemsetD32Async(dst: hipDeviceptr_t; value: Int32; count: SizeUInt; s
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemsetD32Async';
 
 {
-  @brief Fills a 2D memory area with a constant value.
+  Fills a 2D memory area with a constant value.
   
   @param(dst The destination device pointer.)
   @param(pitch The pitch of the destination memory in bytes.)
@@ -1767,7 +1752,7 @@ function hipMemset2D(dst: Pointer; pitch: SizeUInt; value: Int32; width: SizeUIn
   cdecl; external HIP_LIB_NAME name PREFIX + 'Memset2D';
 
 {
-  @brief Asynchronously fills a 2D memory area with a constant value.
+  Asynchronously fills a 2D memory area with a constant value.
   
   @param(dst The destination device pointer.)
   @param(pitch The pitch of the destination memory in bytes.)
@@ -1782,7 +1767,7 @@ function hipMemset2DAsync(dst: Pointer; pitch: SizeUInt; value: Int32; width: Si
   cdecl; external HIP_LIB_NAME name PREFIX + 'Memset2DAsync';
 
 {
-  @brief Fills a 3D memory area with a constant value.
+  Fills a 3D memory area with a constant value.
   
   @param(pitchedDevPtr A pitched pointer to the destination memory.)
   @param(value The byte value to set.)
@@ -1794,7 +1779,7 @@ function hipMemset3D(pitchedDevPtr: THipPitchedPtr; value: Int32; extent: THipEx
   cdecl; external HIP_LIB_NAME name PREFIX + 'Memset3D';
 
 {
-  @brief Asynchronously fills a 3D memory area with a constant value.
+  Asynchronously fills a 3D memory area with a constant value.
   
   @param(pitchedDevPtr A pitched pointer to the destination memory.)
   @param(value The byte value to set.)
@@ -1806,12 +1791,11 @@ function hipMemset3D(pitchedDevPtr: THipPitchedPtr; value: Int32; extent: THipEx
 function hipMemset3DAsync(pitchedDevPtr: THipPitchedPtr; value: Int32; extent: THipExtent; stream: hipStream_t = nil): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'Memset3DAsync';
 
-{ @groupend }
 
-{ @groupbegin(Memory Information) }
+{ @bold(Group: Memory Information) }
 
 {
-  @brief Queries the total and free memory on the current device.
+  Queries the total and free memory on the current device.
   
   @param(free Returns the free memory in bytes.)
   @param(total Returns the total memory in bytes.)
@@ -1822,7 +1806,7 @@ function hipMemGetInfo(var free: SizeUInt; var total: SizeUInt): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemGetInfo';
 
 {
-  @brief Gets the size of a memory allocation from a pointer within it.
+  Gets the size of a memory allocation from a pointer within it.
   
   @param(ptr A pointer to the allocated memory.)
   @param(size Returns the size of the allocation in bytes.)
@@ -1836,17 +1820,16 @@ function hipMemPtrGetInfo(ptr: Pointer; var size: SizeUInt): THipError;
   // This is an AMD-specific extension.
 {$ENDIF}
 
-{ @groupend }
 
-{ @groupbegin(Array Management) }
+{ @bold(Group: Array Management) }
 
 {
-  @brief Allocates a 1D or 2D array on the device.
+  Allocates a 1D or 2D array on the device.
   
   @param(array Returns the allocated HIP array.)
   @param(desc The channel format descriptor for the array.)
   @param(width The width of the array.)
-  @param(height The height of the array (0 for 1D arrays).
+  @param(height The height of the array @(0 for 1D arrays@).)
   @param(flags Flags for the allocation.)
   
   @returns(hipSuccess, hipErrorOutOfMemory)
@@ -1855,7 +1838,7 @@ function hipMallocArray(var PArr: PHipArray; const desc: PHipChannelFormatDesc;
   width, height: SizeUInt; flags: UInt32 = hipArrayDefault): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MallocArray';
 {
-  @brief Creates a HIP array object.
+  Creates a HIP array object.
   
   @param(pHandle Returns the created array handle.)
   @param(pAllocateArray The descriptor for the array to create.)
@@ -1866,7 +1849,7 @@ function hipArrayCreate(var pHandle: hipArray_t; const pAllocateArray: PHIP_ARRA
   cdecl; external HIP_LIB_NAME name PREFIX + 'ArrayCreate';
 
 {
-  @brief Destroys a HIP array object.
+  Destroys a HIP array object.
   
   @param(array The array to destroy.)
   
@@ -1876,7 +1859,7 @@ function hipArrayDestroy(hArr: hipArray_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'ArrayDestroy';
 
 {
-  @brief Creates a 3D HIP array object.
+  Creates a 3D HIP array object.
   
   @param(array Returns the created 3D array.)
   @param(pAllocateArray The descriptor for the 3D array.)
@@ -1887,7 +1870,7 @@ function hipArray3DCreate(var hArr: hipArray_t; const pAllocateArray: PHIP_ARRAY
   cdecl; external HIP_LIB_NAME name PREFIX + 'Array3DCreate';
 
 {
-  @brief Allocates a 3D pitched memory region on the device.
+  Allocates a 3D pitched memory region on the device.
   
   @param(pitchedDevPtr Returns the pitched pointer to the allocated memory.)
   @param(extent The dimensions of the 3D allocation.)
@@ -1898,7 +1881,7 @@ function hipMalloc3D(var pitchedDevPtr: THipPitchedPtr; extent: THipExtent): THi
   cdecl; external HIP_LIB_NAME name PREFIX + 'Malloc3D';
 
 {
-  @brief Frees a HIP array.
+  Frees a HIP array.
   
   @param(array The array to free.)
   
@@ -1908,7 +1891,7 @@ function hipFreeArray(hArr: hipArray_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'FreeArray';
 
 {
-  @brief Allocates a 3D array on the device.
+  Allocates a 3D array on the device.
   
   @param(array Returns the allocated 3D array.)
   @param(desc The channel format descriptor.)
@@ -1921,7 +1904,7 @@ function hipMalloc3DArray(var hArr: hipArray_t; const desc: PHipChannelFormatDes
   cdecl; external HIP_LIB_NAME name PREFIX + 'Malloc3DArray';
 
 {
-  @brief Gets information about a specified HIP array.
+  Gets information about a specified HIP array.
   
   @param(desc Returns the channel format descriptor.)
   @param(extent Returns the array dimensions.)
@@ -1938,7 +1921,7 @@ function hipArrayGetInfo(var desc: THipChannelFormatDesc; var extent: THipExtent
 {$ENDIF}
 
 {
-  @brief Gets the descriptor for a 1D or 2D array.
+  Gets the descriptor for a 1D or 2D array.
   
   @param(pArrayDescriptor Returns the array descriptor.)
   @param(array The array to query.)
@@ -1949,7 +1932,7 @@ function hipArrayGetDescriptor(var pArrayDescriptor: THIP_ARRAY_DESCRIPTOR; hArr
   cdecl; external HIP_LIB_NAME name PREFIX + 'ArrayGetDescriptor';
 
 {
-  @brief Gets the descriptor for a 3D array.
+  Gets the descriptor for a 3D array.
   
   @param(pArrayDescriptor Returns the 3D array descriptor.)
   @param(array The 3D array to query.)
@@ -1959,12 +1942,11 @@ function hipArrayGetDescriptor(var pArrayDescriptor: THIP_ARRAY_DESCRIPTOR; hArr
 function hipArray3DGetDescriptor(var pArrayDescriptor: THIP_ARRAY3D_DESCRIPTOR; hArr: hipArray_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'Array3DGetDescriptor';
 
-{ @groupend }
 
-{ @groupbegin(2D and 3D Memory Copy) }
+{ @bold(Group: 2D and 3D Memory Copy) }
 
 {
-  @brief Copies a 2D region of memory.
+  Copies a 2D region of memory.
   
   @param(dst The destination pointer.)
   @param(dpitch The pitch of the destination memory.)
@@ -1980,7 +1962,7 @@ function hipMemcpy2D(dst: Pointer; dpitch: SizeUInt; src: Pointer; spitch: SizeU
   cdecl; external HIP_LIB_NAME name PREFIX + 'Memcpy2D';
 
 {
-  @brief Copies a 2D region using a parameter structure.
+  Copies a 2D region using a parameter structure.
   
   @param(pCopy The parameters for the memory copy.)
   
@@ -1990,7 +1972,7 @@ function hipMemcpyParam2D(const PCopy: PHipMemcpy2D): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyParam2D';
 
 {
-  @brief Asynchronously copies a 2D region using a parameter structure.
+  Asynchronously copies a 2D region using a parameter structure.
   
   @param(pCopy The parameters for the memory copy.)
   @param(stream The stream for the asynchronous operation.)
@@ -2001,7 +1983,7 @@ function hipMemcpyParam2DAsync(const PCopy: PHipMemcpy2D; stream: hipStream_t = 
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyParam2DAsync';
 
 {
-  @brief Asynchronously copies a 2D region of memory.
+  Asynchronously copies a 2D region of memory.
   
   @param(dst The destination pointer.)
   @param(dpitch The pitch of the destination memory.)
@@ -2018,7 +2000,7 @@ function hipMemcpy2DAsync(dst: Pointer; dpitch: SizeUInt; src: Pointer; spitch: 
   cdecl; external HIP_LIB_NAME name PREFIX + 'Memcpy2DAsync';
 
 {
-  @brief Copies a 2D region to a HIP array.
+  Copies a 2D region to a HIP array.
   
   @param(dst The destination array.)
   @param(wOffset The destination X offset in elements.)
@@ -2035,7 +2017,7 @@ function hipMemcpy2DToArray(dst: hipArray_t; wOffset: SizeUInt; hOffset: SizeUIn
   cdecl; external HIP_LIB_NAME name PREFIX + 'Memcpy2DToArray';
 
 {
-  @brief Asynchronously copies a 2D region to a HIP array.
+  Asynchronously copies a 2D region to a HIP array.
   
   @param(dst The destination array.)
   @param(wOffset The destination X offset.)
@@ -2053,7 +2035,7 @@ function hipMemcpy2DToArrayAsync(dst: hipArray_t; wOffset: SizeUInt; hOffset: Si
   cdecl; external HIP_LIB_NAME name PREFIX + 'Memcpy2DToArrayAsync';
 
 {
-  @brief Copies from one 2D array to another.
+  Copies from one 2D array to another.
   
   @param(dst The destination array.)
   @param(wOffsetDst The destination X offset.)
@@ -2071,7 +2053,7 @@ function hipMemcpy2DArrayToArray(dst: hipArray_t; wOffsetDst: SizeUInt; hOffsetD
   cdecl; external HIP_LIB_NAME name PREFIX + 'Memcpy2DArrayToArray';
 
 {
-  @brief Copies data to a 1D array [DEPRECATED].
+  Copies data to a 1D array [DEPRECATED].
   
   @param(dst The destination array.)
   @param(wOffset The destination X offset.)
@@ -2088,7 +2070,7 @@ function hipMemcpyToArray(dst: hipArray_t; wOffset: SizeUInt; hOffset: SizeUInt;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyToArray'; deprecated;
 
 {
-  @brief Copies data from a 1D array [DEPRECATED].
+  Copies data from a 1D array [DEPRECATED].
   
   @param(dst The destination memory pointer.)
   @param(srcArray The source array.)
@@ -2105,7 +2087,7 @@ function hipMemcpyFromArray(dst: Pointer; src: hipArray_const_t; wOffset: SizeUI
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyFromArray'; deprecated;
 
 {
-  @brief Copies a 2D region from a HIP array.
+  Copies a 2D region from a HIP array.
   
   @param(dst The destination memory pointer.)
   @param(dpitch The pitch of the destination memory.)
@@ -2122,7 +2104,7 @@ function hipMemcpy2DFromArray(dst: Pointer; dpitch: SizeUInt; src: hipArray_cons
   cdecl; external HIP_LIB_NAME name PREFIX + 'Memcpy2DFromArray';
 
 {
-  @brief Asynchronously copies a 2D region from a HIP array.
+  Asynchronously copies a 2D region from a HIP array.
   
   @param(dst The destination memory pointer.)
   @param(dpitch The pitch of the destination memory.)
@@ -2140,7 +2122,7 @@ function hipMemcpy2DFromArrayAsync(dst: Pointer; dpitch: SizeUInt; src: hipArray
   cdecl; external HIP_LIB_NAME name PREFIX + 'Memcpy2DFromArrayAsync';
 
 {
-  @brief Copies data from a 1D array to host memory.
+  Copies data from a 1D array to host memory.
   
   @param(dst The destination host pointer.)
   @param(srcArray The source array.)
@@ -2153,7 +2135,7 @@ function hipMemcpyAtoH(dst: Pointer; src: hipArray_t; srcOffset: SizeUInt; count
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyAtoH';
 
 {
-  @brief Copies data from host memory to a 1D array.
+  Copies data from host memory to a 1D array.
   
   @param(dstArray The destination array.)
   @param(dstOffset The offset in the destination array in bytes.)
@@ -2166,7 +2148,7 @@ function hipMemcpyHtoA(dst: hipArray_t; dstOffset: SizeUInt; const srcHost: Poin
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyHtoA';
 
 {
-  @brief Copies a 3D region of memory.
+  Copies a 3D region of memory.
   
   @param(p The parameters for the 3D memory copy.)
   
@@ -2176,7 +2158,7 @@ function hipMemcpy3D(const p: PHipMemcpy3DParms): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'Memcpy3D';
 
 {
-  @brief Asynchronously copies a 3D region of memory.
+  Asynchronously copies a 3D region of memory.
   
   @param(p The parameters for the 3D memory copy.)
   @param(stream The stream for the asynchronous operation.)
@@ -2187,7 +2169,7 @@ function hipMemcpy3DAsync(const p: PHipMemcpy3DParms; stream: hipStream_t = nil)
   cdecl; external HIP_LIB_NAME name PREFIX + 'Memcpy3DAsync';
 
 {
-  @brief Copies a 3D region of memory (driver version).
+  Copies a 3D region of memory (driver version).
   
   @param(pCopy The parameters for the 3D memory copy.)
   
@@ -2196,7 +2178,7 @@ function hipMemcpy3DAsync(const p: PHipMemcpy3DParms; stream: hipStream_t = nil)
 function hipDrvMemcpy3D(const pCopy: PHipMemcpy3DParms): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DrvMemcpy3D';
 {
-  @brief Asynchronously copies a 3D region of memory (driver version).
+  Asynchronously copies a 3D region of memory (driver version).
   
   @param(pCopy The parameters for the 3D memory copy.)
   @param(stream The stream for the asynchronous operation.)
@@ -2207,7 +2189,7 @@ function hipDrvMemcpy3DAsync(const pCopy: PHipMemcpy3DParms; stream: hipStream_t
   cdecl; external HIP_LIB_NAME name PREFIX + 'DrvMemcpy3DAsync';
 
 {
-  @brief Asynchronously copies from a 1D array to host memory.
+  Asynchronously copies from a 1D array to host memory.
   
   @param(dstHost Destination host pointer.)
   @param(srcArray Source array.)
@@ -2217,13 +2199,13 @@ function hipDrvMemcpy3DAsync(const pCopy: PHipMemcpy3DParms; stream: hipStream_t
   
   @returns(hipSuccess, hipErrorInvalidValue, hipErrorNotInitialized)
   
-  @see(hipMemcpyFromArray, hipMemcpyAtoH)
+  @seeAlso(hipMemcpyFromArray) @seeAlso(hipMemcpyAtoH)
 }
 function hipMemcpyAtoHAsync(dstHost: Pointer; srchArr: hipArray_t; srcOffset: SizeUInt; ByteCount: SizeUInt; stream: hipStream_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyAtoHAsync';
 
 {
-  @brief Asynchronously copies from host memory to a 1D array.
+  Asynchronously copies from host memory to a 1D array.
   
   @param(dstArray Destination array.)
   @param(dstOffset Offset in bytes of destination array.)
@@ -2233,19 +2215,18 @@ function hipMemcpyAtoHAsync(dstHost: Pointer; srchArr: hipArray_t; srcOffset: Si
   
   @returns(hipSuccess, hipErrorInvalidValue, hipErrorNotInitialized)
   
-  @see(hipMemcpyToArray, hipMemcpyHtoA)
+  @seeAlso(hipMemcpyToArray) @seeAlso(hipMemcpyHtoA)
 }
 function hipMemcpyHtoAAsync(dsthArr: hipArray_t; dstOffset: SizeUInt; const srcHost: Pointer; ByteCount: SizeUInt; stream: hipStream_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyHtoAAsync';
 
-{ @groupend }
 
-{ @groupbegin(PeerToPeer Device Memory Access) }
-{ @abstract(This section describes the Peer-to-Peer (P2P) device memory access functions of the HIP runtime API.)
+{ @bold(Group: PeerToPeer Device Memory Access) }
+{ @abstract(This section describes the Peer-to-Peer @(P2P@) device memory access functions of the HIP runtime API.)
   @warning(Peer-to-Peer support is experimental in some versions of HIP.) }
 
 {
-  @brief Determines if a device can directly access memory on a peer device.
+  Determines if a device can directly access memory on a peer device.
   
   @param(canAccessPeer Returns 1 if access is possible, 0 otherwise.)
   @param(deviceId The device that would be accessing the memory.)
@@ -2257,7 +2238,7 @@ function hipDeviceCanAccessPeer(var canAccessPeer: Int32; deviceId: Int32; peerD
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceCanAccessPeer';
 
 {
-  @brief Enables direct access from the current device to a peer device's memory.
+  Enables direct access from the current device to a peer device's memory.
   
   @param(peerDeviceId The peer device to enable access to.)
   @param(flags Reserved for future use, must be zero.)
@@ -2268,7 +2249,7 @@ function hipDeviceEnablePeerAccess(peerDeviceId: Int32; flags: UInt32): THipErro
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceEnablePeerAccess';
 
 {
-  @brief Disables direct access from the current device to a peer device's memory.
+  Disables direct access from the current device to a peer device's memory.
   
   @param(peerDeviceId The peer device to disable access to.)
   
@@ -2278,7 +2259,7 @@ function hipDeviceDisablePeerAccess(peerDeviceId: Int32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceDisablePeerAccess';
 
 {
-  @brief Gets the base address and size of a memory allocation containing a given pointer.
+  Gets the base address and size of a memory allocation containing a given pointer.
   
   @param(pbase Returns the base pointer of the allocation.)
   @param(psize Returns the size of the allocation.)
@@ -2290,7 +2271,7 @@ function hipMemGetAddressRange(var pbase: hipDeviceptr_t; var psize: SizeUInt; d
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemGetAddressRange';
 
 {
-  @brief Copies memory between two different devices.
+  Copies memory between two different devices.
   
   @param(dst The destination device pointer.)
   @param(dstDeviceId The destination device ID.)
@@ -2304,7 +2285,7 @@ function hipMemcpyPeer(dst: Pointer; dstDeviceId: Int32; src: Pointer; srcDevice
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyPeer';
 
 {
-  @brief Asynchronously copies memory between two different devices.
+  Asynchronously copies memory between two different devices.
   
   @param(dst The destination device pointer.)
   @param(dstDeviceId The destination device ID.)
@@ -2318,9 +2299,8 @@ function hipMemcpyPeer(dst: Pointer; dstDeviceId: Int32; src: Pointer; srcDevice
 function hipMemcpyPeerAsync(dst: Pointer; dstDeviceId: Int32; src: Pointer; srcDevice: Int32; sizeBytes: SizeUInt; stream: hipStream_t = nil): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemcpyPeerAsync';
 
-{ @groupend }
 
-{ @groupbegin(Context Management - DEPRECATED) }
+{ @bold(Group: Context Management - DEPRECATED) }
 { @abstract(This section describes deprecated context management functions. On AMD platforms, device and stream APIs are preferred.)
   @warning(These APIs are deprecated on AMD platforms and map to NVIDIA driver context APIs. Use with caution.) }
 
@@ -2328,7 +2308,7 @@ const
   HIP_DEPRECATED_MSG = 'This API is deprecated and might not be supported in future releases.';
 
 {
-  @brief Creates a context and sets it as current. [DEPRECATED]
+  Creates a context and sets it as current. [DEPRECATED]
   
   @param(ctx Returns the created context.)
   @param(flags Context creation flags.)
@@ -2340,7 +2320,7 @@ function hipCtxCreate(var ctx: hipCtx_t; flags: UInt32; device: hipDevice_t): TH
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxCreate'; deprecated;
 
 {
-  @brief Destroys a HIP context. [DEPRECATED]
+  Destroys a HIP context. [DEPRECATED]
   
   @param(ctx The context to destroy.)
   
@@ -2350,7 +2330,7 @@ function hipCtxDestroy(ctx: hipCtx_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxDestroy'; deprecated;
 
 {
-  @brief Pops the current context from the CPU thread's stack. [DEPRECATED]
+  Pops the current context from the CPU thread's stack. [DEPRECATED]
   
   @param(ctx Returns the popped context.)
   
@@ -2360,7 +2340,7 @@ function hipCtxPopCurrent(var ctx: hipCtx_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxPopCurrent'; deprecated;
 
 {
-  @brief Pushes a context onto the CPU thread's stack. [DEPRECATED]
+  Pushes a context onto the CPU thread's stack. [DEPRECATED]
   
   @param(ctx The context to push.)
   
@@ -2370,7 +2350,7 @@ function hipCtxPushCurrent(ctx: hipCtx_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxPushCurrent'; deprecated;
 
 {
-  @brief Binds a HIP context to the calling CPU thread. [DEPRECATED]
+  Binds a HIP context to the calling CPU thread. [DEPRECATED]
   
   @param(ctx The context to set as current.)
   
@@ -2380,7 +2360,7 @@ function hipCtxSetCurrent(ctx: hipCtx_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxSetCurrent'; deprecated;
 
 {
-  @brief Returns the HIP context bound to the calling CPU thread. [DEPRECATED]
+  Returns the HIP context bound to the calling CPU thread. [DEPRECATED]
   
   @param(ctx Returns the current context.)
   
@@ -2390,7 +2370,7 @@ function hipCtxGetCurrent(var ctx: hipCtx_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxGetCurrent'; deprecated;
 
 {
-  @brief Returns the device ID for the current context. [DEPRECATED]
+  Returns the device ID for the current context. [DEPRECATED]
   
   @param(device Returns the device from the current context.)
   
@@ -2400,7 +2380,7 @@ function hipCtxGetDevice(var device: hipDevice_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxGetDevice'; deprecated;
 
 {
-  @brief Returns the API version used to create a context. [DEPRECATED]
+  Returns the API version used to create a context. [DEPRECATED]
   
   @param(ctx The context to check.)
   @param(apiVersion Returns the API version.)
@@ -2411,7 +2391,7 @@ function hipCtxGetApiVersion(ctx: hipCtx_t; var apiVersion: Int32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxGetApiVersion'; deprecated;
 
 {
-  @brief Gets the cache configuration for the current context. [DEPRECATED]
+  Gets the cache configuration for the current context. [DEPRECATED]
   
   @param(cacheConfig Returns the cache configuration.)
   
@@ -2421,7 +2401,7 @@ function hipCtxGetCacheConfig(var cacheConfig: THipFuncCache): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxGetCacheConfig'; deprecated;
 
 {
-  @brief Sets the cache configuration for the current context. [DEPRECATED]
+  Sets the cache configuration for the current context. [DEPRECATED]
   
   @param(cacheConfig The cache configuration to set.)
   
@@ -2431,7 +2411,7 @@ function hipCtxSetCacheConfig(cacheConfig: THipFuncCache): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxSetCacheConfig'; deprecated;
 
 {
-  @brief Sets the shared memory configuration for the current context. [DEPRECATED]
+  Sets the shared memory configuration for the current context. [DEPRECATED]
   
   @param(config The shared memory configuration to set.)
   
@@ -2441,7 +2421,7 @@ function hipCtxSetSharedMemConfig(config: THipSharedMemConfig): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxSetSharedMemConfig'; deprecated;
 
 {
-  @brief Gets the shared memory configuration for the current context. [DEPRECATED]
+  Gets the shared memory configuration for the current context. [DEPRECATED]
   
   @param(pConfig Returns the shared memory configuration.)
   
@@ -2451,7 +2431,7 @@ function hipCtxGetSharedMemConfig(var pConfig: THipSharedMemConfig): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxGetSharedMemConfig'; deprecated;
 
 {
-  @brief Blocks until the context has completed all preceding tasks. [DEPRECATED]
+  Blocks until the context has completed all preceding tasks. [DEPRECATED]
   
   @returns(hipSuccess)
 }
@@ -2459,7 +2439,7 @@ function hipCtxSynchronize(): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxSynchronize'; deprecated;
 
 {
-  @brief Returns the flags used for creating the current context. [DEPRECATED]
+  Returns the flags used for creating the current context. [DEPRECATED]
   
   @param(flags Returns the flags.)
   
@@ -2469,10 +2449,10 @@ function hipCtxGetFlags(var flags: UInt32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxGetFlags'; deprecated;
 
 {
-  @brief Enables direct access to memory in a peer context. [DEPRECATED]
+  Enables direct access to memory in a peer context. [DEPRECATED]
   
   @param(peerCtx The peer context.)
-  @param(flags Flags (must be 0).)
+  @param(flags Flags @(must be 0@).)
   
   @returns(hipSuccess, hipErrorInvalidValue, hipErrorPeerAccessAlreadyEnabled)
 }
@@ -2480,7 +2460,7 @@ function hipCtxEnablePeerAccess(peerCtx: hipCtx_t; flags: UInt32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxEnablePeerAccess'; deprecated;
 
 {
-  @brief Disables direct access to memory in a peer context. [DEPRECATED]
+  Disables direct access to memory in a peer context. [DEPRECATED]
   
   @param(peerCtx The peer context to disable.)
   
@@ -2490,7 +2470,7 @@ function hipCtxDisablePeerAccess(peerCtx: hipCtx_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'CtxDisablePeerAccess'; deprecated;
 
 {
-  @brief Gets the state of the primary context for a device. [DEPRECATED]
+  Gets the state of the primary context for a device. [DEPRECATED]
   
   @param(dev The device to query.)
   @param(flags Returns the flags of the primary context.)
@@ -2502,7 +2482,7 @@ function hipDevicePrimaryCtxGetState(dev: hipDevice_t; var flags: UInt32; var ac
   cdecl; external HIP_LIB_NAME name PREFIX + 'DevicePrimaryCtxGetState'; deprecated;
 
 {
-  @brief Releases the primary context on the GPU. [DEPRECATED]
+  Releases the primary context on the GPU. [DEPRECATED]
   
   @param(dev The device whose primary context is to be released.)
   
@@ -2512,7 +2492,7 @@ function hipDevicePrimaryCtxRelease(dev: hipDevice_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DevicePrimaryCtxRelease'; deprecated;
 
 {
-  @brief Retains the primary context on the GPU, preventing it from being released. [DEPRECATED]
+  Retains the primary context on the GPU, preventing it from being released. [DEPRECATED]
   
   @param(pctx Returns the handle of the primary context.)
   @param(dev The device whose primary context is to be retained.)
@@ -2523,7 +2503,7 @@ function hipDevicePrimaryCtxRetain(var pctx: hipCtx_t; dev: hipDevice_t): THipEr
   cdecl; external HIP_LIB_NAME name PREFIX + 'DevicePrimaryCtxRetain'; deprecated;
 
 {
-  @brief Resets the primary context on the GPU. [DEPRECATED]
+  Resets the primary context on the GPU. [DEPRECATED]
   
   @param(dev The device whose primary context is to be reset.)
   
@@ -2533,7 +2513,7 @@ function hipDevicePrimaryCtxReset(dev: hipDevice_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DevicePrimaryCtxReset'; deprecated;
 
 {
-  @brief Sets the flags for the primary context. [DEPRECATED]
+  Sets the flags for the primary context. [DEPRECATED]
   
   @param(dev The device for which the primary context flags are set.)
   @param(flags The new flags for the primary context.)
@@ -2543,13 +2523,12 @@ function hipDevicePrimaryCtxReset(dev: hipDevice_t): THipError;
 function hipDevicePrimaryCtxSetFlags(dev: hipDevice_t; flags: UInt32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DevicePrimaryCtxSetFlags'; deprecated;
 
-{ @groupend }
 
-{ @groupbegin(Module Management) }
+{ @bold(Group: Module Management) }
 { @abstract(This section describes the module management functions for loading code objects and launching kernels.) }
 
 {
-  @brief Loads a code object from a file into a module.
+  Loads a code object from a file into a module.
   
   @param(module Returns the loaded module.)
   @param(fname The filename of the code object to load.)
@@ -2560,7 +2539,7 @@ function hipModuleLoad(var module: hipModule_t; fname: PChar): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'ModuleLoad';
 
 {
-  @brief Unloads a module.
+  Unloads a module.
   
   @param(module The module to unload.)
   
@@ -2570,7 +2549,7 @@ function hipModuleUnload(module: hipModule_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'ModuleUnload';
 
 {
-  @brief Extracts a function from a module.
+  Extracts a function from a module.
   
   @param(function Returns the function handle.)
   @param(module The module to get the function from.)
@@ -2582,7 +2561,7 @@ function hipModuleGetFunction(var &function: hipFunction_t; module: hipModule_t;
   cdecl; external HIP_LIB_NAME name PREFIX + 'ModuleGetFunction';
 
 {
-  @brief Finds attributes for a given function.
+  Finds attributes for a given function.
   
   @param(attr Returns the attributes of the function.)
   @param(func A pointer to the function.)
@@ -2593,7 +2572,7 @@ function hipFuncGetAttributes(var attr: THipFuncAttributes; func: Pointer): THip
   cdecl; external HIP_LIB_NAME name PREFIX + 'FuncGetAttributes';
 
 {
-  @brief Finds a specific attribute for a given function.
+  Finds a specific attribute for a given function.
   
   @param(value Returns the attribute's value.)
   @param(attrib The attribute to query.)
@@ -2605,7 +2584,7 @@ function hipFuncGetAttribute(var value: Int32; attrib: THipFunctionAttribute; hf
   cdecl; external HIP_LIB_NAME name PREFIX + 'FuncGetAttribute';
 
 {
-  @brief Gets a device function handle from a function symbol pointer.
+  Gets a device function handle from a function symbol pointer.
   
   @param(functionPtr Returns the device function handle.)
   @param(symbolPtr A pointer to the device function symbol.)
@@ -2620,7 +2599,7 @@ function hipGetFuncBySymbol(var functionPtr: hipFunction_t; symbolPtr: Pointer):
 {$ENDIF}
 
 {
-  @brief Returns the handle of a texture reference from a module.
+  Returns the handle of a texture reference from a module.
   
   @param(texRef Returns the texture reference.)
   @param(hmod The module containing the texture reference.)
@@ -2632,7 +2611,7 @@ function hipModuleGetTexRef(var texRef: PTextureReference; hmod: hipModule_t; na
   cdecl; external HIP_LIB_NAME name PREFIX + 'ModuleGetTexRef';
 
 {
-  @brief Loads a module from a memory image.
+  Loads a module from a memory image.
   
   @param(module Returns the loaded module.)
   @param(image A pointer to the code object data.)
@@ -2643,7 +2622,7 @@ function hipModuleLoadData(var module: hipModule_t; image: Pointer): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'ModuleLoadData';
 
 {
-  @brief Loads a module from a memory image with JIT options.
+  Loads a module from a memory image with JIT options.
   
   @param(module Returns the loaded module.)
   @param(image A pointer to the code object data.)
@@ -2657,7 +2636,7 @@ function hipModuleLoadDataEx(var module: hipModule_t; image: Pointer; numOptions
   cdecl; external HIP_LIB_NAME name PREFIX + 'ModuleLoadDataEx';
 
 {
-  @brief Launches a kernel from a module.
+  Launches a kernel from a module.
   
   @param(f The kernel function handle to launch.)
   @param(gridDimX The X grid dimension.)
@@ -2669,7 +2648,7 @@ function hipModuleLoadDataEx(var module: hipModule_t; image: Pointer; numOptions
   @param(sharedMemBytes The amount of dynamic shared memory in bytes.)
   @param(stream The stream for the launch.)
   @param(kernelParams An array of pointers to kernel arguments.)
-  @param(extra Extra launch options (e.g., HIP_LAUNCH_PARAM_END).)
+  @param(extra Extra launch options @(e.g., HIP_LAUNCH_PARAM_END@).)
   
   @returns(hipSuccess, hipErrorInvalidValue, hipErrorNotInitialized)
 }
@@ -2677,7 +2656,7 @@ function hipModuleLaunchKernel(f: hipFunction_t; gridDimX: UInt32; gridDimY: UIn
   cdecl; external HIP_LIB_NAME name PREFIX + 'ModuleLaunchKernel';
 
 {
-  @brief Launches a cooperative kernel from a module.
+  Launches a cooperative kernel from a module.
   
   @param(f The kernel function handle.)
   @param(gridDimX, gridDimY, gridDimZ The grid dimensions.)
@@ -2692,7 +2671,7 @@ function hipModuleLaunchCooperativeKernel(f: hipFunction_t; gridDimX: UInt32; gr
   cdecl; external HIP_LIB_NAME name PREFIX + 'ModuleLaunchCooperativeKernel';
 
 {
-  @brief Launches cooperative kernels on multiple devices.
+  Launches cooperative kernels on multiple devices.
   
   @param(launchParamsList A list of launch parameters, one per device.)
   @param(numDevices The size of the launchParamsList array.)
@@ -2704,7 +2683,7 @@ function hipModuleLaunchCooperativeKernelMultiDevice(launchParamsList: PHipFunct
   cdecl; external HIP_LIB_NAME name PREFIX + 'ModuleLaunchCooperativeKernelMultiDevice';
 
 {
-  @brief Launches a cooperative kernel.
+  Launches a cooperative kernel.
   
   @param(f The kernel function pointer.)
   @param(gridDim The grid dimensions.)
@@ -2719,7 +2698,7 @@ function hipLaunchCooperativeKernel(f: Pointer; gridDim: TDim3; blockDim: TDim3;
   cdecl; external HIP_LIB_NAME name PREFIX + 'LaunchCooperativeKernel';
 
 {
-  @brief Launches cooperative kernels on multiple devices.
+  Launches cooperative kernels on multiple devices.
   
   @param(launchParamsList A list of launch parameters.)
   @param(numDevices The number of devices.)
@@ -2731,7 +2710,7 @@ function hipLaunchCooperativeKernelMultiDevice(launchParamsList: PHipLaunchParam
   cdecl; external HIP_LIB_NAME name PREFIX + 'LaunchCooperativeKernelMultiDevice';
 
 {
-  @brief Launches kernels on multiple devices with extended controls.
+  Launches kernels on multiple devices with extended controls.
   
   @param(launchParamsList A list of launch parameters.)
   @param(numDevices The number of devices.)
@@ -2746,19 +2725,18 @@ function hipExtLaunchMultiKernelMultiDevice(launchParamsList: PHipLaunchParams; 
   // This is an AMD-specific extension.
 {$ENDIF}
 
-{ @groupend }
 
-{ @groupbegin(Occupancy Calculation) }
+{ @bold(Group: Occupancy Calculation) }
 { @abstract(This section describes functions to calculate theoretical kernel occupancy.) }
 
 {
-  @brief Determines grid and block sizes for maximum occupancy for a kernel from a module.
+  Determines grid and block sizes for maximum occupancy for a kernel from a module.
   
   @param(gridSize Returns the minimum grid size.)
   @param(blockSize Returns the block size.)
   @param(f The kernel function handle.)
   @param(dynSharedMemPerBlk The dynamic shared memory usage in bytes.)
-  @param(blockSizeLimit The maximum block size for the kernel (0 for no limit).)
+  @param(blockSizeLimit The maximum block size for the kernel @(0 for no limit@).)
   
   @returns(hipSuccess, hipErrorInvalidValue)
 }
@@ -2766,13 +2744,13 @@ function hipModuleOccupancyMaxPotentialBlockSize(var gridSize: Int32; var blockS
   cdecl; external HIP_LIB_NAME name PREFIX + 'ModuleOccupancyMaxPotentialBlockSize';
 
 {
-  @brief Determines grid and block sizes for maximum occupancy for a kernel from a module with flags.
+  Determines grid and block sizes for maximum occupancy for a kernel from a module with flags.
   
   @param(gridSize Returns the minimum grid size.)
   @param(blockSize Returns the block size.)
   @param(f The kernel function handle.)
   @param(dynSharedMemPerBlk The dynamic shared memory usage in bytes.)
-  @param(blockSizeLimit The maximum block size for the kernel (0 for no limit).)
+  @param(blockSizeLimit The maximum block size for the kernel @(0 for no limit@).)
   @param(flags Extra flags for the occupancy calculation.)
   
   @returns(hipSuccess, hipErrorInvalidValue)
@@ -2781,7 +2759,7 @@ function hipModuleOccupancyMaxPotentialBlockSizeWithFlags(var gridSize: Int32; v
   cdecl; external HIP_LIB_NAME name PREFIX + 'ModuleOccupancyMaxPotentialBlockSizeWithFlags';
 
 {
-  @brief Returns the maximum number of active blocks per multiprocessor for a function from a module.
+  Returns the maximum number of active blocks per multiprocessor for a function from a module.
   
   @param(numBlocks Returns the occupancy in number of blocks.)
   @param(f The kernel function handle.)
@@ -2794,7 +2772,7 @@ function hipModuleOccupancyMaxActiveBlocksPerMultiprocessor(var numBlocks: Int32
   cdecl; external HIP_LIB_NAME name PREFIX + 'ModuleOccupancyMaxActiveBlocksPerMultiprocessor';
 
 {
-  @brief Returns the maximum number of active blocks per multiprocessor for a function from a module with flags.
+  Returns the maximum number of active blocks per multiprocessor for a function from a module with flags.
   
   @param(numBlocks Returns the occupancy in number of blocks.)
   @param(f The kernel function handle.)
@@ -2808,7 +2786,7 @@ function hipModuleOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(var numBloc
   cdecl; external HIP_LIB_NAME name PREFIX + 'ModuleOccupancyMaxActiveBlocksPerMultiprocessorWithFlags';
 
 {
-  @brief Returns the maximum number of active blocks per multiprocessor for a function pointer.
+  Returns the maximum number of active blocks per multiprocessor for a function pointer.
   
   @param(numBlocks Returns the occupancy in number of blocks.)
   @param(f A pointer to the kernel function.)
@@ -2821,7 +2799,7 @@ function hipOccupancyMaxActiveBlocksPerMultiprocessor(var numBlocks: Int32; f: P
   cdecl; external HIP_LIB_NAME name PREFIX + 'OccupancyMaxActiveBlocksPerMultiprocessor';
 
 {
-  @brief Returns the maximum number of active blocks per multiprocessor for a function pointer with flags.
+  Returns the maximum number of active blocks per multiprocessor for a function pointer with flags.
   
   @param(numBlocks Returns the occupancy in number of blocks.)
   @param(f A pointer to the kernel function.)
@@ -2835,26 +2813,25 @@ function hipOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(var numBlocks: In
   cdecl; external HIP_LIB_NAME name PREFIX + 'OccupancyMaxActiveBlocksPerMultiprocessorWithFlags';
 
 {
-  @brief Determines grid and block sizes for maximum occupancy for a kernel function pointer.
+  Determines grid and block sizes for maximum occupancy for a kernel function pointer.
   
   @param(gridSize Returns the minimum grid size.)
   @param(blockSize Returns the block size.)
   @param(f A pointer to the kernel function.)
   @param(dynSharedMemPerBlk The dynamic shared memory usage in bytes.)
-  @param(blockSizeLimit The maximum block size for the kernel (0 for no limit).)
+  @param(blockSizeLimit The maximum block size for the kernel @(0 for no limit@).)
   
   @returns(hipSuccess, hipErrorInvalidValue)
 }
 function hipOccupancyMaxPotentialBlockSize(var gridSize: Int32; var blockSize: Int32; f: Pointer; dynSharedMemPerBlk: SizeUInt; blockSizeLimit: Int32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'OccupancyMaxPotentialBlockSize';
 
-{ @groupend }
 
-{ @groupbegin(Profiler Control - DEPRECATED) }
+{ @bold(Group: Profiler Control - DEPRECATED) }
 { @abstract(This section describes deprecated profiler control functions. Use roctracer/rocTX instead.) }
 
 {
-  @brief Starts the profiler. [DEPRECATED]
+  Starts the profiler. [DEPRECATED]
   
   @returns(hipErrorNotSupported)
   
@@ -2864,7 +2841,7 @@ function hipProfilerStart: THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'ProfilerStart'; deprecated;
 
 {
-  @brief Stops the profiler. [DEPRECATED]
+  Stops the profiler. [DEPRECATED]
   
   @returns(hipErrorNotSupported)
   
@@ -2873,13 +2850,12 @@ function hipProfilerStart: THipError;
 function hipProfilerStop: THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'ProfilerStop'; deprecated;
 
-{ @groupend }
 
-{ @groupbegin(Clang Launch API) }
+{ @bold(Group: Clang Launch API) }
 { @abstract(This section describes the API to support the triple-chevron syntax for kernel launches.) }
 
 {
-  @brief Configures a kernel launch.
+  Configures a kernel launch.
   
   @param(gridDim The grid dimensions.)
   @param(blockDim The block dimensions.)
@@ -2892,7 +2868,7 @@ function hipConfigureCall(gridDim: TDim3; blockDim: TDim3; sharedMem: SizeUInt =
   cdecl; external HIP_LIB_NAME name PREFIX + 'ConfigureCall';
 
 {
-  @brief Sets a kernel argument for a configured launch.
+  Sets a kernel argument for a configured launch.
   
   @param(arg A pointer to the argument data in host memory.)
   @param(size The size of the argument.)
@@ -2904,7 +2880,7 @@ function hipSetupArgument(arg: Pointer; size: SizeUInt; offset: SizeUInt): THipE
   cdecl; external HIP_LIB_NAME name PREFIX + 'SetupArgument';
 
 {
-  @brief Launches a kernel previously configured with hipConfigureCall.
+  Launches a kernel previously configured with hipConfigureCall.
   
   @param(func The kernel function pointer to launch.)
   
@@ -2914,7 +2890,7 @@ function hipLaunchByPtr(func: Pointer): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'LaunchByPtr';
 
 {
-  @brief Pushes a kernel launch configuration onto a stack.
+  Pushes a kernel launch configuration onto a stack.
   
   @param(gridDim The grid dimensions.)
   @param(blockDim The block dimensions.)
@@ -2931,7 +2907,7 @@ function __hipPushCallConfiguration(gridDim: TDim3; blockDim: TDim3; sharedMem: 
 {$ENDIF}
 
 {
-  @brief Pops a kernel launch configuration from the stack.
+  Pops a kernel launch configuration from the stack.
   
   @param(gridDim Returns the grid dimensions.)
   @param(blockDim Returns the block dimensions.)
@@ -2948,7 +2924,7 @@ function __hipPopCallConfiguration(var gridDim: TDim3; var blockDim: TDim3; var 
 {$ENDIF}
 
 {
-  @brief Launches a kernel with a C-style interface.
+  Launches a kernel with a C-style interface.
   
   @param(function_address The kernel function pointer.)
   @param(numBlocks The number of blocks in the grid.)
@@ -2963,7 +2939,7 @@ function hipLaunchKernel(function_address: Pointer; numBlocks: TDim3; dimBlocks:
   cdecl; external HIP_LIB_NAME name PREFIX + 'LaunchKernel';
 
 {
-  @brief Enqueues a host function to be called from a stream. [BETA]
+  Enqueues a host function to be called from a stream. [BETA]
   
   @param(stream The stream to enqueue the host function in.)
   @param(fn The host function to call.)
@@ -2977,7 +2953,7 @@ function hipLaunchHostFunc(stream: hipStream_t; fn: THipHostFn; userData: Pointe
   cdecl; external HIP_LIB_NAME name PREFIX + 'LaunchHostFunc';
 
 {
-  @brief Copies a 2D region of memory with potentially unaligned source/destination.
+  Copies a 2D region of memory with potentially unaligned source/destination.
   
   @param(pCopy The parameters for the memory copy.)
   
@@ -2987,7 +2963,7 @@ function hipDrvMemcpy2DUnaligned(const pCopy: PHipMemcpy2D): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DrvMemcpy2DUnaligned';
 
 {
-  @brief Launches a kernel with extended parameters, including start/stop events.
+  Launches a kernel with extended parameters, including start/stop events.
   
   @param(function_address The kernel function pointer.)
   @param(numBlocks The number of blocks in the grid.)
@@ -3008,13 +2984,12 @@ function hipExtLaunchKernel(function_address: Pointer; numBlocks: TDim3; dimBloc
   // This is an AMD-specific extension.
 {$ENDIF}
 
-{ @groupend }
 
-{ @groupbegin(Texture Management) }
+{ @bold(Group: Texture Management) }
 { @abstract(This section describes the texture management functions of the HIP runtime API.) }
 
 {
-  @brief Creates a texture object.
+  Creates a texture object.
   
   @param(pTexObject Returns the created texture object.)
   @param(pResDesc The resource descriptor.)
@@ -3027,7 +3002,7 @@ function hipCreateTextureObject(var pTexObject: hipTextureObject_t; const pResDe
   cdecl; external HIP_LIB_NAME name PREFIX + 'CreateTextureObject';
 
 {
-  @brief Destroys a texture object.
+  Destroys a texture object.
   
   @param(textureObject The texture object to destroy.)
   
@@ -3037,7 +3012,7 @@ function hipDestroyTextureObject(textureObject: hipTextureObject_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DestroyTextureObject';
 
 {
-  @brief Gets the channel descriptor of a HIP array.
+  Gets the channel descriptor of a HIP array.
   
   @param(desc Returns the channel format descriptor.)
   @param(array The array to query.)
@@ -3048,7 +3023,7 @@ function hipGetChannelDesc(var desc: THipChannelFormatDesc; hArr: hipArray_const
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetChannelDesc';
 
 {
-  @brief Gets the resource descriptor for a texture object.
+  Gets the resource descriptor for a texture object.
   
   @param(pResDesc Returns the resource descriptor.)
   @param(textureObject The texture object to query.)
@@ -3059,7 +3034,7 @@ function hipGetTextureObjectResourceDesc(var pResDesc: THipResourceDesc; texture
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetTextureObjectResourceDesc';
 
 {
-  @brief Gets the resource view descriptor for a texture object.
+  Gets the resource view descriptor for a texture object.
   
   @param(pResViewDesc Returns the resource view descriptor.)
   @param(textureObject The texture object to query.)
@@ -3070,7 +3045,7 @@ function hipGetTextureObjectResourceViewDesc(var pResViewDesc: THipResourceViewD
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetTextureObjectResourceViewDesc';
 
 {
-  @brief Gets the texture descriptor for a texture object.
+  Gets the texture descriptor for a texture object.
   
   @param(pTexDesc Returns the texture descriptor.)
   @param(textureObject The texture object to query.)
@@ -3081,7 +3056,7 @@ function hipGetTextureObjectTextureDesc(var pTexDesc: THipTextureDesc; textureOb
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetTextureObjectTextureDesc';
 
 {
-  @brief Creates a texture object (driver type version).
+  Creates a texture object (driver type version).
   
   @param(pTexObject Returns the created texture object.)
   @param(pResDesc The resource descriptor.)
@@ -3094,7 +3069,7 @@ function hipTexObjectCreate(var pTexObject: hipTextureObject_t; const pResDesc: 
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexObjectCreate';
 
 {
-  @brief Destroys a texture object (driver type version).
+  Destroys a texture object (driver type version).
   
   @param(texObject The texture object to destroy.)
   
@@ -3104,7 +3079,7 @@ function hipTexObjectDestroy(texObject: hipTextureObject_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexObjectDestroy';
 
 {
-  @brief Gets the resource descriptor of a texture object (driver type version).
+  Gets the resource descriptor of a texture object (driver type version).
   
   @param(pResDesc Returns the resource descriptor.)
   @param(texObject The texture object to query.)
@@ -3115,7 +3090,7 @@ function hipTexObjectGetResourceDesc(var pResDesc: THipResourceDesc; texObject: 
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexObjectGetResourceDesc';
 
 {
-  @brief Gets the resource view descriptor of a texture object (driver type version).
+  Gets the resource view descriptor of a texture object (driver type version).
   
   @param(pResViewDesc Returns the resource view descriptor.)
   @param(texObject The texture object to query.)
@@ -3126,7 +3101,7 @@ function hipTexObjectGetResourceViewDesc(var pResViewDesc: THipResourceViewDesc;
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexObjectGetResourceViewDesc';
 
 {
-  @brief Gets the texture descriptor of a texture object (driver type version).
+  Gets the texture descriptor of a texture object (driver type version).
   
   @param(pTexDesc Returns the texture descriptor.)
   @param(texObject The texture object to query.)
@@ -3137,7 +3112,7 @@ function hipTexObjectGetTextureDesc(var pTexDesc: THipTextureDesc; texObject: hi
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexObjectGetTextureDesc';
 
 {
-  @brief Allocates a mipmapped array on the device.
+  Allocates a mipmapped array on the device.
   
   @param(mipmappedArray Returns the allocated mipmapped array.)
   @param(desc The channel format descriptor.)
@@ -3151,7 +3126,7 @@ function hipMallocMipmappedArray(var mipmappedArray: hipMipmappedArray_t; const 
   cdecl; external HIP_LIB_NAME name PREFIX + 'MallocMipmappedArray';
 
 {
-  @brief Frees a mipmapped array.
+  Frees a mipmapped array.
   
   @param(mipmappedArray The mipmapped array to free.)
   
@@ -3161,7 +3136,7 @@ function hipFreeMipmappedArray(mipmappedArray: hipMipmappedArray_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'FreeMipmappedArray';
 
 {
-  @brief Gets a specific mipmap level from a mipmapped array.
+  Gets a specific mipmap level from a mipmapped array.
   
   @param(levelArray Returns the HIP array for the specified level.)
   @param(mipmappedArray The mipmapped array.)
@@ -3173,7 +3148,7 @@ function hipGetMipmappedArrayLevel(var levelhArr: hipArray_t; mipmappedArray: hi
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetMipmappedArrayLevel';
 
 {
-  @brief Creates a mipmapped array.
+  Creates a mipmapped array.
   
   @param(pHandle Returns the created mipmapped array.)
   @param(pMipmappedArrayDesc The descriptor for the mipmapped array.)
@@ -3185,7 +3160,7 @@ function hipMipmappedArrayCreate(var pHandle: hipMipmappedArray_t; pMipmappedArr
   cdecl; external HIP_LIB_NAME name PREFIX + 'MipmappedArrayCreate';
 
 {
-  @brief Destroys a mipmapped array.
+  Destroys a mipmapped array.
   
   @param(hMipmappedArray The mipmapped array to destroy.)
   
@@ -3195,7 +3170,7 @@ function hipMipmappedArrayDestroy(hMipmappedArray: hipMipmappedArray_t): THipErr
   cdecl; external HIP_LIB_NAME name PREFIX + 'MipmappedArrayDestroy';
 
 {
-  @brief Gets a specific mipmap level from a mipmapped array.
+  Gets a specific mipmap level from a mipmapped array.
   
   @param(pLevelArray Returns the array for the specified level.)
   @param(hMipMappedArray The mipmapped array.)
@@ -3206,12 +3181,11 @@ function hipMipmappedArrayDestroy(hMipmappedArray: hipMipmappedArray_t): THipErr
 function hipMipmappedArrayGetLevel(var pLevelhArr: hipArray_t; hMipMappedArray: hipMipmappedArray_t; level: UInt32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MipmappedArrayGetLevel';
 
-{ @groupend }
 
-{ @groupbegin(Deprecated Texture Management) }
+{ @bold(Group: Deprecated Texture Management) }
 
 {
-  @brief Binds a mipmapped array to a texture. [DEPRECATED]
+  Binds a mipmapped array to a texture. [DEPRECATED]
   
   @param(tex A pointer to the texture reference.)
   @param(mipmappedArray The mipmapped array to bind.)
@@ -3223,7 +3197,7 @@ function hipBindTextureToMipmappedArray(tex: PTextureReference; mipmappedArray: 
   cdecl; external HIP_LIB_NAME name PREFIX + 'BindTextureToMipmappedArray'; deprecated;
 
 {
-  @brief Gets the texture reference associated with a symbol. [DEPRECATED]
+  Gets the texture reference associated with a symbol. [DEPRECATED]
   
   @param(texref Returns the texture reference.)
   @param(symbol A pointer to the symbol.)
@@ -3234,7 +3208,7 @@ function hipGetTextureReference(var texref: PTextureReference; symbol: Pointer):
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetTextureReference'; deprecated;
 
 {
-  @brief Gets the border color of a texture reference. [DEPRECATED]
+  Gets the border color of a texture reference. [DEPRECATED]
   
   @param(pBorderColor Returns the RGBA border color as a float array.)
   @param(texRef The texture reference.)
@@ -3245,7 +3219,7 @@ function hipTexRefGetBorderColor(pBorderColor: PSingle; texRef: PTextureReferenc
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefGetBorderColor'; deprecated;
 
 {
-  @brief Gets the array bound to a texture reference. [DEPRECATED]
+  Gets the array bound to a texture reference. [DEPRECATED]
   
   @param(pArray Returns the bound array.)
   @param(texRef The texture reference.)
@@ -3256,10 +3230,10 @@ function hipTexRefGetArray(var phArr: hipArray_t; texRef: PTextureReference): TH
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefGetArray'; deprecated;
 
 {
-  @brief Sets the address mode for a texture reference. [DEPRECATED]
+  Sets the address mode for a texture reference. [DEPRECATED]
   
   @param(texRef The texture reference.)
-  @param(dim The dimension (0 for x, 1 for y, 2 for z).)
+  @param(dim The dimension @(0 for x, 1 for y, 2 for z@).)
   @param(am The address mode.)
   
   @returns(hipSuccess, hipErrorInvalidValue)
@@ -3268,7 +3242,7 @@ function hipTexRefSetAddressMode(texRef: PTextureReference; dim: Int32; am: THip
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefSetAddressMode'; deprecated;
 
 {
-  @brief Binds an array to a texture reference. [DEPRECATED]
+  Binds an array to a texture reference. [DEPRECATED]
   
   @param(tex The texture reference.)
   @param(array The array to bind.)
@@ -3280,7 +3254,7 @@ function hipTexRefSetArray(tex: PTextureReference; hArr: hipArray_const_t; flags
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefSetArray'; deprecated;
 
 {
-  @brief Sets the filter mode for a texture reference. [DEPRECATED]
+  Sets the filter mode for a texture reference. [DEPRECATED]
   
   @param(texRef The texture reference.)
   @param(fm The filter mode.)
@@ -3291,7 +3265,7 @@ function hipTexRefSetFilterMode(texRef: PTextureReference; fm: THipTextureFilter
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefSetFilterMode'; deprecated;
 
 {
-  @brief Sets the flags for a texture reference. [DEPRECATED]
+  Sets the flags for a texture reference. [DEPRECATED]
   
   @param(texRef The texture reference.)
   @param(Flags The flags to set.)
@@ -3302,7 +3276,7 @@ function hipTexRefSetFlags(texRef: PTextureReference; Flags: UInt32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefSetFlags'; deprecated;
 
 {
-  @brief Sets the format for a texture reference. [DEPRECATED]
+  Sets the format for a texture reference. [DEPRECATED]
   
   @param(texRef The texture reference.)
   @param(fmt The array format.)
@@ -3314,7 +3288,7 @@ function hipTexRefSetFormat(texRef: PTextureReference; fmt: THipArray_Format; Nu
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefSetFormat'; deprecated;
 
 {
-  @brief Binds a memory area to a texture. [DEPRECATED]
+  Binds a memory area to a texture. [DEPRECATED]
   
   @param(offset Returns the byte offset.)
   @param(tex The texture reference.)
@@ -3329,7 +3303,7 @@ function hipBindTexture(var offset: SizeUInt; tex: PTextureReference; devPtr: Po
   cdecl; external HIP_LIB_NAME name PREFIX + 'BindTexture'; deprecated;
 
 {
-  @brief Binds a 2D memory area to a texture. [DEPRECATED]
+  Binds a 2D memory area to a texture. [DEPRECATED]
   
   @param(offset Returns the byte offset.)
   @param(tex The texture reference.)
@@ -3346,7 +3320,7 @@ function hipBindTexture2D(var offset: SizeUInt; tex: PTextureReference; devPtr: 
   cdecl; external HIP_LIB_NAME name PREFIX + 'BindTexture2D'; deprecated;
 
 {
-  @brief Binds a HIP array to a texture. [DEPRECATED]
+  Binds a HIP array to a texture. [DEPRECATED]
   
   @param(tex The texture reference.)
   @param(array The array to bind.)
@@ -3359,7 +3333,7 @@ function hipBindTextureToArray(tex: PTextureReference; hArr: hipArray_const_t;
   cdecl; external HIP_LIB_NAME name PREFIX + 'BindTextureToArray'; deprecated;
 
 {
-  @brief Gets the alignment offset for a texture. [DEPRECATED]
+  Gets the alignment offset for a texture. [DEPRECATED]
   
   @param(offset Returns the alignment offset in bytes.)
   @param(texref The texture reference.)
@@ -3370,7 +3344,7 @@ function hipGetTextureAlignmentOffset(var offset: SizeUInt; texref: PTextureRefe
   cdecl; external HIP_LIB_NAME name PREFIX + 'GetTextureAlignmentOffset'; deprecated;
 
 {
-  @brief Unbinds a texture. [DEPRECATED]
+  Unbinds a texture. [DEPRECATED]
   
   @param(tex The texture reference to unbind.)
   
@@ -3380,7 +3354,7 @@ function hipUnbindTexture(tex: PTextureReference): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'UnbindTexture'; deprecated;
 
 {
-  @brief Gets the address bound to a texture reference. [DEPRECATED]
+  Gets the address bound to a texture reference. [DEPRECATED]
   
   @param(dev_ptr Returns the device pointer.)
   @param(texRef The texture reference.)
@@ -3391,7 +3365,7 @@ function hipTexRefGetAddress(var dev_ptr: hipDeviceptr_t; texRef: PTextureRefere
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefGetAddress'; deprecated;
 
 {
-  @brief Gets the address mode of a texture reference. [DEPRECATED]
+  Gets the address mode of a texture reference. [DEPRECATED]
   
   @param(pam Returns the address mode.)
   @param(texRef The texture reference.)
@@ -3403,7 +3377,7 @@ function hipTexRefGetAddressMode(var pam: THipTextureAddressMode; texRef: PTextu
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefGetAddressMode'; deprecated;
 
 {
-  @brief Gets the filter mode of a texture reference. [DEPRECATED]
+  Gets the filter mode of a texture reference. [DEPRECATED]
   
   @param(pfm Returns the filter mode.)
   @param(texRef The texture reference.)
@@ -3414,7 +3388,7 @@ function hipTexRefGetFilterMode(var pfm: THipTextureFilterMode; texRef: PTexture
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefGetFilterMode'; deprecated;
 
 {
-  @brief Gets the flags of a texture reference. [DEPRECATED]
+  Gets the flags of a texture reference. [DEPRECATED]
   
   @param(pFlags Returns the flags.)
   @param(texRef The texture reference.)
@@ -3425,7 +3399,7 @@ function hipTexRefGetFlags(var pFlags: UInt32; texRef: PTextureReference): THipE
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefGetFlags'; deprecated;
 
 {
-  @brief Gets the format of a texture reference. [DEPRECATED]
+  Gets the format of a texture reference. [DEPRECATED]
   
   @param(pFormat Returns the format.)
   @param(pNumChannels Returns the number of channels.)
@@ -3437,7 +3411,7 @@ function hipTexRefGetFormat(var pFormat: THipArray_Format; var pNumChannels: Int
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefGetFormat'; deprecated;
 
 {
-  @brief Gets the maximum anisotropy of a texture reference. [DEPRECATED]
+  Gets the maximum anisotropy of a texture reference. [DEPRECATED]
   
   @param(pmaxAniso Returns the maximum anisotropy.)
   @param(texRef The texture reference.)
@@ -3448,7 +3422,7 @@ function hipTexRefGetMaxAnisotropy(var pmaxAniso: Int32; texRef: PTextureReferen
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefGetMaxAnisotropy'; deprecated;
 
 {
-  @brief Gets the mipmap filter mode of a texture reference. [DEPRECATED]
+  Gets the mipmap filter mode of a texture reference. [DEPRECATED]
   
   @param(pfm Returns the mipmap filter mode.)
   @param(texRef The texture reference.)
@@ -3459,7 +3433,7 @@ function hipTexRefGetMipmapFilterMode(var pfm: THipTextureFilterMode; texRef: PT
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefGetMipmapFilterMode'; deprecated;
 
 {
-  @brief Gets the mipmap level bias of a texture reference. [DEPRECATED]
+  Gets the mipmap level bias of a texture reference. [DEPRECATED]
   
   @param(pbias Returns the mipmap level bias.)
   @param(texRef The texture reference.)
@@ -3470,7 +3444,7 @@ function hipTexRefGetMipmapLevelBias(var pbias: Single; texRef: PTextureReferenc
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefGetMipmapLevelBias'; deprecated;
 
 {
-  @brief Gets the min and max mipmap level clamps of a texture reference. [DEPRECATED]
+  Gets the min and max mipmap level clamps of a texture reference. [DEPRECATED]
   
   @param(pminMipmapLevelClamp Returns the minimum clamp.)
   @param(pmaxMipmapLevelClamp Returns the maximum clamp.)
@@ -3482,7 +3456,7 @@ function hipTexRefGetMipmapLevelClamp(var pminMipmapLevelClamp: Single; var pmax
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefGetMipmapLevelClamp'; deprecated;
 
 {
-  @brief Gets the mipmapped array bound to a texture reference. [DEPRECATED]
+  Gets the mipmapped array bound to a texture reference. [DEPRECATED]
   
   @param(pArray Returns the mipmapped array.)
   @param(texRef The texture reference.)
@@ -3493,7 +3467,7 @@ function hipTexRefGetMipMappedArray(var pArray: hipMipmappedArray_t; texRef: PTe
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefGetMipMappedArray'; deprecated;
 
 {
-  @brief Sets the address for a texture reference. [DEPRECATED]
+  Sets the address for a texture reference. [DEPRECATED]
   
   @param(ByteOffset Returns the byte offset.)
   @param(texRef The texture reference.)
@@ -3506,7 +3480,7 @@ function hipTexRefSetAddress(var ByteOffset: SizeUInt; texRef: PTextureReference
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefSetAddress'; deprecated;
 
 {
-  @brief Binds an address as a 2D texture reference. [DEPRECATED]
+  Binds an address as a 2D texture reference. [DEPRECATED]
   
   @param(texRef The texture reference.)
   @param(desc The array descriptor.)
@@ -3519,7 +3493,7 @@ function hipTexRefSetAddress2D(texRef: PTextureReference; const desc: PHIP_ARRAY
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefSetAddress2D'; deprecated;
 
 {
-  @brief Sets the maximum anisotropy for a texture reference. [DEPRECATED]
+  Sets the maximum anisotropy for a texture reference. [DEPRECATED]
   
   @param(texRef The texture reference.)
   @param(maxAniso The maximum anisotropy value.)
@@ -3530,7 +3504,7 @@ function hipTexRefSetMaxAnisotropy(texRef: PTextureReference; maxAniso: UInt32):
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefSetMaxAnisotropy'; deprecated;
 
 {
-  @brief Sets the border color for a texture reference. [DEPRECATED]
+  Sets the border color for a texture reference. [DEPRECATED]
   
   @param(texRef The texture reference.)
   @param(pBorderColor A pointer to the RGBA border color.)
@@ -3541,7 +3515,7 @@ function hipTexRefSetBorderColor(texRef: PTextureReference; pBorderColor: PSingl
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefSetBorderColor'; deprecated;
 
 {
-  @brief Sets the mipmap filter mode for a texture reference. [DEPRECATED]
+  Sets the mipmap filter mode for a texture reference. [DEPRECATED]
   
   @param(texRef The texture reference.)
   @param(fm The filter mode.)
@@ -3552,7 +3526,7 @@ function hipTexRefSetMipmapFilterMode(texRef: PTextureReference; fm: THipTexture
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefSetMipmapFilterMode'; deprecated;
 
 {
-  @brief Sets the mipmap level bias for a texture reference. [DEPRECATED]
+  Sets the mipmap level bias for a texture reference. [DEPRECATED]
   
   @param(texRef The texture reference.)
   @param(bias The mipmap level bias value.)
@@ -3563,7 +3537,7 @@ function hipTexRefSetMipmapLevelBias(texRef: PTextureReference; bias: Single): T
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefSetMipmapLevelBias'; deprecated;
 
 {
-  @brief Sets the mipmap level clamp for a texture reference. [DEPRECATED]
+  Sets the mipmap level clamp for a texture reference. [DEPRECATED]
   
   @param(texRef The texture reference.)
   @param(minMipMapLevelClamp The minimum mipmap level clamp.)
@@ -3575,7 +3549,7 @@ function hipTexRefSetMipmapLevelClamp(texRef: PTextureReference; minMipMapLevelC
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefSetMipmapLevelClamp'; deprecated;
 
 {
-  @brief Binds a mipmapped array to a texture reference. [DEPRECATED]
+  Binds a mipmapped array to a texture reference. [DEPRECATED]
   
   @param(texRef The texture reference.)
   @param(mipmappedArray The mipmapped array to bind.)
@@ -3586,13 +3560,12 @@ function hipTexRefSetMipmapLevelClamp(texRef: PTextureReference; minMipMapLevelC
 function hipTexRefSetMipmappedArray(texRef: PTextureReference; mipmappedArray: hipMipmappedArray_t; Flags: UInt32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'TexRefSetMipmappedArray'; deprecated;
 
-{ @groupend }
 
 
-{ @groupbegin(Callback and Activity APIs) }
+{ @bold(Group: Callback and Activity APIs) }
 
 {
-  @brief Returns the string name of a HIP API from its ID.
+  Returns the string name of a HIP API from its ID.
   
   @param(id The ID of a HIP API.)
   
@@ -3606,7 +3579,7 @@ function hipApiName(id: UInt32): PChar;
 {$ENDIF}
 
 {
-  @brief Returns the kernel name from a function handle.
+  Returns the kernel name from a function handle.
   
   @param(f The function handle.)
   
@@ -3620,7 +3593,7 @@ function hipKernelNameRef(f: hipFunction_t): PChar;
 {$ENDIF}
 
 {
-  @brief Retrieves the kernel name for a given host function pointer.
+  Retrieves the kernel name for a given host function pointer.
   
   @param(hostFunction A pointer to the host-side kernel stub function.)
   @param(stream The stream on which the kernel is executed.)
@@ -3635,7 +3608,7 @@ function hipKernelNameRefByPtr(hostFunction: Pointer; stream: hipStream_t): PCha
 {$ENDIF}
 
 {
-  @brief Returns the device ID associated with a stream.
+  Returns the device ID associated with a stream.
   
   @param(stream The stream to query.)
   
@@ -3648,14 +3621,13 @@ function hipGetStreamDeviceId(stream: hipStream_t): Int32;
   // This is only an AMD-specific extension.
 {$ENDIF}
 
-{ @groupend }
 
-{ @groupbegin(Graph Management) }
+{ @bold(Group: Graph Management) }
 { @abstract(This section describes graph management types & functions of the HIP runtime API.)
   @warning(Graph APIs are marked as beta and may have outstanding issues.) }
 
 {
-  @brief Begins graph capture on a stream.
+  Begins graph capture on a stream.
   
   @param(stream The stream to initiate capture on.)
   @param(mode The capture mode.)
@@ -3666,7 +3638,7 @@ function hipStreamBeginCapture(stream: hipStream_t; mode: THipStreamCaptureMode)
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamBeginCapture';
 
 {
-  @brief Ends capture on a stream, returning the captured graph.
+  Ends capture on a stream, returning the captured graph.
   
   @param(stream The stream to end capture on.)
   @param(pGraph Returns the captured graph.)
@@ -3677,10 +3649,10 @@ function hipStreamEndCapture(stream: hipStream_t; var pGraph: hipGraph_t): THipE
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamEndCapture';
 
 {
-  @brief Creates a graph.
+  Creates a graph.
   
   @param(pGraph Returns the created graph.)
-  @param(flags Flags for graph creation (must be 0).)
+  @param(flags Flags for graph creation @(must be 0@).)
   
   @returns(hipSuccess, hipErrorInvalidValue, hipErrorMemoryAllocation)
 }
@@ -3688,7 +3660,7 @@ function hipGraphCreate(var pGraph: hipGraph_t; flags: UInt32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphCreate';
 
 {
-  @brief Destroys a graph.
+  Destroys a graph.
   
   @param(graph The graph to destroy.)
   
@@ -3698,7 +3670,7 @@ function hipGraphDestroy(graph: hipGraph_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphDestroy';
 
 {
-  @brief Creates an executable graph from a graph.
+  Creates an executable graph from a graph.
   
   @param(pGraphExec Returns the instantiated executable graph.)
   @param(graph The graph to instantiate.)
@@ -3712,7 +3684,7 @@ function hipGraphInstantiate(var pGraphExec: hipGraphExec_t; graph: hipGraph_t; 
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphInstantiate';
 
 {
-  @brief Launches an executable graph in a stream.
+  Launches an executable graph in a stream.
   
   @param(graphExec The executable graph to launch.)
   @param(stream The stream in which to launch the graph.)
@@ -3723,7 +3695,7 @@ function hipGraphLaunch(graphExec: hipGraphExec_t; stream: hipStream_t): THipErr
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphLaunch';
 
 {
-  @brief Destroys an executable graph.
+  Destroys an executable graph.
   
   @param(graphExec The executable graph to destroy.)
   
@@ -3733,7 +3705,7 @@ function hipGraphExecDestroy(graphExec: hipGraphExec_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphExecDestroy';
 
 {
-  @brief Adds dependency edges to a graph.
+  Adds dependency edges to a graph.
   
   @param(graph The graph to which to add dependencies.)
   @param(from An array of nodes that provide the dependencies.)
@@ -3748,7 +3720,7 @@ function hipGraphAddDependencies(graph: hipGraph_t; const from: PhipGraphNode_t;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphAddDependencies';
 
 {
-  @brief Removes dependency edges from a graph.
+  Removes dependency edges from a graph.
   
   @param(graph The graph from which to remove dependencies.)
   @param(from An array of nodes that provide the dependencies.)
@@ -3763,7 +3735,7 @@ function hipGraphRemoveDependencies(graph: hipGraph_t; const from: PhipGraphNode
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphRemoveDependencies';
 
 {
-  @brief Returns a graph's dependency edges.
+  Returns a graph's dependency edges.
   
   @param(graph The graph from which to get the edges.)
   @param(from Pointer to an array to return the source nodes of the edges.)
@@ -3779,7 +3751,7 @@ function hipGraphGetEdges(graph: hipGraph_t; from: PhipGraphNode_t; into: PhipGr
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphGetEdges';
 
 {
-  @brief Returns a graph's nodes.
+  Returns a graph's nodes.
   
   @param(graph The graph from which to get the nodes.)
   @param(nodes An array to return the graph's nodes.)
@@ -3794,7 +3766,7 @@ function hipGraphGetNodes(graph: hipGraph_t; nodes: PhipGraphNode_t; var numNode
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphGetNodes';
 
 {
-  @brief Returns a graph's root nodes.
+  Returns a graph's root nodes.
   
   @param(graph The graph from which to get the root nodes.)
   @param(pRootNodes An array to return the graph's root nodes.)
@@ -3809,7 +3781,7 @@ function hipGraphGetRootNodes(graph: hipGraph_t; pRootNodes: PhipGraphNode_t; va
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphGetRootNodes';
 
 {
-  @brief Returns a node's dependencies.
+  Returns a node's dependencies.
   
   @param(node The node from which to get the dependencies.)
   @param(pDependencies An array to return the dependencies.)
@@ -3823,7 +3795,7 @@ function hipGraphNodeGetDependencies(node: hipGraphNode_t; pDependencies: PhipGr
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphNodeGetDependencies';
 
 {
-  @brief Returns a node's dependent nodes.
+  Returns a node's dependent nodes.
   
   @param(node The node from which to get the dependent nodes.)
   @param(pDependentNodes An array to return the dependent nodes.)
@@ -3837,7 +3809,7 @@ function hipGraphNodeGetDependentNodes(node: hipGraphNode_t; pDependentNodes: Ph
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphNodeGetDependentNodes';
 
 {
-  @brief Returns a node's type.
+  Returns a node's type.
   
   @param(node The node to get the type of.)
   @param(pType Pointer to return the type.)
@@ -3850,7 +3822,7 @@ function hipGraphNodeGetType(node: hipGraphNode_t; var pType: THipGraphNodeType)
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphNodeGetType';
 
 {
-  @brief Removes a node from the graph.
+  Removes a node from the graph.
   
   @param(node The graph node to remove.)
   
@@ -3862,7 +3834,7 @@ function hipGraphDestroyNode(node: hipGraphNode_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphDestroyNode';
 
 {
-  @brief Clones a graph.
+  Clones a graph.
   
   @param(pGraphClone Returns the newly created cloned graph.)
   @param(originalGraph The original graph to clone.)
@@ -3875,7 +3847,7 @@ function hipGraphClone(var pGraphClone: hipGraph_t; originalGraph: hipGraph_t): 
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphClone';
 
 {
-  @brief Finds a cloned version of a node in a cloned graph.
+  Finds a cloned version of a node in a cloned graph.
   
   @param(pNode Returns the cloned node.)
   @param(originalNode The original node handle.)
@@ -3889,7 +3861,7 @@ function hipGraphNodeFindInClone(var pNode: hipGraphNode_t; originalNode: hipGra
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphNodeFindInClone';
 
 {
-  @brief Creates an executable graph from a graph with additional flags.
+  Creates an executable graph from a graph with additional flags.
   
   @param(pGraphExec Pointer to the instantiated executable graph that is created.)
   @param(graph The graph to instantiate.)
@@ -3903,7 +3875,7 @@ function hipGraphInstantiateWithFlags(var pGraphExec: hipGraphExec_t; graph: hip
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphInstantiateWithFlags';
   
 {
-  @brief Creates an executable graph from a graph with detailed parameters.
+  Creates an executable graph from a graph with detailed parameters.
   
   @param(pGraphExec Pointer to the instantiated executable graph.)
   @param(graph The graph to instantiate.)
@@ -3917,7 +3889,7 @@ function hipGraphInstantiateWithParams(var pGraphExec: hipGraphExec_t; graph: hi
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphInstantiateWithParams';
 
 {
-  @brief Uploads an executable graph's data to the device.
+  Uploads an executable graph's data to the device.
   
   @param(graphExec The executable graph to upload.)
   @param(stream The stream to use for the upload.)
@@ -3930,7 +3902,7 @@ function hipGraphUpload(graphExec: hipGraphExec_t; stream: hipStream_t): THipErr
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphUpload';
 
 {
-  @brief Checks if an executable graph can be updated and performs the update.
+  Checks if an executable graph can be updated and performs the update.
   
   @param(hGraphExec The executable graph to update.)
   @param(hGraph The graph containing the updated parameters.)
@@ -3945,7 +3917,7 @@ function hipGraphExecUpdate(hGraphExec: hipGraphExec_t; hGraph: hipGraph_t; var 
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphExecUpdate';
 
 {
-  @brief Returns the flags used to instantiate an executable graph.
+  Returns the flags used to instantiate an executable graph.
   
   @param(graphExec The executable graph to get flags from.)
   @param(flags Returns the flags used for instantiation.)
@@ -3958,7 +3930,7 @@ function hipGraphExecGetFlags(graphExec: hipGraphExec_t; var flags: UInt64): THi
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphExecGetFlags';
 
 {
-  @brief Creates a kernel execution node and adds it to a graph.
+  Creates a kernel execution node and adds it to a graph.
   
   @param(pGraphNode Returns the pointer to the created graph node.)
   @param(graph The graph to which the node will be added.)
@@ -3974,7 +3946,7 @@ function hipGraphAddKernelNode(var pGraphNode: hipGraphNode_t; graph: hipGraph_t
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphAddKernelNode';
 
 {
-  @brief Gets a kernel node's parameters.
+  Gets a kernel node's parameters.
   
   @param(node The node to get parameters from.)
   @param(pNodeParams A pointer to a structure where the parameters will be returned.)
@@ -3987,7 +3959,7 @@ function hipGraphKernelNodeGetParams(node: hipGraphNode_t; var pNodeParams: THip
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphKernelNodeGetParams';
 
 {
-  @brief Sets a kernel node's parameters.
+  Sets a kernel node's parameters.
   
   @param(node The node to set parameters for.)
   @param(pNodeParams The parameters to set.)
@@ -4000,7 +3972,7 @@ function hipGraphKernelNodeSetParams(node: hipGraphNode_t; const pNodeParams: PH
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphKernelNodeSetParams';
 
 {
-  @brief Sets the parameters for a kernel node in an executable graph.
+  Sets the parameters for a kernel node in an executable graph.
   
   @param(hGraphExec The executable graph in which the node exists.)
   @param(node The node to set parameters for.)
@@ -4014,7 +3986,7 @@ function hipGraphExecKernelNodeSetParams(hGraphExec: hipGraphExec_t; node: hipGr
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphExecKernelNodeSetParams';
 
 {
-  @brief Sets an attribute of a kernel node.
+  Sets an attribute of a kernel node.
   
   @param(hNode The node to set an attribute for.)
   @param(attr The attribute to set.)
@@ -4022,14 +3994,14 @@ function hipGraphExecKernelNodeSetParams(hGraphExec: hipGraphExec_t; node: hipGr
   
   @returns(hipSuccess, hipErrorInvalidValue)
   
-  @see(THipKernelNodeAttrID)
+  @seeAlso(THipKernelNodeAttrID)
   @warning(This API is marked as beta and may have outstanding issues.)
 }
 function hipGraphKernelNodeSetAttribute(hNode: hipGraphNode_t; attr: THipKernelNodeAttrID; const value: PHipKernelNodeAttrValue): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphKernelNodeSetAttribute';
 
 {
-  @brief Gets an attribute of a kernel node.
+  Gets an attribute of a kernel node.
   
   @param(hNode The node to get an attribute from.)
   @param(attr The attribute to get.)
@@ -4037,14 +4009,14 @@ function hipGraphKernelNodeSetAttribute(hNode: hipGraphNode_t; attr: THipKernelN
   
   @returns(hipSuccess, hipErrorInvalidValue)
   
-  @see(THipKernelNodeAttrID)
+  @seeAlso(THipKernelNodeAttrID)
   @warning(This API is marked as beta and may have outstanding issues.)
 }
 function hipGraphKernelNodeGetAttribute(hNode: hipGraphNode_t; attr: THipKernelNodeAttrID; var value: THipKernelNodeAttrValue): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphKernelNodeGetAttribute';
 
 {
-  @brief Copies attributes from a source kernel node to a destination kernel node.
+  Copies attributes from a source kernel node to a destination kernel node.
   
   @param(hDst The destination node.)
   @param(hSrc The source node.)
@@ -4060,7 +4032,7 @@ function hipGraphKernelNodeCopyAttributes(hSrc: hipGraphNode_t; hDst: hipGraphNo
 // --- Memcpy Node Functions ---
 
 {
-  @brief Creates a memcpy node and adds it to a graph.
+  Creates a memcpy node and adds it to a graph.
   
   @param(pGraphNode Returns the pointer to the created graph node.)
   @param(graph The graph to which the node will be added.)
@@ -4076,7 +4048,7 @@ function hipGraphAddMemcpyNode(var pGraphNode: hipGraphNode_t; graph: hipGraph_t
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphAddMemcpyNode';
 
 {
-  @brief Gets a memcpy node's parameters.
+  Gets a memcpy node's parameters.
   
   @param(node The node to get parameters from.)
   @param(pNodeParams A pointer to a structure where the parameters will be stored.)
@@ -4089,7 +4061,7 @@ function hipGraphMemcpyNodeGetParams(node: hipGraphNode_t; var pNodeParams: THip
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphMemcpyNodeGetParams';
 
 {
-  @brief Sets a memcpy node's parameters.
+  Sets a memcpy node's parameters.
   
   @param(node The node to set parameters for.)
   @param(pNodeParams The parameters to set for the memcpy operation.)
@@ -4102,7 +4074,7 @@ function hipGraphMemcpyNodeSetParams(node: hipGraphNode_t; const pNodeParams: PH
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphMemcpyNodeSetParams';
 
 {
-  @brief Sets the parameters for a memcpy node in an executable graph.
+  Sets the parameters for a memcpy node in an executable graph.
   
   @param(hGraphExec The executable graph containing the node.)
   @param(node The node to update.)
@@ -4116,7 +4088,7 @@ function hipGraphExecMemcpyNodeSetParams(hGraphExec: hipGraphExec_t; node: hipGr
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphExecMemcpyNodeSetParams';
 
 {
-  @brief Creates a 1D memcpy node and adds it to a graph.
+  Creates a 1D memcpy node and adds it to a graph.
   
   @param(pGraphNode Returns the pointer to the created graph node.)
   @param(graph The graph to which the node will be added.)
@@ -4135,7 +4107,7 @@ function hipGraphAddMemcpyNode1D(var pGraphNode: hipGraphNode_t; graph: hipGraph
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphAddMemcpyNode1D';
 
 {
-  @brief Sets a memcpy node's parameters to perform a 1D copy.
+  Sets a memcpy node's parameters to perform a 1D copy.
   
   @param(node The node to update.)
   @param(dst The destination memory address.)
@@ -4151,7 +4123,7 @@ function hipGraphMemcpyNodeSetParams1D(node: hipGraphNode_t; dst: Pointer; const
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphMemcpyNodeSetParams1D';
 
 {
-  @brief Sets the parameters for a 1D memcpy node in an executable graph.
+  Sets the parameters for a 1D memcpy node in an executable graph.
   
   @param(hGraphExec The executable graph containing the node.)
   @param(node The node to update.)
@@ -4168,7 +4140,7 @@ function hipGraphExecMemcpyNodeSetParams1D(hGraphExec: hipGraphExec_t; node: hip
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphExecMemcpyNodeSetParams1D';
 
 {
-  @brief Creates a memcpy node to copy from a symbol and adds it to a graph.
+  Creates a memcpy node to copy from a symbol and adds it to a graph.
   
   @param(pGraphNode Returns the pointer to the created graph node.)
   @param(graph The graph to which the node will be added.)
@@ -4188,7 +4160,7 @@ function hipGraphAddMemcpyNodeFromSymbol(var pGraphNode: hipGraphNode_t; graph: 
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphAddMemcpyNodeFromSymbol';
 
 {
-  @brief Sets a memcpy node's parameters to copy from a symbol.
+  Sets a memcpy node's parameters to copy from a symbol.
   
   @param(node The node to update.)
   @param(dst The destination memory address.)
@@ -4205,7 +4177,7 @@ function hipGraphMemcpyNodeSetParamsFromSymbol(node: hipGraphNode_t; dst: Pointe
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphMemcpyNodeSetParamsFromSymbol';
 
 {
-  @brief Sets the parameters for a memcpy node (from symbol) in an executable graph.
+  Sets the parameters for a memcpy node (from symbol) in an executable graph.
   
   @param(hGraphExec The executable graph containing the node.)
   @param(node The node to update.)
@@ -4223,7 +4195,7 @@ function hipGraphExecMemcpyNodeSetParamsFromSymbol(hGraphExec: hipGraphExec_t; n
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphExecMemcpyNodeSetParamsFromSymbol';
 
 {
-  @brief Creates a memcpy node to copy to a symbol and adds it to a graph.
+  Creates a memcpy node to copy to a symbol and adds it to a graph.
   
   @param(pGraphNode Returns the pointer to the created graph node.)
   @param(graph The graph to which the node will be added.)
@@ -4243,7 +4215,7 @@ function hipGraphAddMemcpyNodeToSymbol(var pGraphNode: hipGraphNode_t; graph: hi
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphAddMemcpyNodeToSymbol';
 
 {
-  @brief Sets a memcpy node's parameters to copy to a symbol.
+  Sets a memcpy node's parameters to copy to a symbol.
   
   @param(node The node to update.)
   @param(symbol The destination device symbol.)
@@ -4260,7 +4232,7 @@ function hipGraphMemcpyNodeSetParamsToSymbol(node: hipGraphNode_t; const symbol:
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphMemcpyNodeSetParamsToSymbol';
 
 {
-  @brief Sets the parameters for a memcpy node (to symbol) in an executable graph.
+  Sets the parameters for a memcpy node (to symbol) in an executable graph.
   
   @param(hGraphExec The executable graph containing the node.)
   @param(node The node to update.)
@@ -4280,7 +4252,7 @@ function hipGraphExecMemcpyNodeSetParamsToSymbol(hGraphExec: hipGraphExec_t; nod
 // --- Memset Node Functions ---
 
 {
-  @brief Creates a memset node and adds it to a graph.
+  Creates a memset node and adds it to a graph.
   
   @param(pGraphNode Returns the pointer to the created graph node.)
   @param(graph The graph to which the node will be added.)
@@ -4296,7 +4268,7 @@ function hipGraphAddMemsetNode(var pGraphNode: hipGraphNode_t; graph: hipGraph_t
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphAddMemsetNode';
 
 {
-  @brief Gets a memset node's parameters.
+  Gets a memset node's parameters.
   
   @param(node The node to get parameters from.)
   @param(pNodeParams A pointer to a structure where the parameters will be stored.)
@@ -4309,7 +4281,7 @@ function hipGraphMemsetNodeGetParams(node: hipGraphNode_t; var pNodeParams: THip
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphMemsetNodeGetParams';
 
 {
-  @brief Sets a memset node's parameters.
+  Sets a memset node's parameters.
   
   @param(node The node to set parameters for.)
   @param(pNodeParams The parameters to set for the memset operation.)
@@ -4322,7 +4294,7 @@ function hipGraphMemsetNodeSetParams(node: hipGraphNode_t; const pNodeParams: PH
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphMemsetNodeSetParams';
 
 {
-  @brief Sets the parameters for a memset node in an executable graph.
+  Sets the parameters for a memset node in an executable graph.
   
   @param(hGraphExec The executable graph containing the node.)
   @param(node The node to update.)
@@ -4338,7 +4310,7 @@ function hipGraphExecMemsetNodeSetParams(hGraphExec: hipGraphExec_t; node: hipGr
 // --- Host Node Functions ---
 
 {
-  @brief Creates a host execution node and adds it to a graph.
+  Creates a host execution node and adds it to a graph.
   
   @param(pGraphNode Returns the pointer to the created graph node.)
   @param(graph The graph to which the node will be added.)
@@ -4354,7 +4326,7 @@ function hipGraphAddHostNode(var pGraphNode: hipGraphNode_t; graph: hipGraph_t; 
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphAddHostNode';
 
 {
-  @brief Gets a host node's parameters.
+  Gets a host node's parameters.
   
   @param(node The node to get parameters from.)
   @param(pNodeParams A pointer to a structure where the parameters will be stored.)
@@ -4367,7 +4339,7 @@ function hipGraphHostNodeGetParams(node: hipGraphNode_t; var pNodeParams: THipHo
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphHostNodeGetParams';
 
 {
-  @brief Sets a host node's parameters.
+  Sets a host node's parameters.
   
   @param(node The node to set parameters for.)
   @param(pNodeParams The parameters to set for the host node.)
@@ -4380,7 +4352,7 @@ function hipGraphHostNodeSetParams(node: hipGraphNode_t; const pNodeParams: PHip
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphHostNodeSetParams';
 
 {
-  @brief Sets the parameters for a host node in an executable graph.
+  Sets the parameters for a host node in an executable graph.
   
   @param(hGraphExec The executable graph containing the node.)
   @param(node The node to update.)
@@ -4396,7 +4368,7 @@ function hipGraphExecHostNodeSetParams(hGraphExec: hipGraphExec_t; node: hipGrap
 // --- Event Node Functions ---
 
 {
-  @brief Creates an event record node and adds it to a graph.
+  Creates an event record node and adds it to a graph.
   
   @param(pGraphNode Returns the pointer to the created graph node.)
   @param(graph The graph to which the node will be added.)
@@ -4412,7 +4384,7 @@ function hipGraphAddEventRecordNode(var pGraphNode: hipGraphNode_t; graph: hipGr
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphAddEventRecordNode';
 
 {
-  @brief Returns the event associated with an event record node.
+  Returns the event associated with an event record node.
   
   @param(node The event record node to query.)
   @param(event_out Returns the event associated with the node.)
@@ -4425,7 +4397,7 @@ function hipGraphEventRecordNodeGetEvent(node: hipGraphNode_t; var event_out: hi
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphEventRecordNodeGetEvent';
 
 {
-  @brief Sets the event for an event record node.
+  Sets the event for an event record node.
   
   @param(node The event record node to update.)
   @param(event The new event to associate with the node.)
@@ -4438,7 +4410,7 @@ function hipGraphEventRecordNodeSetEvent(node: hipGraphNode_t; event: hipEvent_t
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphEventRecordNodeSetEvent';
 
 {
-  @brief Sets the event for an event record node in an executable graph.
+  Sets the event for an event record node in an executable graph.
   
   @param(hGraphExec The executable graph containing the node.)
   @param(hNode The node to update.)
@@ -4452,7 +4424,7 @@ function hipGraphExecEventRecordNodeSetEvent(hGraphExec: hipGraphExec_t; hNode: 
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphExecEventRecordNodeSetEvent';
 
 {
-  @brief Creates an event wait node and adds it to a graph.
+  Creates an event wait node and adds it to a graph.
   
   @param(pGraphNode Returns the pointer to the created graph node.)
   @param(graph The graph to which the node will be added.)
@@ -4468,7 +4440,7 @@ function hipGraphAddEventWaitNode(var pGraphNode: hipGraphNode_t; graph: hipGrap
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphAddEventWaitNode';
 
 {
-  @brief Returns the event associated with an event wait node.
+  Returns the event associated with an event wait node.
   
   @param(node The event wait node to query.)
   @param(event_out Returns the event associated with the node.)
@@ -4481,7 +4453,7 @@ function hipGraphEventWaitNodeGetEvent(node: hipGraphNode_t; var event_out: hipE
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphEventWaitNodeGetEvent';
 
 {
-  @brief Sets the event for an event wait node.
+  Sets the event for an event wait node.
   
   @param(node The event wait node to update.)
   @param(event The new event for the node to wait on.)
@@ -4494,7 +4466,7 @@ function hipGraphEventWaitNodeSetEvent(node: hipGraphNode_t; event: hipEvent_t):
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphEventWaitNodeSetEvent';
 
 {
-  @brief Sets the event for an event wait node in an executable graph.
+  Sets the event for an event wait node in an executable graph.
   
   @param(hGraphExec The executable graph containing the node.)
   @param(hNode The node to update.)
@@ -4510,7 +4482,7 @@ function hipGraphExecEventWaitNodeSetEvent(hGraphExec: hipGraphExec_t; hNode: hi
 // --- Child Graph Node Functions ---
 
 {
-  @brief Creates a child graph node and adds it to a graph.
+  Creates a child graph node and adds it to a graph.
   
   @param(pGraphNode Returns the pointer to the created graph node.)
   @param(graph The parent graph to which the node will be added.)
@@ -4526,7 +4498,7 @@ function hipGraphAddChildGraphNode(var pGraphNode: hipGraphNode_t; graph: hipGra
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphAddChildGraphNode';
 
 {
-  @brief Gets a handle to the embedded graph of a child graph node.
+  Gets a handle to the embedded graph of a child graph node.
   
   @param(node The child graph node to query.)
   @param(pGraph Returns a pointer to the embedded graph.)
@@ -4539,7 +4511,7 @@ function hipGraphChildGraphNodeGetGraph(node: hipGraphNode_t; var pGraph: hipGra
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphChildGraphNodeGetGraph';
 
 {
-  @brief Sets the child graph for a node in an executable graph.
+  Sets the child graph for a node in an executable graph.
   
   @param(hGraphExec The executable graph containing the node.)
   @param(node The node to update.)
@@ -4555,7 +4527,7 @@ function hipGraphExecChildGraphNodeSetParams(hGraphExec: hipGraphExec_t; node: h
 // --- Empty Node Functions ---
 
 {
-  @brief Creates an empty node and adds it to a graph.
+  Creates an empty node and adds it to a graph.
   
   @param(pGraphNode Returns the pointer to the created empty node.)
   @param(graph The graph to which the node will be added.)
@@ -4573,7 +4545,7 @@ function hipGraphAddEmptyNode(var pGraphNode: hipGraphNode_t; graph: hipGraph_t;
 // --- Memory Allocation and Free Node Functions ---
 
 {
-  @brief Creates a memory allocation node and adds it to a graph.
+  Creates a memory allocation node and adds it to a graph.
   
   @param(pGraphNode Returns the pointer to the created memory allocation node.)
   @param(graph The graph to which the node will be added.)
@@ -4589,7 +4561,7 @@ function hipGraphAddMemAllocNode(var pGraphNode: hipGraphNode_t; graph: hipGraph
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphAddMemAllocNode';
 
 {
-  @brief Returns the parameters for a memory allocation node.
+  Returns the parameters for a memory allocation node.
   
   @param(node The memory allocation node to query.)
   @param(pNodeParams A pointer to a structure where the parameters will be stored.)
@@ -4602,7 +4574,7 @@ function hipGraphMemAllocNodeGetParams(node: hipGraphNode_t; var pNodeParams: TH
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphMemAllocNodeGetParams';
 
 {
-  @brief Creates a memory free node and adds it to a graph.
+  Creates a memory free node and adds it to a graph.
   
   @param(pGraphNode Returns the pointer to the created memory free node.)
   @param(graph The graph to which the node will be added.)
@@ -4618,7 +4590,7 @@ function hipGraphAddMemFreeNode(var pGraphNode: hipGraphNode_t; graph: hipGraph_
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphAddMemFreeNode';
 
 {
-  @brief Returns the device pointer from a memory free node.
+  Returns the device pointer from a memory free node.
   
   @param(node The memory free node to query.)
   @param(dev_ptr Returns the device pointer to be freed.)
@@ -4633,7 +4605,7 @@ function hipGraphMemFreeNodeGetParams(node: hipGraphNode_t; var dev_ptr: Pointer
 // --- External Semaphore Node Functions ---
 
 {
-  @brief Creates an external semaphore signal node and adds it to a graph.
+  Creates an external semaphore signal node and adds it to a graph.
   
   @param(pGraphNode Returns the pointer to the created graph node.)
   @param(graph The graph to which the node will be added.)
@@ -4649,7 +4621,7 @@ function hipGraphAddExternalSemaphoresSignalNode(var pGraphNode: hipGraphNode_t;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphAddExternalSemaphoresSignalNode';
 
 {
-  @brief Gets the parameters of an external semaphore signal node.
+  Gets the parameters of an external semaphore signal node.
   
   @param(hNode The node to get parameters from.)
   @param(params_out A pointer to a structure where the parameters will be stored.)
@@ -4662,7 +4634,7 @@ function hipGraphExternalSemaphoresSignalNodeGetParams(hNode: hipGraphNode_t; va
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphExternalSemaphoresSignalNodeGetParams';
   
 {
-  @brief Sets the parameters for an external semaphore signal node.
+  Sets the parameters for an external semaphore signal node.
   
   @param(hNode The node to set parameters for.)
   @param(nodeParams The parameters to set.)
@@ -4675,7 +4647,7 @@ function hipGraphExternalSemaphoresSignalNodeSetParams(hNode: hipGraphNode_t; co
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphExternalSemaphoresSignalNodeSetParams';
 
 {
-  @brief Sets the parameters for an external semaphore signal node in an executable graph.
+  Sets the parameters for an external semaphore signal node in an executable graph.
   
   @param(hGraphExec The executable graph containing the node.)
   @param(hNode The node to update.)
@@ -4689,7 +4661,7 @@ function hipGraphExecExternalSemaphoresSignalNodeSetParams(hGraphExec: hipGraphE
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphExecExternalSemaphoresSignalNodeSetParams';
 
 {
-  @brief Creates an external semaphore wait node and adds it to a graph.
+  Creates an external semaphore wait node and adds it to a graph.
   
   @param(pGraphNode Returns the pointer to the created graph node.)
   @param(graph The graph to which the node will be added.)
@@ -4705,7 +4677,7 @@ function hipGraphAddExternalSemaphoresWaitNode(var pGraphNode: hipGraphNode_t; g
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphAddExternalSemaphoresWaitNode';
 
 {
-  @brief Gets the parameters of an external semaphore wait node.
+  Gets the parameters of an external semaphore wait node.
   
   @param(hNode The node to get parameters from.)
   @param(params_out A pointer to a structure where the parameters will be stored.)
@@ -4718,7 +4690,7 @@ function hipGraphExternalSemaphoresWaitNodeGetParams(hNode: hipGraphNode_t; var 
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphExternalSemaphoresWaitNodeGetParams';
 
 {
-  @brief Sets the parameters for an external semaphore wait node.
+  Sets the parameters for an external semaphore wait node.
   
   @param(hNode The node to set parameters for.)
   @param(nodeParams The parameters to set.)
@@ -4731,7 +4703,7 @@ function hipGraphExternalSemaphoresWaitNodeSetParams(hNode: hipGraphNode_t; cons
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphExternalSemaphoresWaitNodeSetParams';
   
 {
-  @brief Sets the parameters for an external semaphore wait node in an executable graph.
+  Sets the parameters for an external semaphore wait node in an executable graph.
   
   @param(hGraphExec The executable graph containing the node.)
   @param(hNode The node to update.)
@@ -4747,12 +4719,12 @@ function hipGraphExecExternalSemaphoresWaitNodeSetParams(hGraphExec: hipGraphExe
 // --- Stream Capture Functions ---
 
 {
-  @brief Begins graph capture on a stream, adding to an existing graph.
+  Begins graph capture on a stream, adding to an existing graph.
   
   @param(stream The stream to initiate capture on.)
   @param(graph The graph to capture into.)
   @param(dependencies An array of nodes that are dependencies for the first captured node.)
-  @param(dependencyData Optional array of data associated with each dependency (currently unsupported).)
+  @param(dependencyData Optional array of data associated with each dependency @(currently unsupported@).)
   @param(numDependencies The number of dependencies.)
   @param(mode Controls the interaction of this capture sequence with other API calls.)
   
@@ -4764,7 +4736,7 @@ function hipStreamBeginCaptureToGraph(stream: hipStream_t; graph: hipGraph_t; co
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamBeginCaptureToGraph';
 
 {
-  @brief Gets the capture status of a stream.
+  Gets the capture status of a stream.
   
   @param(stream The stream to query.)
   @param(pCaptureStatus Returns the current capture status of the stream.)
@@ -4778,7 +4750,7 @@ function hipStreamGetCaptureInfo(stream: hipStream_t; var pCaptureStatus: THipSt
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamGetCaptureInfo';
 
 {
-  @brief Gets extended capture information for a stream.
+  Gets extended capture information for a stream.
   
   @param(stream The stream to query.)
   @param(captureStatus_out Returns the current capture status.)
@@ -4795,7 +4767,7 @@ function hipStreamGetCaptureInfo_v2(stream: hipStream_t; var captureStatus_out: 
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamGetCaptureInfo_v2';
 
 {
-  @brief Queries if a stream is actively capturing.
+  Queries if a stream is actively capturing.
   
   @param(stream The stream to query.)
   @param(pCaptureStatus Returns the current capture status of the stream.)
@@ -4808,23 +4780,23 @@ function hipStreamIsCapturing(stream: hipStream_t; var pCaptureStatus: THipStrea
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamIsCapturing';
 
 {
-  @brief Updates the set of dependencies in a capturing stream.
+  Updates the set of dependencies in a capturing stream.
   
   @param(stream The stream under capture.)
   @param(dependencies A pointer to an array of nodes to add or replace as dependencies.)
   @param(numDependencies The size of the dependency array.)
-  @param(flags A flag indicating how to update the dependency set (add or replace).)
+  @param(flags A flag indicating how to update the dependency set @(add or replace@).)
   
   @returns(hipSuccess, hipErrorInvalidValue, hipErrorIllegalState)
   
-  @see(THipStreamUpdateCaptureDependenciesFlags)
+  @seeAlso(THipStreamUpdateCaptureDependenciesFlags)
   @warning(This API is marked as beta and may have outstanding issues.)
 }
 function hipStreamUpdateCaptureDependencies(stream: hipStream_t; dependencies: PhipGraphNode_t; numDependencies: SizeUInt; flags: UInt32 = 0): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'StreamUpdateCaptureDependencies';
 
 {
-  @brief Swaps the stream capture mode of the calling thread.
+  Swaps the stream capture mode of the calling thread.
   
   @param(mode On input, a pointer to the new mode; on output, it is overwritten with the previous mode.)
   
@@ -4838,7 +4810,7 @@ function hipThreadExchangeStreamCaptureMode(var mode: THipStreamCaptureMode): TH
 // --- Graph Utility and User Object Functions ---
 
 {
-  @brief Writes a DOT file describing the graph's structure for visualization.
+  Writes a DOT file describing the graph's structure for visualization.
   
   @param(graph The graph to print.)
   @param(path The path to the output .dot file.)
@@ -4852,7 +4824,7 @@ function hipGraphDebugDotPrint(graph: hipGraph_t; const path: PChar; flags: UInt
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphDebugDotPrint';
 
 {
-  @brief Enables or disables a node in an executable graph.
+  Enables or disables a node in an executable graph.
   
   @param(hGraphExec The executable graph in which the node exists.)
   @param(hNode The node from the original graph to enable or disable.)
@@ -4867,7 +4839,7 @@ function hipGraphNodeSetEnabled(hGraphExec: hipGraphExec_t; hNode: hipGraphNode_
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphNodeSetEnabled';
 
 {
-  @brief Queries whether a node in an executable graph is enabled.
+  Queries whether a node in an executable graph is enabled.
   
   @param(hGraphExec The executable graph to query.)
   @param(hNode The node from the original graph to check.)
@@ -4882,7 +4854,7 @@ function hipGraphNodeGetEnabled(hGraphExec: hipGraphExec_t; hNode: hipGraphNode_
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphNodeGetEnabled';
   
 {
-  @brief Gets memory attributes related to graphs for a specific device.
+  Gets memory attributes related to graphs for a specific device.
   
   @param(device The device to query.)
   @param(attr The memory attribute to get.)
@@ -4896,7 +4868,7 @@ function hipDeviceGetGraphMemAttribute(device: Int32; attr: THipGraphMemAttribut
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceGetGraphMemAttribute';
 
 {
-  @brief Sets memory attributes related to graphs for a specific device.
+  Sets memory attributes related to graphs for a specific device.
   
   @param(device The device to set the attribute for.)
   @param(attr The memory attribute to set.)
@@ -4910,7 +4882,7 @@ function hipDeviceSetGraphMemAttribute(device: Int32; attr: THipGraphMemAttribut
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceSetGraphMemAttribute';
 
 {
-  @brief Frees unused memory allocated for graphs on a specific device back to the OS.
+  Frees unused memory allocated for graphs on a specific device back to the OS.
   
   @param(device The device on which to trim graph memory.)
   
@@ -4922,13 +4894,13 @@ function hipDeviceGraphMemTrim(device: Int32): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DeviceGraphMemTrim';
   
 {
-  @brief Creates a user object to manage the lifetime of a custom resource.
+  Creates a user object to manage the lifetime of a custom resource.
   
   @param(object_out Returns the created user object.)
   @param(ptr A pointer to the custom resource to be managed.)
   @param(destroy The destructor callback function to be called when the object's refcount reaches zero.)
   @param(initialRefcount The initial reference count for the object.)
-  @param(flags Flags for the user object (e.g., hipUserObjectNoDestructorSync).)
+  @param(flags Flags for the user object @(e.g., hipUserObjectNoDestructorSync@).)
   
   @returns(hipSuccess, hipErrorInvalidValue)
   
@@ -4938,10 +4910,10 @@ function hipUserObjectCreate(var object_out: hipUserObject_t; ptr: Pointer; dest
   cdecl; external HIP_LIB_NAME name PREFIX + 'UserObjectCreate';
 
 {
-  @brief Decrements the reference count of a user object.
+  Decrements the reference count of a user object.
   
   @param(object The user object to release.)
-  @param(count The number of references to release (defaults to 1).)
+  @param(count The number of references to release @(defaults to 1@).)
   
   @returns(hipSuccess, hipErrorInvalidValue)
   
@@ -4951,10 +4923,10 @@ function hipUserObjectRelease(Aobject: hipUserObject_t; count: UInt32 = 1): THip
   cdecl; external HIP_LIB_NAME name PREFIX + 'UserObjectRelease';
 
 {
-  @brief Increments the reference count of a user object.
+  Increments the reference count of a user object.
   
   @param(object The user object to retain.)
-  @param(count The number of references to add (defaults to 1).)
+  @param(count The number of references to add @(defaults to 1@).)
   
   @returns(hipSuccess, hipErrorInvalidValue)
   
@@ -4964,12 +4936,12 @@ function hipUserObjectRetain(Aobject: hipUserObject_t; count: UInt32 = 1): THipE
   cdecl; external HIP_LIB_NAME name PREFIX + 'UserObjectRetain';
 
 {
-  @brief Associates a user object with a graph, incrementing its reference count.
+  Associates a user object with a graph, incrementing its reference count.
   
   @param(graph The graph that will retain the user object.)
   @param(object The user object to be retained by the graph.)
-  @param(count The number of references for the graph to hold (defaults to 1).)
-  @param(flags Flags for the operation (e.g., hipGraphUserObjectMove).
+  @param(count The number of references for the graph to hold @(defaults to 1@).)
+  @param(flags Flags for the operation @(e.g., hipGraphUserObjectMove@).)
   
   @returns(hipSuccess, hipErrorInvalidValue)
   
@@ -4979,11 +4951,11 @@ function hipGraphRetainUserObject(graph: hipGraph_t; Aobject: hipUserObject_t; c
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphRetainUserObject';
 
 {
-  @brief Releases a graph's reference to a user object.
+  Releases a graph's reference to a user object.
   
   @param(graph The graph that is releasing the user object.)
   @param(object The user object to be released.)
-  @param(count The number of references for the graph to release (defaults to 1).
+  @param(count The number of references for the graph to release @(defaults to 1@).)
   
   @returns(hipSuccess, hipErrorInvalidValue)
   
@@ -4992,10 +4964,9 @@ function hipGraphRetainUserObject(graph: hipGraph_t; Aobject: hipUserObject_t; c
 function hipGraphReleaseUserObject(graph: hipGraph_t; Aobject: hipUserObject_t; count: UInt32 = 1): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphReleaseUserObject';
 
-{ @groupend }
 
 
-{ @groupbegin(Virtual Memory Management) }
+{ @bold(Group: Virtual Memory Management) }
 {
   @abstract(This section describes virtual memory management functions.)
   
@@ -5004,7 +4975,7 @@ function hipGraphReleaseUserObject(graph: hipGraph_t; Aobject: hipUserObject_t; 
 }
 
 {
-  @brief Frees an address range reservation made via hipMemAddressReserve.
+  Frees an address range reservation made via hipMemAddressReserve.
   
   @param(devPtr The starting address of the range to free.)
   @param(size The size of the range in bytes.)
@@ -5015,7 +4986,7 @@ function hipMemAddressFree(devPtr: Pointer; size: SizeUInt): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemAddressFree';
 
 {
-  @brief Reserves a virtual address range.
+  Reserves a virtual address range.
   
   @param(ptr Returns the starting address of the reserved range.)
   @param(size The size of the reservation in bytes.)
@@ -5029,11 +5000,11 @@ function hipMemAddressReserve(var ptr: Pointer; size: SizeUInt; alignment: SizeU
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemAddressReserve';
 
 {
-  @brief Creates a physical memory allocation (handle).
+  Creates a physical memory allocation (handle).
   
   @param(handle Returns the handle for the created memory allocation.)
   @param(size The size of the allocation in bytes.)
-  @param(prop The properties of the allocation (e.g., location, type).
+  @param(prop The properties of the allocation @(e.g., location, type@).)
   @param(flags Reserved for future use, must be zero.)
   
   @returns(hipSuccess, hipErrorInvalidValue, hipErrorNotSupported)
@@ -5042,11 +5013,11 @@ function hipMemCreate(var handle: hipMemGenericAllocationHandle_t; size: SizeUIn
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemCreate';
 
 {
-  @brief Exports a physical memory allocation to a shareable handle.
+  Exports a physical memory allocation to a shareable handle.
   
   @param(shareableHandle A pointer to the location to store the OS-specific shareable handle.)
   @param(handle The memory allocation handle to export.)
-  @param(handleType The type of shareable handle to create (e.g., POSIX file descriptor).
+  @param(handleType The type of shareable handle to create @(e.g., POSIX file descriptor@).)
   @param(flags Reserved for future use, must be zero.)
   
   @returns(hipSuccess, hipErrorInvalidValue, hipErrorNotSupported)
@@ -5055,10 +5026,10 @@ function hipMemExportToShareableHandle(shareableHandle: Pointer; handle: hipMemG
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemExportToShareableHandle';
 
 {
-  @brief Gets the access flags for a given memory location and virtual address.
+  Gets the access flags for a given memory location and virtual address.
   
   @param(flags Returns the access flags for the specified location.)
-  @param(location The location (e.g., a specific device) to query.)
+  @param(location The location @(e.g., a specific device@) to query.)
   @param(ptr The virtual address to check.)
   
   @returns(hipSuccess, hipErrorInvalidValue, hipErrorNotSupported)
@@ -5067,7 +5038,7 @@ function hipMemGetAccess(var flags: UInt64; const location: PHipMemLocation; ptr
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemGetAccess';
 
 {
-  @brief Calculates the required granularity for a memory allocation.
+  Calculates the required granularity for a memory allocation.
   
   @param(granularity Returns the allocation granularity in bytes.)
   @param(prop The properties of the allocation.)
@@ -5079,7 +5050,7 @@ function hipMemGetAllocationGranularity(var granularity: SizeUInt; const prop: P
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemGetAllocationGranularity';
 
 {
-  @brief Retrieves the property structure for a given memory allocation handle.
+  Retrieves the property structure for a given memory allocation handle.
   
   @param(prop Returns the properties of the specified handle.)
   @param(handle The memory allocation handle to query.)
@@ -5090,7 +5061,7 @@ function hipMemGetAllocationPropertiesFromHandle(var prop: THipMemAllocationProp
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemGetAllocationPropertiesFromHandle';
 
 {
-  @brief Imports a physical memory allocation from a shareable handle.
+  Imports a physical memory allocation from a shareable handle.
   
   @param(handle Returns the imported memory allocation handle.)
   @param(osHandle The OS-specific shareable handle representing the memory.)
@@ -5102,11 +5073,11 @@ function hipMemImportFromShareableHandle(var handle: hipMemGenericAllocationHand
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemImportFromShareableHandle';
 
 {
-  @brief Maps a physical memory allocation to a reserved virtual address range.
+  Maps a physical memory allocation to a reserved virtual address range.
   
   @param(ptr The starting virtual address where the memory will be mapped.)
   @param(size The size of the mapping in bytes.)
-  @param(offset The offset into the physical memory allocation (must be zero).
+  @param(offset The offset into the physical memory allocation @(must be zero@).)
   @param(handle The physical memory allocation handle to map.)
   @param(flags Reserved for future use, must be zero.)
   
@@ -5116,7 +5087,7 @@ function hipMemMap(ptr: Pointer; size: SizeUInt; offset: SizeUInt; handle: hipMe
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemMap';
 
 {
-  @brief Asynchronously maps or unmaps subregions of sparse HIP arrays.
+  Asynchronously maps or unmaps subregions of sparse HIP arrays.
   
   @param(mapInfoList A list of mapping operations to perform.)
   @param(count The number of operations in the list.)
@@ -5128,7 +5099,7 @@ function hipMemMapArrayAsync(mapInfoList: PHipArrayMapInfo; count: UInt32; strea
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemMapArrayAsync';
 
 {
-  @brief Releases a physical memory allocation handle.
+  Releases a physical memory allocation handle.
   
   @param(handle The memory allocation handle to release.)
   
@@ -5138,7 +5109,7 @@ function hipMemRelease(handle: hipMemGenericAllocationHandle_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemRelease';
 
 {
-  @brief Returns the allocation handle for a given virtual address.
+  Returns the allocation handle for a given virtual address.
   
   @param(handle Returns the handle representing the memory at the specified address.)
   @param(addr The virtual address to look up.)
@@ -5149,7 +5120,7 @@ function hipMemRetainAllocationHandle(var handle: hipMemGenericAllocationHandle_
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemRetainAllocationHandle';
 
 {
-  @brief Sets the access permissions for a virtual address range on one or more devices.
+  Sets the access permissions for a virtual address range on one or more devices.
   
   @param(ptr The starting virtual address of the range.)
   @param(size The size of the range in bytes.)
@@ -5162,7 +5133,7 @@ function hipMemSetAccess(ptr: Pointer; size: SizeUInt; const desc: PHipMemAccess
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemSetAccess';
 
 {
-  @brief Unmaps a memory range that was previously mapped with hipMemMap.
+  Unmaps a memory range that was previously mapped with hipMemMap.
   
   @param(ptr The starting virtual address of the range to unmap.)
   @param(size The size of the range to unmap in bytes.)
@@ -5172,14 +5143,13 @@ function hipMemSetAccess(ptr: Pointer; size: SizeUInt; const desc: PHipMemAccess
 function hipMemUnmap(ptr: Pointer; size: SizeUInt): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'MemUnmap';
 
-{ @groupend }
 
 
-{ @groupbegin(OpenGL Interoperability) }
+{ @bold(Group: OpenGL Interoperability) }
 { @abstract(This section describes OpenGL and graphics interoperability functions.) }
 
 {
-  @brief Maps graphics resources for access by HIP.
+  Maps graphics resources for access by HIP.
   
   @param(count The number of resources to map.)
   @param(resources A pointer to the resources to map.)
@@ -5191,7 +5161,7 @@ function hipGraphicsMapResources(count: Int32; resources: PHipGraphicsResource; 
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphicsMapResources';
 
 {
-  @brief Unmaps graphics resources.
+  Unmaps graphics resources.
   
   @param(count The number of resources to unmap.)
   @param(resources A pointer to the resources to unmap.)
@@ -5203,7 +5173,7 @@ function hipGraphicsUnmapResources(count: Int32; resources: PHipGraphicsResource
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphicsUnmapResources';
 
 {
-  @brief Gets a HIP array through which to access a subresource of a mapped graphics resource.
+  Gets a HIP array through which to access a subresource of a mapped graphics resource.
   
   @param(array Returns a pointer to the HIP array for accessing the subresource.)
   @param(resource The mapped graphics resource to access.)
@@ -5218,7 +5188,7 @@ function hipGraphicsSubResourceGetMappedArray(var hArr: hipArray_t; resource: hi
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphicsSubResourceGetMappedArray';
 
 {
-  @brief Gets the device pointer and size for a mapped graphics resource.
+  Gets the device pointer and size for a mapped graphics resource.
   
   @param(devPtr Returns the device pointer for accessing the resource.)
   @param(size Returns the size of the accessible buffer in bytes.)
@@ -5230,7 +5200,7 @@ function hipGraphicsResourceGetMappedPointer(var devPtr: Pointer; var size: Size
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphicsResourceGetMappedPointer';
 
 {
-  @brief Unregisters a graphics resource.
+  Unregisters a graphics resource.
   
   @param(resource The graphics resource to unregister.)
   
@@ -5241,14 +5211,13 @@ function hipGraphicsResourceGetMappedPointer(var devPtr: Pointer; var size: Size
 function hipGraphicsUnregisterResource(resource: hipGraphicsResource_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'GraphicsUnregisterResource';
 
-{ @groupend }
 
-{ @groupbegin(Surface Management) }
+{ @bold(Group: Surface Management) }
 { @abstract(This section describes surface object functions.)
   @note(These APIs are under development in some versions of HIP.) }
 
 {
-  @brief Creates a surface object.
+  Creates a surface object.
   
   @param(pSurfObject Returns the created surface object.)
   @param(pResDesc The resource descriptor for the surface.)
@@ -5259,7 +5228,7 @@ function hipCreateSurfaceObject(var pSurfObject: hipSurfaceObject_t; const pResD
   cdecl; external HIP_LIB_NAME name PREFIX + 'CreateSurfaceObject';
 
 {
-  @brief Destroys a surface object.
+  Destroys a surface object.
   
   @param(surfaceObject The surface object to destroy.)
   
@@ -5268,18 +5237,17 @@ function hipCreateSurfaceObject(var pSurfObject: hipSurfaceObject_t; const pResD
 function hipDestroySurfaceObject(surfaceObject: hipSurfaceObject_t): THipError;
   cdecl; external HIP_LIB_NAME name PREFIX + 'DestroySurfaceObject';
 
-{ @groupend }
 
 
 implementation
 
-{ @brief [DEPRECATED] Convenience function for binding texture to mipmapped array. 
+{ [DEPRECATED] Convenience function for binding texture to mipmapped array. 
   This attempts to auto-detect the channel format from the base mipmap level.
   
   @note This is a Pascal convenience wrapper, not a C API function.
   @param(tex [in] Texture reference to bind)
   @param(mipmappedArray [in] Mipmapped array to bind to)
-  @see(hip_deprecated.txt) Use hipTexObjectCreate instead }
+  Use hipTexObjectCreate instead (see hip_deprecated.txt). }
 function hipBindTextureToMipmappedArray(tex: PTextureReference; 
   mipmappedArray: hipMipmappedArray_const_t): THipError; deprecated;
 var

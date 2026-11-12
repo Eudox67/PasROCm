@@ -26,6 +26,8 @@
   This is an unofficial project and is not affiliated with or endorsed by AMD.
 ------------------------------------------------------------------------------}
 
+{ Bindings for RCCL collective communication primitives. }
+{ Bindings for RCCL collective communication primitives. }
 unit rccl;
 
 {$mode objfpc}{$H+}

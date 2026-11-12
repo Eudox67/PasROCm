@@ -26,6 +26,8 @@
   This is an unofficial project and is not affiliated with or endorsed by AMD.
 ------------------------------------------------------------------------------}
 
+{ rocPRIM block-level primitives. }
+{ rocPRIM block-level primitives. }
 unit rocprim_block;
 
 {$mode objfpc}{$H+}

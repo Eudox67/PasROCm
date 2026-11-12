@@ -26,6 +26,8 @@
   This is an unofficial project and is not affiliated with or endorsed by AMD.
 ------------------------------------------------------------------------------}
 
+{ Runtime compilation of HIP kernels through hipRTC. }
+{ Runtime compilation of HIP kernels through hipRTC. }
 unit hiprtc;
 
 {$mode objfpc}{$H+}

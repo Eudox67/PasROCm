@@ -1,10 +1,12 @@
+{ rocPRIM thread-level primitives. }
+{ rocPRIM thread-level primitives. }
 unit rocprim_thread;
 
 {$MODE OBJFPC}{$H+}
 {$modeswitch advancedrecords}
 {$PACKRECORDS C}
 
-{< Copyright (c) 2017-2024 Advanced Micro Devices, Inc. All rights reserved.
+{ Copyright (c) 2017-2024 Advanced Micro Devices, Inc. All rights reserved.
   Pascal translation/bindings: Copyright (c) 2024-2026 Eudox67
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,7 +28,7 @@ unit rocprim_thread;
   THE SOFTWARE.
 
   This file is a Pascal translation of the C++ header files in the rocprim/thread directory.
->}
+}
 
 interface
 
@@ -58,19 +60,19 @@ type
 
   TSum = record  // Advanced record: Methods + constructor
   public
-    { @brief Binary sum (32-bit Integer). }
+    { Binary sum (32-bit Integer). }
     function DoOp(a, b: Integer): Integer;
-    { @brief Binary sum (64-bit Int64). }
+    { Binary sum (64-bit Int64). }
     function DoOp(a, b: Int64): Int64;
   end;
 
-  { @brief Min functor: DoOp(a, b) = min(a, b). }
+  { Min functor: DoOp(a, b) = min(a, b). }
   TMin = record
     function DoOp(a, b: LongInt): LongInt;
     function DoOp(a, b: Int64): Int64;
   end;
 
-  { @brief Max functor: DoOp(a, b) = max(a, b). }
+  { Max functor: DoOp(a, b) = max(a, b). }
   TMax = record
     function DoOp(a, b: LongInt): LongInt;
     function DoOp(a, b: Int64): Int64;
