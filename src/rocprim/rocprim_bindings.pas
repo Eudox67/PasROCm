@@ -47,6 +47,22 @@ const
     librocprimshim = 'rocprim_shim';
   {$ENDIF}
 
+// --- shim identity and target checks (pure: no HIP calls, no GPU needed) ---
+// These describe the library that is actually loaded: the GPU target it was
+// built for, its compile-time wavefront width, the SDK it was built against, and
+// the widths the hardware can run (bit 0 = 32, bit 1 = 64).
+//
+// A loader should compare pasrocm_shim_target against the device it detected and
+// refuse a library built for a different GPU. pasrocm_wavefront_compatible is
+// the same pure test the shim uses at init, exposed so a host-side check can
+// reproduce the decision without a GPU.
+function pasrocm_shim_target: PAnsiChar; cdecl; external librocprimshim;
+function pasrocm_shim_wavefront_size: cuint; cdecl; external librocprimshim;
+function pasrocm_shim_rocm_version: PAnsiChar; cdecl; external librocprimshim;
+function pasrocm_shim_wavefront_widths_mask: cuint; cdecl; external librocprimshim;
+function pasrocm_wavefront_compatible(compiled, reported, allowed_mask: cuint): cint;
+    cdecl; external librocprimshim;
+
 // --- rocprim::reduce ---
 function rocprim_reduce_int(
     d_out: PCint;

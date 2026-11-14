@@ -20,6 +20,7 @@
 
 #define NOMINMAX
 
+#include <atomic>
 #include <cstdio>
 #include <limits>
 
@@ -36,30 +37,119 @@
 // It encapsulates the two-step (get-size, execute) API for temporary storage
 // and instantiates templates for common data types.
 
-// Use compiler flag "--offload-arch=gfx..." to set the warp size.
-#if defined(__AMDGCN__)
-
-// Helper to extract major version from target (e.g., gfx1100 -> 11)
-#ifdef __AMDGCN_TARGET__
-    #define AMDGCN_TARGET_MAJOR (__AMDGCN_TARGET__ / 100)
-#else
-    #define AMDGCN_TARGET_MAJOR 10  // because no define means it should be >=10 (RDNA)
+// ---------------------------------------------------------------------------
+// Target and wavefront configuration.
+//
+// Both come from the build (src/rocprim/build.sh or CMakeLists.txt), looked up
+// in ci/gfx-targets.json -- the single mapping table. They are deliberately not
+// derived from preprocessor macros, because (measured, see DESIGN.md 12.3):
+//   * __AMDGCN_TARGET__ does not exist in clang at all;
+//   * __AMDGCN__ and __AMDGPU__ are defined for RDNA and CDNA alike, so neither
+//     identifies a wavefront width;
+//   * __AMDGCN_WAVEFRONT_SIZE no longer exists in ROCm 10.1's clang 24;
+//   * __builtin_amdgcn_wavefrontsize() is not an integral constant expression,
+//     and the launch geometry below is HOST code, which cannot evaluate it.
+// ---------------------------------------------------------------------------
+#ifndef PASROCM_WAVEFRONT_SIZE
+#error "PASROCM_WAVEFRONT_SIZE must be injected by the build (ci/gfx-targets.json)"
+#endif
+#ifndef PASROCM_GPU_TARGET
+#error "PASROCM_GPU_TARGET must be injected by the build"
+#endif
+#ifndef PASROCM_ROCM_VERSION
+#error "PASROCM_ROCM_VERSION must be injected by the build"
+#endif
+#ifndef PASROCM_WAVEFRONT_WIDTHS_MASK
+#error "PASROCM_WAVEFRONT_WIDTHS_MASK must be injected by the build"
 #endif
 
+static_assert(PASROCM_WAVEFRONT_SIZE == 32 || PASROCM_WAVEFRONT_SIZE == 64,
+              "wavefront size must be 32 or 64");
 
-// Pattern: RDNA/Graphics (major 10+) = 32-wide; CDNA/Compute (major 9) = 64-wide
-// Future: gfx13xx (RDNA5) -> 13 (32); gfx96x/gfx97x (UDNA MI400/MI450) -> 9/96 (64)
-#if AMDGCN_TARGET_MAJOR >= 10
-    #define ROCPRIM_WARP_SIZE 32
-    #define ROCPRIM_IS_RDNA
-#elif AMDGCN_TARGET_MAJOR == 9  // Includes gfx908,90a,942,950, and future 96x/97x
-    #define ROCPRIM_WARP_SIZE 64
-    #define ROCPRIM_IS_CDNA
+// Hardware facts, checked in the device pass. A wrong entry in the table cannot
+// satisfy these, so a mistyped width fails the build instead of the GPU run.
+#if defined(__GFX9__) && PASROCM_WAVEFRONT_SIZE != 64
+#error "CDNA (gfx9xx) is wave64: refusing a wave32 build"
 #endif
+#if (defined(__GFX10__) || defined(__GFX11__)) && PASROCM_WAVEFRONT_SIZE != 32
+#error "RDNA 1-3.5 is wave32: refusing a wave64 build"
+#endif
+// gfx12 deliberately has no width guard: RDNA4 can run either width, so the
+// table's pinned value is the only decider (gfx1250 rejects -mwavefrontsize64).
 
-#else
-    #define ROCPRIM_WARP_SIZE 32  // Host/default: Conservative for compute (RDNA-like)
-#endif  // __AMDGCN__
+#define ROCPRIM_WARP_SIZE PASROCM_WAVEFRONT_SIZE
+
+extern "C" {
+
+// Pure identity accessors: no HIP calls, so a host-only process can read them
+// without a GPU. CI asserts them against the matrix entry for every build.
+const char* pasrocm_shim_target(void)         { return PASROCM_GPU_TARGET; }
+unsigned    pasrocm_shim_wavefront_size(void) { return PASROCM_WAVEFRONT_SIZE; }
+const char* pasrocm_shim_rocm_version(void)   { return PASROCM_ROCM_VERSION; }
+
+// Widths this build's hardware can run: bit 0 = 32, bit 1 = 64.
+unsigned pasrocm_shim_wavefront_widths_mask(void) { return PASROCM_WAVEFRONT_WIDTHS_MASK; }
+
+// Pure compatibility test, exposed so the mismatch branch is testable without
+// CDNA hardware.
+//
+// It compares the width the DEVICE reports against the widths the hardware can
+// run -- never against the compiled width. Measured on gfx1100 (DESIGN.md
+// section 9): a kernel built with -mwavefrontsize64 reports 64 from inside the
+// kernel while hipDeviceProp_t::warpSize still reports 32, and the launch
+// succeeds. An equality test would therefore reject a legitimate wave64 build
+// on dual-width hardware.
+int pasrocm_wavefront_compatible(unsigned compiled,
+                                 unsigned reported,
+                                 unsigned allowed_mask)
+{
+    const unsigned compiled_bit = compiled == 32u ? 1u : (compiled == 64u ? 2u : 0u);
+    const unsigned reported_bit = reported == 32u ? 1u : (reported == 64u ? 2u : 0u);
+    if (compiled_bit == 0u || reported_bit == 0u)
+        return 0;                                   // not a wavefront width at all
+    // The build itself must target a width the hardware supports, whatever the
+    // device happens to report. build.sh/CMake cannot produce this today, but
+    // this is a public entry point a loader may call with anything.
+    if ((allowed_mask & compiled_bit) == 0u)
+        return 0;                                   // build is for an impossible width
+    if ((allowed_mask & reported_bit) == 0u)
+        return 0;                                   // hardware cannot run this width
+    if ((allowed_mask & 3u) == 3u)
+        return 1;                                   // dual-width hardware: either is valid
+    return compiled == reported ? 1 : 0;            // single-width hardware: must agree
+}
+
+}  // extern "C"
+
+namespace {
+
+// 0 = not checked yet, 1 = compatible, -1 = mismatch (latched for the process).
+std::atomic<int> g_wavefront_state{0};
+
+// Compares the compiled width with the device's reported width exactly once.
+// A mismatch means the wrong library was loaded, so no kernel may be launched.
+hipError_t require_matching_wavefront()
+{
+    int state = g_wavefront_state.load(std::memory_order_acquire);
+    if (state == 0)
+    {
+        hipDeviceProp_t properties{};
+        int device = 0;
+        if (hipGetDevice(&device) != hipSuccess)
+            return hipGetLastError();
+        if (hipGetDeviceProperties(&properties, device) != hipSuccess)
+            return hipGetLastError();
+        const int compatible = pasrocm_wavefront_compatible(
+            static_cast<unsigned>(PASROCM_WAVEFRONT_SIZE),
+            static_cast<unsigned>(properties.warpSize),
+            static_cast<unsigned>(PASROCM_WAVEFRONT_WIDTHS_MASK));
+        state = compatible ? 1 : -1;
+        g_wavefront_state.store(state, std::memory_order_release);
+    }
+    return state > 0 ? hipSuccess : hipErrorInvalidDevice;
+}
+
+}  // namespace
     
 
 
@@ -311,6 +401,8 @@ __global__ void warp_sort_kernel(const T* d_in, T* d_out, const size_t num_items
 template<typename T>
 hipError_t rocprim_warp_reduce(T* d_out, const T* d_in, size_t num_items, hipStream_t stream)
 {
+	const hipError_t ready = require_matching_wavefront();
+	if (ready != hipSuccess) return ready;
 	hipLaunchKernelGGL(
 		HIP_KERNEL_NAME(warp_reduce_kernel<T, ROCPRIM_WARP_SIZE>),
 		dim3(rocprim::detail::ceiling_div(num_items, (unsigned int)ROCPRIM_WARP_SIZE)),
@@ -325,6 +417,8 @@ hipError_t rocprim_warp_reduce(T* d_out, const T* d_in, size_t num_items, hipStr
 template<typename T>
 hipError_t rocprim_warp_scan(T* d_out, const T* d_in, size_t num_items, hipStream_t stream)
 {
+	const hipError_t ready = require_matching_wavefront();
+	if (ready != hipSuccess) return ready;
 	hipLaunchKernelGGL(
 		HIP_KERNEL_NAME(warp_scan_kernel<T, ROCPRIM_WARP_SIZE>),
 		dim3(rocprim::detail::ceiling_div(num_items, (unsigned int)ROCPRIM_WARP_SIZE)),
@@ -339,6 +433,8 @@ hipError_t rocprim_warp_scan(T* d_out, const T* d_in, size_t num_items, hipStrea
 template<typename T>
 hipError_t rocprim_warp_sort(T* d_out, const T* d_in, size_t num_items, hipStream_t stream)
 {
+	const hipError_t ready = require_matching_wavefront();
+	if (ready != hipSuccess) return ready;
 	hipLaunchKernelGGL(
 		HIP_KERNEL_NAME(warp_sort_kernel<T, ROCPRIM_WARP_SIZE>),
 		dim3(rocprim::detail::ceiling_div(num_items, (unsigned int)ROCPRIM_WARP_SIZE)),
@@ -470,7 +566,11 @@ hipError_t rocprim_scatter_float(
 
 void rocprim_set_warp_size(unsigned int size)
 {
-    int max_warp_size = ROCPRIM_WARP_SIZE;
+    // Kept for ABI compatibility. The compiled width is authoritative; this only
+    // validates a caller's belief and latches a mismatch so later calls fail
+    // instead of computing with the wrong geometry.
+    if (size != 0u && size != PASROCM_WAVEFRONT_SIZE)
+        g_wavefront_state.store(-1, std::memory_order_release);
 }
 
 // --- rocprim::reduce ---
