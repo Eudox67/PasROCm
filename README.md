@@ -255,21 +255,42 @@ your GPU and your ROCm version.
 
 ```bash
 cd src/rocprim
-./build.sh                                  # auto-detect ROCm + GPU arch
-ROCM_PATH=/opt/rocm/core-10.1 ./build.sh    # pin a specific ROCm install
-GFX_ARCH=gfx1100 ./build.sh                 # specific GPU
-GFX_ARCH=rdna3;cdna3 ./build.sh             # fat binary across families
-DRY_RUN=1 ./build.sh                        # print resolved toolchain/archs only
+./build.sh                                  # detect ROCm and this machine's GPU
+GFX_ARCH=gfx1100 ./build.sh                 # one target -> libpasrocm_shim_gfx1100.so
+GFX_ARCH=gfx942 ./build.sh                  # CDNA: wave64, adds -mwavefrontsize64
+COMPILER_KIND=hipcc ./build.sh              # ROCm 6.x/7.x: hipcc
+COMPILER_KIND=clang ./build.sh              # ROCm 10.x: amdclang++ -x hip
+OUT_DIR=/tmp/shim ./build.sh                # build outside the source tree
+DRY_RUN=1 ./build.sh                        # print the resolved toolchain only
 ```
 
-`GFX_ARCH` names the GPU architecture, for example `gfx1100` (RDNA 3 — the
-Radeon RX 7000 series). `ROCM_PATH` accepts both install layouts. ROCm 10.x
-keeps the versioned tree at `/opt/rocm/core-<ver>` and points `/opt/rocm` at it
-through alternatives, while 6.x/7.x releases installed `/opt/rocm-<ver>`
-directly. Detection prefers `/opt/rocm` when it holds an executable
-`bin/hipcc`, then takes the newest `/opt/rocm-<ver>` that also has one. A stray
-header-only `/opt/rocm-<ver>` directory can never be selected. If nothing
-usable exists, the error tells you to set `ROCM_PATH`.
+**One target per build.** `GFX_ARCH` names exactly one GPU target, for example
+`gfx1100` (RDNA 3 — Radeon RX 7000) or `gfx942` (CDNA 3 — MI300). A family
+keyword such as `rdna3` is rejected on purpose: it expands to several targets,
+and this project ships one small library per architecture instead of a fat
+binary. The library is named after the target it was built for, and the Pascal
+loader picks the file that matches the detected GPU.
+
+`ROCM_PATH` accepts both install layouts. ROCm 10.x keeps the versioned tree at
+`/opt/rocm/core-<ver>` and points `/opt/rocm` at it through alternatives, while
+6.x/7.x releases installed `/opt/rocm-<ver>` directly. Detection prefers
+`/opt/rocm` when it holds a compiler, then takes the newest `/opt/rocm-<ver>`
+that also has one. A stray header-only directory can never be selected. If
+nothing usable exists, the error tells you to set `ROCM_PATH`.
+
+`COMPILER_KIND` selects the driver: `hipcc` is the 6.x/7.x entry point, while
+`clang` runs `amdclang++ -x hip`, which is what ROCm 10.x expects (hipcc is
+deprecated there, and modern hipcc is only a wrapper around that command line).
+`REQUIRE_ARCH=1` disables GPU auto-detection and fails when `GFX_ARCH` is
+missing — CI always sets it, because the machine a build lands on must not
+decide which target the artifact contains.
+
+**The wavefront size is injected, never guessed.** It comes from
+`ci/gfx-targets.json` (the one mapping table) and reaches the compiler as
+`-DPASROCM_WAVEFRONT_SIZE`; the build refuses to start without it, and refuses a
+wave32 build on CDNA or a wave64 build on RDNA 1–3.5. At first use the shim also
+compares that width with what the device reports and returns
+`hipErrorInvalidDevice` instead of running kernels with the wrong geometry.
 
 Every build prints the toolchain it actually found. So a build log answers
 "which compiler produced this `.so`?" — and you do not have to follow symlinks
@@ -277,15 +298,19 @@ by hand:
 
 ```text
 == ROCm root : /opt/rocm
-== hipcc     : /opt/rocm/core-10.1/bin/hipcc     <- resolved through alternatives
+== compiler  : /opt/rocm/core-10.1/bin/hipcc  [hipcc]
+== compiler v: AMD clang version 24.0.0git (...) (via hipcc)
 == HIP ver   : 7.16.26385-0000000
-== Lib dir   : /opt/rocm/lib
-== Arch      : gfx1100  (1 target[s])
+== lib dir   : /opt/rocm/lib
+== target    : gfx1100  (wavefront 32)
+== output    : /path/to/PasROCm/src/rocprim/libpasrocm_shim_gfx1100.so
 ...
 == Linked against:
  (NEEDED)    Shared library: [libamdhip64.so.7]
 == Loads at runtime:
     libamdhip64.so.7 => /opt/rocm/lib/libamdhip64.so.7
+== rocprim_* exports: 146
+== build info: /path/to/PasROCm/src/rocprim/build-info.env
 ```
 
 `DRY_RUN=1 ./build.sh` prints that same header without compiling. It is the
@@ -303,6 +328,49 @@ Take the HIP headers only from your selected ROCm install. A copied `hip/`
 header set next to the shim does not work well: mixed header versions do not
 compile together with the installed `hip/amd_detail/*.h` internals. On ROCm 7.x
 this appeared as `unknown type name 'hipDriverEntryPointQueryResult'`.
+
+## Continuous integration
+
+`.github/workflows/shim-build.yml` compiles the shim for every supported
+(Ubuntu, ROCm) pair and GPU architecture group, and uploads one package per
+(configuration, arch group). The matrix is not written in YAML — it is generated
+from `ci/supported-builds.json` by `ci/manifest.py`, so adding or retiring a
+configuration is a one-file change.
+
+| layer | file |
+|---|---|
+| GPU targets, wavefront widths | `ci/gfx-targets.json` |
+| SDK pins, profiles | `ci/supported-builds.json` |
+| SDK provisioning | `ci/install-rocm.sh --config <id>` |
+| build, ABI check, package | `ci/build-linux.sh --config <id> --arch-group <group>` |
+| ABI gate | `ci/check-abi.sh` |
+| design, measured upstream facts, risks | `ci/DESIGN.md` |
+
+Profiles keep a private repository inside its Actions allowance:
+`pull_request` runs 2 jobs, a push to `main` runs 16, a nightly or manual run
+covers all 55 jobs (nine configurations × the targets each one builds).
+
+```bash
+python3 ci/manifest.py validate                    # self-check the manifest
+python3 ci/manifest.py matrix --profile smoke      # what CI would run
+
+# reproduce one CI job verbatim (installs the pinned SDK, so inspect first)
+ci/install-rocm.sh --config ubuntu-24.04-rocm10.1 --dry-run
+ci/build-linux.sh  --config ubuntu-24.04-rocm10.1 --target gfx1100
+```
+
+**CDNA artifacts are compile-verified and ABI-checked only.** Nothing in this
+repository can execute gfx9xx kernels, so every gfx908/gfx90a/gfx942/gfx950
+package carries `validation.gpu_runtime: not-run` in its `manifest.json`. Their
+wavefront handling is proven at build time (guards, identity self-test) and the
+launch geometry is proven by construction, but real kernel execution on MI
+hardware is unverified until a self-hosted or rented runner exists.
+
+A configuration claims a range of patches it can back up: `7.2` claims
+`7.2.0-7.2.4` because the rocPRIM headers are identical in both channels, while
+`6.4` claims `6.4.0-6.4.4` only because dedicated probe jobs compile against the
+6.4.0 channel as well. `manifest.json` inside each package records the claim,
+the evidence, and the exact toolchain that produced the binary.
 
 ## Examples
 
