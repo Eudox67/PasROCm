@@ -153,7 +153,7 @@ jobs:
               The tarball itself legitimately differs from the validated one when
               gpu_runtime moves from not-run to passed, because that lives in the
               manifest. The library does not change, so its hash is the evidence
-              that transfers (DESIGN sections 8 and 13.6).
+              that transfers.
               """
               with tarfile.open(path) as tar:
                   member = next(m for m in tar.getmembers()
@@ -165,7 +165,7 @@ jobs:
               "validated artifacts. The tarballs are deterministic; the manifest of a",
               "validated target differs only by its recorded `gpu_runtime` evidence,",
               "so the invariant is the **library hash** below: it is identical to the",
-              "one a hardware run validated (DESIGN sections 8 and 13.6).",
+              "one a hardware run validated.",
               "",
               "| SDK line | GPU target | wavefront (widths) | abi | GPU runtime | library sha256 |",
               "|---|---|---|---|---|---|",
@@ -189,11 +189,12 @@ jobs:
           lines += [
               "",
               "`not-run` means no recorded hardware run for that target: the package is",
-              "compile- and ABI-verified only. See `ci/DESIGN.md` section 13.6.",
+              "compile- and ABI-verified only: no hardware run has been recorded for it.",
               "",
               "Known per-line difference: on the 6.4 line, `rocprim_merge_inplace_int`",
-              "returns `hipErrorNotSupported` (rocPRIM 3.4 has no `merge_inplace`;",
-              "DESIGN section 12.6).",
+              "returns `hipErrorNotSupported`, because rocPRIM 3.4 has no",
+              "`merge_inplace`. The symbol is exported on every line, so this is a",
+              "capability gap a caller can detect, not a missing symbol.",
           ]
           pathlib.Path("/tmp/release-notes.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
           print("\n".join(lines))
