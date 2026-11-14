@@ -41,9 +41,7 @@
        resolve (the table is never left half-bound).
 
   A wrong library is therefore a named exception with the two targets in it,
-  not a mis-sized kernel or a call through a nil pointer. See DESIGN.md
-  section 13 for the contract, the environment variables and the measured
-  facts behind the SDK-line check.
+  not a mis-sized kernel or a call through a nil pointer.
 
   Load once, lazily: PasROCmShimEnsureLoaded is called by every wrapper in
   rocprim_bindings, so a program that never touches rocPRIM never opens it.
@@ -449,8 +447,8 @@ begin
 end;
 
 { The SDK line is reported, not guessed. Measured reasons it cannot be a hard
-  gate on every machine (DESIGN.md section 13): ROCm 10.1 ships HIP 7.16, 7.2
-  and 10.1 share libamdhip64.so.7, the 10.x layout has no .info/version, and a
+  gate on every machine: 10.1 ships HIP 7.16, 7.2 and 10.1 share
+  libamdhip64.so.7, the 10.x layout has no .info/version, and a
   local build.sh without ROCM_VERSION stamps the HIP version. So: compare when
   the caller pins PASROCM_EXPECT_ROCM, warn when the stamp maps to a different
   HIP major, and let PASROCM_STRICT_ROCM turn the warning into an error. }
@@ -665,7 +663,7 @@ begin
       ivTargetMismatch:
         Fail(EShimIdentityError.CreateFmt(
           'PasROCm: %s was built for %s but this device is %s.%s'
-          + 'Load the shim for %s (one library per GPU target, DESIGN.md 3).',
+          + 'Load the shim for %s (one library per GPU target).',
           [Chosen, ShimTarget, Gfx, LineEnding, Gfx]));
       ivBadCompiledWidth:
         Fail(EShimIdentityError.CreateFmt(
@@ -727,7 +725,7 @@ begin
     writes, so a reader that sees ssLoaded also sees a complete table (TSO).
     A weakly ordered target (aarch64) would need a barrier here, or simply the
     unconditional PasROCmShimLoad -- an uncontended critical section is
-    negligible next to a kernel launch. See DESIGN.md section 13. }
+    negligible next to a kernel launch. }
   if GState = ssLoaded then
     Exit(True);
   Result := PasROCmShimLoad;

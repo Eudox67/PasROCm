@@ -22,7 +22,8 @@ message(STATUS "Using ROCm: ${ROCM_ROOT}")
 # ---------------------------------------------------------------------------
 # One target per build. The GPU target decides the wavefront width, which is
 # injected as a compile definition -- it is never guessed from preprocessor
-# macros (DESIGN.md section 12.3). The mapping lives in exactly one file:
+# macros: the geometry is a launch-time property of the host code, which is
+# compiled once and cannot know the device. The mapping lives in one file:
 # targets.conf, shared with build.sh and the CI planner.
 # ---------------------------------------------------------------------------
 if(NOT DEFINED GPU_TARGET)

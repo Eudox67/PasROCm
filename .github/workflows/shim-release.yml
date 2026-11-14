@@ -3,7 +3,7 @@ name: shim-release
 # A v* tag rebuilds the full matrix at that commit and publishes the packages.
 # Determinism is the point: ci/package.sh emits byte-identical archives for one
 # commit and one pinned SDK, so the assets attached here are the ones a hardware
-# run validated (DESIGN sections 8 and 13.6). The release notes carry the
+# run validated. The release notes carry the
 # gpu_runtime state of every target, taken from the package manifests, so no
 # claim runs ahead of evidence.
 

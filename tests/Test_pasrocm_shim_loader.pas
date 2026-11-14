@@ -226,7 +226,7 @@ end;
 procedure TTestShimLoader.TestIdentityAcceptsDualWidthHardware;
 begin
   { RDNA4 class: mask 3 accepts either width, and the reported width does not
-    have to equal the compiled width (DESIGN.md section 9). }
+    have to equal the compiled width. }
   AssertEquals('wave64 build, device reports 32', Ord(ivOk),
     Ord(PasROCmClassifyIdentity('gfx1250', 'gfx1250', 64, 32, 3, True)));
   AssertEquals('wave32 build, device reports 64', Ord(ivOk),

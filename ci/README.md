@@ -15,7 +15,7 @@ Python. Every script is shell and reads its data from the two `.conf` files.
 | `gpu-runtime-evidence.json` | what was actually executed on real GPU hardware |
 | `gen-shim-bindings.py` | generates `rocprim_shim_api.pas`, `rocprim_bindings.pas` |
 | `gen-shim-header.py` | generates `rocprim_shim.h`, `rocprim_shim.map` |
-| `DESIGN.md` | maintainer notes: decisions, measured upstream facts, risks, tooling rules (§14). Excluded from the source download |
+| `DESIGN.md` | stub: the design record lives in the private [PasROCm-design](https://github.com/Eudox67/PasROCm-design) repository |
 
 Data files are authoritative. The workflow matrices are produced by
 `manifest.sh`, so adding a configuration is a one-line edit plus a

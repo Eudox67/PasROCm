@@ -39,7 +39,7 @@
   an exception naming the problem -- it never calls through a nil pointer.
 
   This unit keeps the original names and signatures, so existing programs need
-  no change; nothing here is resolved at link time (DESIGN.md section 13). }
+  no change; nothing here is resolved at link time. }
 
 unit rocprim_bindings;
 

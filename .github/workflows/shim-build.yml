@@ -11,11 +11,11 @@ name: shim-build
 #
 # The two crons exist because minutes are finite: measured 2026-11-14, a smoke
 # run costs ~37 billed minutes and a full run ~125, so nightly-full (~3,800 per
-# month) does not fit the 2,000-minute allowance, while nightly smoke + weekly
-# full (~1,620) does. ci/DESIGN.md sections 5 and 9.
+# month) does not fit a private repository's 2,000-minute allowance, while
+# nightly smoke + weekly full (~1,620) does. See docs/CI.md.
 #
 # Everything about the matrix comes from ci/supported-builds.json; this file only
-# says where to run it. See ci/DESIGN.md sections 5 and 7.
+# says where to run it. See docs/CI.md.
 
 on:
   pull_request:
@@ -32,7 +32,7 @@ on:
   schedule:
     # Nightly smoke keeps every SDK line honest; the weekly full matrix is the
     # expensive one. Both fire the same workflow; the profile step tells them
-    # apart by github.event.schedule. See the header comment and DESIGN 9.
+    # apart by github.event.schedule. See the header comment.
     - cron: '0 4 * * *'   # nightly  -> smoke (16 jobs)
     - cron: '0 5 * * 0'   # Sunday   -> full  (54 jobs)
   workflow_dispatch:
@@ -47,8 +47,12 @@ permissions:
   contents: read
 
 concurrency:
-  # A pull request only needs its newest run; main/scheduled runs are kept.
-  group: shim-build-${{ github.workflow }}-${{ github.ref }}
+  # A pull request only needs its newest run, so it groups by ref and cancels.
+  # A push or a schedule groups by commit: GitHub keeps only one *pending* run
+  # per group, so a ref-based group silently drops a push that lands while
+  # another run is still queued (observed: a commit with real source changes
+  # produced no run at all). Per-commit groups cannot collide with each other.
+  group: shim-build-${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.ref) || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:

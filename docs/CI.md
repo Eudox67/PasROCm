@@ -14,7 +14,7 @@ one-file change.
 | SDK provisioning | `ci/install-rocm.sh --config <id>` |
 | build, ABI check, package | `ci/build-linux.sh --config <id> --arch-group <group>` |
 | ABI gate | `ci/check-abi.sh` |
-| design, measured upstream facts, risks | `ci/DESIGN.md` (maintainer notes, not shipped) |
+| design record, measured facts, risks | private: [PasROCm-design](https://github.com/Eudox67/PasROCm-design) (`ci/DESIGN.md` is a stub) |
 
 ## CI is maintainer tooling, not part of the product
 

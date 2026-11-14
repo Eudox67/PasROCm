@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Package one built shim (DESIGN.md section 8).
+# Package one built shim.
 #
 #   ci/package.sh --config ubuntu-24.04-rocm10.1 --target gfx1100 \
 #                 --lib dist/work/<id>-gfx1100/libpasrocm_shim_gfx1100.so \
@@ -210,7 +210,7 @@ manifest = {
         "compile": "passed",
         "abi": "passed",
         # Flipped only by a recorded hardware run: ci/gpu-runtime-evidence.json
-        # is the one owner of that claim (DESIGN 13.6), so no build can assert
+        # is the one owner of that claim, so no build can assert
         # runtime validation on its own.
         "gpu_runtime": runtime_verdict["gpu_runtime"],
     },
@@ -220,7 +220,7 @@ if "gpu_runtime_evidence" in runtime_verdict:
 
 # No wall-clock timestamp: it would make two builds of one commit differ and
 # break the release promise that the rebuilt assets are the validated ones
-# (DESIGN section 8). Provenance is the commit plus the pinned SDK.
+# Provenance is the commit plus the pinned SDK.
 manifest.pop("built_at", None)
 
 with open(destination, "w", encoding="utf-8") as handle:

@@ -13,8 +13,7 @@ so a name can never appear in one place and not the other.
 
 The header is also the visibility contract: every prototype carries
 PASROCM_EXPORT, and build.sh/CMake compile with -fvisibility=hidden, so the
-library exports exactly these symbols (and stops exporting the two internals
-that leaked into the dynamic table, DESIGN.md section 4).
+library exports exactly these symbols, and nothing else.
 
 Exit codes: 0 ok, 1 spec/definition mismatch, 2 stale in --check mode.
 """

@@ -17,10 +17,9 @@
 # reported as stale, never as an ABI change.
 #
 # Extra rocprim_* exports are reported, and fatal only with --strict. They are
-# the visible symptom of the missing -fvisibility=hidden described in
-# DESIGN.md section 4; until the public header (phase 1) lands, the library
-# exports more than it promises, so this is a warning by default rather than a
-# gate that can never pass.
+# the visible symptom of a build without -fvisibility=hidden. The public header
+# is what pins the surface, so an extra export is a warning by default and a
+# gate only under --strict.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -56,7 +55,7 @@ done
 [[ -f "$BINDINGS" ]] || die "missing $BINDINGS"
 
 # Check 0: the generated units must match the specification. The generator is
-# the last Python in the tree (DESIGN.md section 14.4); a Pascal machine without
+# the last Python in the tree; a Pascal machine without
 # it can still run the export checks below, but CI always proves staleness.
 if [[ -f "$ROOT/ci/gen-shim-bindings.py" ]] && command -v python3 >/dev/null 2>&1; then
     python3 "$ROOT/ci/gen-shim-bindings.py" --check \

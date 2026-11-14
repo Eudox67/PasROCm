@@ -14,7 +14,7 @@
 #   DRY_RUN=1 ./build.sh                        # print the resolved toolchain only
 #   NO_STRIP=1 ./build.sh                       # keep debug info
 #
-# Environment contract (ci/DESIGN.md section 7, phase 2):
+# Environment contract:
 #   ROCM_PATH      ROCm install root (default: /opt/rocm, then the newest
 #                  /opt/rocm-* that has a compiler; header-only leftovers are
 #                  never selected)
@@ -41,14 +41,13 @@
 # ONE TARGET PER BUILD. The shim is built for exactly one GPU target and named
 # after it: libpasrocm_shim_<gfx>.so. A family keyword such as `rdna3` is
 # accepted only as an error with guidance -- it expands to several targets, and
-# this project ships one small library per architecture instead of a fat binary
-# (DESIGN.md section 3).
+# this project ships one small library per architecture instead of a fat binary.
 #
 # The wavefront width is NOT guessed from preprocessor macros. It is looked up
 # in targets.conf (the single mapping table) and injected as
 # -DPASROCM_WAVEFRONT_SIZE, because the launch geometry lives in host code that
 # is compiled once and cannot know the device. The shim refuses to build without
-# it, and refuses to run when the device disagrees (DESIGN.md section 12.3).
+# it, and refuses to run when the device disagrees.
 #
 # Compiles BOTH translation units; the resulting per-target library lands in
 # OUT_DIR (default: next to the Pascal units in src/rocprim/, which is where
@@ -248,7 +247,7 @@ esac
 # Widths the hardware can actually run (1=32, 2=64, 3=both). The runtime gate
 # compares the device's reported width against this set, never against the
 # compiled width: measured on gfx1100, a -mwavefrontsize64 kernel reports 64
-# while hipDeviceProp_t::warpSize still says 32 (DESIGN.md section 9).
+# while hipDeviceProp_t::warpSize still says 32.
 WIDTHS_MASK=0
 IFS=',' read -ra _target_widths <<<"$TARGET_WIDTHS"
 for _width in "${_target_widths[@]}"; do

@@ -28,7 +28,7 @@
 // The public ABI declarations. They carry PASROCM_EXPORT, and the build uses
 // -fvisibility=hidden: a definition inherits the visibility of the prototype
 // declared here, which is what keeps the exported surface at exactly 149
-// symbols (DESIGN.md section 4). Including it also makes the header a
+// symbols. Including it also makes the header a
 // compile-time check of every signature.
 #include "rocprim_shim.h"
 
@@ -63,8 +63,8 @@
 // Target and wavefront configuration.
 //
 // Both come from the build (src/rocprim/build.sh or CMakeLists.txt), looked up
-// in ci/gfx-targets.json -- the single mapping table. They are deliberately not
-// derived from preprocessor macros, because (measured, see DESIGN.md 12.3):
+// in targets.conf -- the single mapping table. They are deliberately not
+// derived from preprocessor macros, because (measured):
 //   * __AMDGCN_TARGET__ does not exist in clang at all;
 //   * __AMDGCN__ and __AMDGPU__ are defined for RDNA and CDNA alike, so neither
 //     identifies a wavefront width;
@@ -144,8 +144,8 @@ const char* pasrocm_shim_build_info(void)
 // CDNA hardware.
 //
 // It compares the width the DEVICE reports against the widths the hardware can
-// run -- never against the compiled width. Measured on gfx1100 (DESIGN.md
-// section 9): a kernel built with -mwavefrontsize64 reports 64 from inside the
+// run -- never against the compiled width. Measured on gfx1100: a kernel
+// built with -mwavefrontsize64 reports 64 from inside the
 // kernel while hipDeviceProp_t::warpSize still reports 32, and the launch
 // succeeds. An equality test would therefore reject a legitimate wave64 build
 // on dual-width hardware.

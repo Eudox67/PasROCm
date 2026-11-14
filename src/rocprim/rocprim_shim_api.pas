@@ -59,12 +59,12 @@ const
   ROCPRIM_SHIM_SYMBOL_COUNT = 151;
 
   { ABI revision this unit was generated for; the loader refuses a
-    library whose pasrocm_shim_abi_version() differs (DESIGN 13.2). }
+    library whose pasrocm_shim_abi_version() differs. }
   ROCPRIM_SHIM_ABI_VERSION = 1;
 
   { Indexes of the identity exports. They are the first declarations in the
     specification because the loader must call them before it can trust the
-    rest of the table (ci/DESIGN.md section 13). }
+    rest of the table. }
   ROCPRIM_SHIM_IDX_TARGET = 0;
   ROCPRIM_SHIM_IDX_WAVEFRONT_SIZE = 1;
   ROCPRIM_SHIM_IDX_ROCM_VERSION = 2;

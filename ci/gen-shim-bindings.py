@@ -11,7 +11,6 @@ Output: src/rocprim/rocprim_shim_api.pas   (internal pointer table)
 The generated units never link the shim. `rocprim_bindings` wraps each entry
 point so that a call cannot reach a nil pointer: the wrapper asks
 `rocprim_shim_loader` to open the library that matches the detected GPU first.
-See ci/DESIGN.md section 13.
 
 Every parse runs the full validation (count, uniqueness, name shape, identity
 exports first, parameter names extractable) in *both* modes, so a bad
@@ -277,12 +276,12 @@ def render_api(license_text: str, uses_text: str, items: list[dict]) -> str:
         "  ROCPRIM_SHIM_SYMBOL_COUNT = %d;" % count,
         "",
         "  { ABI revision this unit was generated for; the loader refuses a",
-        "    library whose pasrocm_shim_abi_version() differs (DESIGN 13.2). }",
+        "    library whose pasrocm_shim_abi_version() differs. }",
         "  ROCPRIM_SHIM_ABI_VERSION = %d;" % abi_version(),
         "",
         "  { Indexes of the identity exports. They are the first declarations in the",
         "    specification because the loader must call them before it can trust the",
-        "    rest of the table (ci/DESIGN.md section 13). }",
+        "    rest of the table. }",
     ]
     for offset, (_name, label) in enumerate(IDENTITY):
         out.append("  ROCPRIM_SHIM_IDX_%s = %d;" % (label, offset))
@@ -354,7 +353,7 @@ def render_bindings(license_text: str, uses_text: str, types_text: str,
         "  an exception naming the problem -- it never calls through a nil pointer.",
         "",
         "  This unit keeps the original names and signatures, so existing programs need",
-        "  no change; nothing here is resolved at link time (DESIGN.md section 13). }",
+        "  no change; nothing here is resolved at link time. }",
         "",
         "unit rocprim_bindings;",
         "",
