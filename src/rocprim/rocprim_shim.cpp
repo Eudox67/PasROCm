@@ -22,6 +22,7 @@
 
 #include <atomic>
 #include <cstdio>
+#include <cstring>  // rocPRIM 4.2's texture_cache_iterator.hpp calls memset unqualified
 #include <limits>
 
 
@@ -29,6 +30,17 @@
 #include <rocprim/rocprim.hpp>
 #include <rocprim/device/device_copy.hpp>
 #include <rocprim/device/device_radix_sort.hpp>  // For rocprim::sort (radix backend for int)
+// rocPRIM gained merge_inplace after 3.4. Include it explicitly when the header
+// exists, because not every rocprim.hpp re-exports it. The 6.4 line (rocPRIM
+// 3.4.x) has neither the header nor the function, so the entry point below
+// reports hipErrorNotSupported instead of failing the build. Measured on the
+// first CI matrix: 3.4.1 no, 4.2.0 and 4.6.0 yes.
+#if defined(__has_include)
+#  if __has_include(<rocprim/device/device_merge_inplace.hpp>)
+#    include <rocprim/device/device_merge_inplace.hpp>
+#    define PASROCM_HAVE_MERGE_INPLACE 1
+#  endif
+#endif
 #include <rocprim/types.hpp>
 #include <rocprim/intrinsics/thread.hpp>
 #include <rocprim/intrinsics/arch.hpp>
@@ -1095,6 +1107,7 @@ hipError_t rocprim_merge_inplace_int(void* temporary_storage,
                                      size_t right_size,
                                      hipStream_t stream)
 {
+#ifdef PASROCM_HAVE_MERGE_INPLACE
     hipError_t status;
 
     // Get required size of the temporary storage
@@ -1105,6 +1118,17 @@ hipError_t rocprim_merge_inplace_int(void* temporary_storage,
     status = rocprim::merge_inplace(temporary_storage, *storage_size, data, left_size, right_size, rocprim::less<int>(), stream);
 
     return status;
+#else
+    // rocPRIM before 4.0 has no merge_inplace. Keep the symbol so the ABI stays
+    // complete and report the capability gap where the caller can see it.
+    (void)temporary_storage;
+    (void)storage_size;
+    (void)data;
+    (void)left_size;
+    (void)right_size;
+    (void)stream;
+    return hipErrorNotSupported;
+#endif
 }
 
 hipError_t rocprim_binary_search_int(void* temporary_storage,
