@@ -249,11 +249,31 @@ the installed copy. The reverse also applies: if you edit PasROCm and rebuild
 only through the `.lpk`, an unrelated CLI project keeps using the units that
 `fpmake install` last wrote.
 
-## Building the rocPRIM native shim
+## Getting the rocPRIM native shim
 
-You build `libpasrocm_shim_<gfx>.so` yourself, one per ROCm/GPU combination. None of
-the three install options installs it, because the correct binary depends on
-your GPU and your ROCm version.
+There are two ways to get `libpasrocm_shim_<gfx>.so`, one per ROCm/GPU
+combination. None of the three install options installs it, because the correct
+binary depends on your GPU and your ROCm version.
+
+### Option A — use a pre-built package
+
+CI builds and packages every supported (Ubuntu, ROCm line, GPU target)
+combination: `pasrocm-shim-<version>-linux-x86_64-rocm-<line>-<gfx>.tar.gz`.
+Download it from the workflow run (or a release, once one exists), then point
+the loader at it — nothing is installed system-wide:
+
+```bash
+tar xzf pasrocm-shim-*-rocm-10.1-gfx1100.tar.gz -C ~/pasrocm-shim
+export PASROCM_SHIM_DIR=~/pasrocm-shim/lib
+```
+
+The package contains `lib/` (the library), `include/rocprim_shim.h` (the public
+C surface), `pascal/` (the matching units **and** `rocprim_shim_abi.inc`, the
+ABI specification they are generated from), and `manifest.json` with the exact
+toolchain, SDK packages and validation level that produced it. Pick the package
+whose GPU target matches your device (`rocminfo | grep gfx`).
+
+### Option B — build it locally
 
 ```bash
 cd src/rocprim
@@ -265,6 +285,21 @@ COMPILER_KIND=clang ./build.sh              # ROCm 10.x: amdclang++ -x hip
 OUT_DIR=/tmp/shim ./build.sh                # build outside the source tree
 DRY_RUN=1 ./build.sh                        # print the resolved toolchain only
 ```
+
+### What each SDK line supports
+
+The three SDK lines are built from different rocPRIM versions, and one primitive
+depends on a rocPRIM feature that only arrived after 3.4:
+
+| SDK line | rocPRIM | `rocprim_merge_inplace_int` |
+|---|---|---|
+| 6.4 | 3.4.x | returns `hipErrorNotSupported` — the primitive does not exist in that rocPRIM |
+| 7.2 | 4.2.0 | supported |
+| 10.1 | 4.6.0 | supported |
+
+Everything else in the 149-function surface is available on all three. The
+symbol is always exported, so this is a capability gap the caller can see and
+test, not a missing symbol at load time (`ci/DESIGN.md` §12.6).
 
 **One target per build.** `GFX_ARCH` names exactly one GPU target, for example
 `gfx1100` (RDNA 3 — Radeon RX 7000) or `gfx942` (CDNA 3 — MI300). A family
@@ -390,9 +425,13 @@ configuration is a one-file change.
 | ABI gate | `ci/check-abi.sh` |
 | design, measured upstream facts, risks | `ci/DESIGN.md` |
 
-Profiles keep a private repository inside its Actions allowance:
-`pull_request` runs 2 jobs, a push to `main` runs 16, a nightly or manual run
-covers all 55 jobs (nine configurations × the targets each one builds).
+Profiles keep a private repository inside its Actions allowance, measured on
+2026-11-14: `pull_request` runs 2 jobs, a push to `main` runs `smoke` (16 jobs,
+~37 billed minutes), the nightly cron repeats `smoke`, and the Sunday cron runs
+`full` (54 jobs, ~125 minutes) — about 1,640 minutes a month against the
+2,000-minute allowance, leaving room for pull requests and dispatches. A manual
+run can request any profile; nightly `full` would be ~3,800 minutes a month and
+needs a public repository or a bigger plan (`ci/DESIGN.md` §9).
 
 ```bash
 python3 ci/manifest.py validate                    # self-check the manifest
@@ -494,6 +533,8 @@ PasROCm/
 ├── src/                  # library units (14) + rocprim/ sub-units (13)
 │   └── rocprim/          # rocPRIM layer + C++ shim + loader
 │                         #   rocprim_shim_abi.inc  <- ABI spec (not compiled)
+│                         #   rocprim_shim.h        <- generated public C header
+│                         #   rocprim_shim.map      <- generated export map
 │                         #   rocprim_shim_api.pas  <- generated pointer table
 │                         #   rocprim_bindings.pas  <- generated public API
 │                         #   rocprim_shim_loader.pas <- per-GPU dlopen + checks

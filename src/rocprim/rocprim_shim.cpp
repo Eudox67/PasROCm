@@ -25,6 +25,13 @@
 #include <cstring>  // rocPRIM 4.2's texture_cache_iterator.hpp calls memset unqualified
 #include <limits>
 
+// The public ABI declarations. They carry PASROCM_EXPORT, and the build uses
+// -fvisibility=hidden: a definition inherits the visibility of the prototype
+// declared here, which is what keeps the exported surface at exactly 149
+// symbols (DESIGN.md section 4). Including it also makes the header a
+// compile-time check of every signature.
+#include "rocprim_shim.h"
+
 
 #include <hip/hip_runtime.h>
 #include <rocprim/rocprim.hpp>
@@ -169,15 +176,8 @@ hipError_t require_matching_wavefront()
 
 
 
-enum rocprim_binary_op
-{
-    rocprim_binary_op_equal_to,
-    rocprim_binary_op_not_equal_to,
-    rocprim_binary_op_greater_than,
-    rocprim_binary_op_less_than,
-    rocprim_binary_op_greater_equal,
-    rocprim_binary_op_less_equal
-};
+// rocprim_binary_op is declared in the public header (generated from the spec's
+// TYPES section), so this file and the Pascal enum cannot disagree.
 
 __global__
 void fill_kernel_size_t(size_t* array, size_t value, size_t count)

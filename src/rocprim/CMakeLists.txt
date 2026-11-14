@@ -98,6 +98,19 @@ target_compile_options(pasrocm_shim_${GPU_TARGET} PRIVATE
     --rocm-path=${ROCM_ROOT}
     --offload-arch=${GPU_TARGET}
     ${_hip_language_flags}
+    -fvisibility=hidden
+)
+
+# SONAME is the on-disk file name, deliberately without a .so.N suffix: the
+# Pascal loader resolves the library by exact name, so a versioned soname would
+# diverge from it. ABI breaks are gated by ci/check-abi.sh --strict and the
+# package version instead.
+target_link_options(pasrocm_shim_${GPU_TARGET} PRIVATE
+    "LINKER:-soname,libpasrocm_shim_${GPU_TARGET}.so"
+    # -fvisibility=hidden does not hide __global__ kernels (HIP gives their host
+    # stubs default visibility so the runtime can register them), so the version
+    # script is what closes the dynamic symbol table to the 149 public names.
+    "LINKER:--version-script=${CMAKE_CURRENT_SOURCE_DIR}/rocprim_shim.map"
 )
 
 # Only the table may select wave64: clang accepts -mwavefrontsize64 on gfx1100

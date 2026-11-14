@@ -22,7 +22,10 @@ CONFIG=""
 TARGET=""
 SKIP_INSTALL=""
 DO_PACKAGE=1
-STRICT_ABI=""
+# Phase 1 closed the surface: with -fvisibility=hidden an unexpected export is a
+# defect, so the strict ABI gate is the default. --allow-extra-exports exists
+# for local debugging only and must never appear in CI.
+STRICT_ABI=1
 DRY_RUN=""
 
 usage() {
@@ -33,7 +36,7 @@ usage: ci/build-linux.sh --config <id> --target <gfxNNNN> [options]
   --target <gfx>       one GPU target (one library per target, by design)
   --skip-install       do not provision ROCm (already installed)
   --no-package         build, self-test and ABI-check only
-  --strict-abi         fail on unexpected rocprim_* exports
+  --allow-extra-exports  do not fail on unexpected rocprim_* exports (debugging)
   --dry-run            resolve everything and print, build nothing
   -h, --help           this text
 EOF
@@ -47,7 +50,7 @@ while [[ $# -gt 0 ]]; do
         --target)     TARGET="${2:?--target needs a value}"; shift 2 ;;
         --skip-install) SKIP_INSTALL=1; shift ;;
         --no-package) DO_PACKAGE=0; shift ;;
-        --strict-abi) STRICT_ABI=1; shift ;;
+        --allow-extra-exports) STRICT_ABI=""; shift ;;
         --dry-run)    DRY_RUN=1; shift ;;
         -h|--help)    usage; exit 0 ;;
         *)            usage >&2; die "unknown argument: $1" ;;

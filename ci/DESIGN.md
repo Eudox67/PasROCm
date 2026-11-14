@@ -1,10 +1,10 @@
 # Shim build and release pipeline
 
-**Status:** phases 2, 3 and 5 of §7 are implemented; phase 1 (public header,
-identity functions, closed visibility) is still open, so the ABI is checked but
-not yet *closed*, and phase 4 exists only as the build workflow (no tag-driven
-release and no GPU test workflow). Phase 7 (GPU runtime) has a decision and a
-procedure — a one-off rented MI instance, §13.6 — but no recorded run yet.
+**Status:** phases 1, 2, 3 and 5 of §7 are implemented — the ABI is *closed* at
+149 exported symbols with a public header and a SONAME, and the strict gate is
+the default. Phase 4 exists only as the build workflow (no tag-driven release
+and no GPU test workflow). Phase 7 (GPU runtime) has a decision and a procedure
+— a one-off rented MI instance, §13.6 — but no recorded run yet.
 
 The shim is `src/rocprim/libpasrocm_shim_<gfx>.so`: the C++/HIP layer that the
 Pascal units call into for the rocPRIM primitives that cannot be expressed as
@@ -37,12 +37,12 @@ Out of scope for now:
 
 | Fact | Value |
 |---|---|
-| Dynamic exported symbols | 146 `rocprim_*` plus 5 `pasrocm_*` identity symbols |
+| Dynamic exported symbols | **exactly 149**: 144 `rocprim_*` plus 5 `pasrocm_*` identity symbols, nothing else (§12.8) |
 | Declared in Pascal | **149** `external librocprimshim` functions (144 + 5 identity) |
-| ABI gate | `ci/check-abi.sh`: 149/149 exported, 2 unexpected exports (see §12.4) |
-| Visibility control | none — no `-fvisibility=hidden`, no export macro (phase 1) |
-| SONAME | **absent** (`readelf -d` shows no SONAME) |
-| Public C header | **none** — the ABI is declared only in `rocprim_bindings.pas` |
+| ABI gate | `ci/check-abi.sh`: 149/149 exported, 0 unexpected; `--strict` is the default in `ci/build-linux.sh` |
+| Visibility control | `-fvisibility=hidden` + `PASROCM_EXPORT` in the generated header, closed by a generated linker version script (HIP kernels ignore visibility, §12.8) |
+| SONAME | `libpasrocm_shim_<gfx>.so` — identical to the on-disk name, deliberately without `.so.N` |
+| Public C header | `src/rocprim/rocprim_shim.h`, generated from the definitions and gated by the 149 names in the spec |
 | Identity functions | `pasrocm_shim_target`, `_wavefront_size`, `_rocm_version`, `_wavefront_widths_mask` (GPU-free); ABI version/build-info still pending in phase 1 |
 | Runtime dependencies | `libamdhip64.so.7`, `libstdc++.so.6`, `libm.so.6`, `libgcc_s.so.1`, `libc.so.6` |
 | Build entry points | `src/rocprim/build.sh` (canonical), `src/rocprim/CMakeLists.txt` |
@@ -109,31 +109,34 @@ a 6.4 build for a 10.1-only part.
 
 ## 4. ABI prerequisites, before any stability claim
 
-The current surface (146 `rocprim_*` exports, default visibility, no SONAME)
-cannot be called stable because nothing constrains it. Measured today:
+The surface is now closed: 149 exported names, no others, with a SONAME that
+matches the file the loader opens. What that took, and what is left:
 
-- 144 names are declared in `rocprim_bindings.pas`; all 144 are exported.
-- 2 `rocprim_*` symbols are exported without a declaration:
-  `rocprim_fill_kernel_int` (a `__global__` kernel that leaked into the dynamic
-  symbol table) and `rocprim_set_warp_size` (host helper nothing calls).
+1. `src/rocprim/rocprim_shim.h` — **done**. Generated from the definitions (so
+   const-ness and the `rocprim_binary_op` enum are exact) and gated by the 149
+   names in `rocprim_shim_abi.inc`; every prototype carries `PASROCM_EXPORT`.
+   Both translation units include it, which also makes it a compile-time check
+   of every signature.
+2. `-fvisibility=hidden` plus `PASROCM_EXPORT` — **done**, and *insufficient on
+   its own*: HIP emits `__global__` host stubs at default visibility, so 30+
+   kernels and `rocprim_fill_kernel_int` stayed exported. A generated linker
+   version script (`rocprim_shim.map`, same 149 names) is what actually closes
+   the dynamic symbol table (§12.8).
+3. SONAME — **done**, and deliberately the on-disk name
+   `libpasrocm_shim_<gfx>.so`, not `.so.1`: the loader resolves the file by exact
+   name, so a versioned soname would diverge from it. ABI breaks are gated by
+   the strict ABI check and the package version instead.
+4. `ci/abi-expected.txt` — **done**: generated from the ABI specification, so it
+   is the contract rather than a snapshot of whatever the compiler emitted.
+5. Gates — **done**: `ci/check-abi.sh` (strict by default since phase 1), plus
+   `gen-shim-bindings.py --check` and `gen-shim-header.py --check` in the plan
+   job, so no generated artifact can be stale.
 
-Required, in order (phase 1, still open):
-
-1. `src/rocprim/rocprim_shim.h` — the public header: export macro, identity
-   functions, host API declarations.
-2. `rocprim_shim_abi_version()` and `rocprim_shim_build_info()` implemented in
-   `rocprim_shim.cpp`, stamped via `-D` from git commit / SDK / compiler.
-   (`build.sh` already passes `-DPASROCM_SHIM_VERSION` and
-   `-DPASROCM_GIT_COMMIT`; nothing consumes them yet.)
-3. `-fvisibility=hidden` plus explicit `PASROCM_EXPORT` on exported functions;
-   `-Wl,-soname,librocprim_shim.so.1`.
-4. `ci/abi-expected.txt` — the golden export list. **Done**: it is generated
-   from the ABI specification (`src/rocprim/rocprim_shim_abi.inc`), so it is the
-   contract rather than a snapshot of whatever the compiler emitted.
-5. Two gates — **done** in `ci/check-abi.sh`: the declaration set must match the
-   golden list, and every declaration must resolve in the built library. It also
-   rejects a generated unit that is stale with respect to the specification.
-   Extra exports are a warning today and become an error (`--strict`) with item 3.
+Still open from the original list: `rocprim_shim_abi_version()` /
+`rocprim_shim_build_info()`. The identity symbols today carry target, width,
+widths mask and SDK stamp; a numeric ABI version and a build-info string are
+what a *stable* contract still lacks. They are additive, so they can land
+without another break.
 
 Names stay as they are for the API: symbol prefix `rocprim_*`, library base name
 `pasrocm_shim_<gfx>`. Two exceptions are now part of the ABI and are recorded
@@ -179,11 +182,11 @@ separates what we *claim* from what we *compile against*:
   smoke set to prove the newer userland still works.
 
 Supported matrix (`ci/supported-builds.json`; `pr` = 2 jobs, `smoke` = 16,
-`full`/`release` = 55):
+`full`/`release` = 54):
 
 | Runner | Ubuntu repo dir | ROCm line | Pin | Compiler | Targets built in `full` |
 |---|---|---|---|---|---|
-| `ubuntu-22.04` | `ubuntu2204` | 6.4 | 6.4.4 | `hipcc` | all 13 that 6.4 ships |
+| `ubuntu-22.04` | `ubuntu2204` | 6.4 | 6.4.4 | `hipcc` | all 12 that 6.4 ships (`gfx950` needs 7.2, §12.7) |
 | `ubuntu-24.04` | `ubuntu2404` | 6.4 | 6.4.4 | `hipcc` | `gfx1100`, `gfx942` |
 | `ubuntu-22.04` | `ubuntu2204` | 6.4 | **6.4.0 (probe)** | `hipcc` | `gfx1100` |
 | `ubuntu-24.04` | `ubuntu2404` | 6.4 | **6.4.0 (probe)** | `hipcc` | `gfx1100` |
@@ -209,7 +212,7 @@ reached, and `manifest.json` records exactly which ones ran.
 
 | Phase | Work | Gate | Status |
 |---|---|---|---|
-| 1. ABI identity | `rocprim_shim.h`, hidden visibility, SONAME | `ci/check-abi.sh` passes with `--strict` | **open** — golden list, gate and the five `pasrocm_*` identity symbols exist; the public header, `-fvisibility=hidden` and SONAME do not |
+| 1. ABI identity | `rocprim_shim.h`, hidden visibility, SONAME | `ci/check-abi.sh` passes with `--strict` | **done** — generated header, `-fvisibility=hidden` plus a generated version script (149 exports, 0 others), SONAME = on-disk name, strict gate by default, real gfx1100 run. `rocprim_shim_abi_version()`/`build_info()` remain (§4) |
 | 2. CI-callable build | `COMPILER_KIND`/`COMPILER`, `OUT_DIR`, `VERSION`/`GIT_COMMIT`/`ROCM_VERSION`, `REQUIRE_ARCH`, one target per build | `REQUIRE_ARCH=1 ./src/rocprim/build.sh` without `GFX_ARCH` exits non-zero; a multi-target `GFX_ARCH` exits non-zero | **done** — both compiler kinds and both wavefront widths built locally |
 | 3. Manifest + driver | `ci/gfx-targets.json`, `ci/supported-builds.json`, `ci/manifest.py`, `ci/install-rocm.sh`, `ci/build-linux.sh`, `ci/package.sh` | two consecutive builds of one config produce identical package contents | **done** — 55-job `full` matrix; byte-identical packaging |
 | 4. Workflows | `shim-build.yml` (matrix from the manifest), `shim-release.yml` (tag → assets), `shim-gpu-tests.yml` (self-hosted, manual) | a PR run produces one package per enabled configuration; a tag run attaches them | **partly done** — `shim-build.yml` with `pr`/`smoke`/`full`; no release or GPU workflow |
@@ -290,12 +293,13 @@ installation being present, exactly as `libamdhip64.so.N` implies.
 - **A new ROCm patch can remove a pinned version** from the rolling 10.x suite.
   The build then fails loudly with an apt "version not found" and needs a
   reviewed manifest bump — intended behaviour, not a flake.
-- **Private repository minutes.** The `full` profile is 55 jobs (13 targets on
-  the oldest OS per line, 2 targets on the newer ones, plus 2 probes); at ~4
-  minutes per job that is ~220 minutes per run against a 2,000 min/month
-  allowance. `pr` is 2 jobs and `smoke` is 16, so everyday work stays cheap and
-  `full` runs nightly and on tags.
-- **Artifact count.** One library per (line, target) means ~55 packages per full
+- **Private repository minutes (measured 2026-11-14).** A `smoke` run (16 build
+  jobs) bills ~37 minutes and a `full` run (54 jobs) ~125. The cadence is
+  therefore **nightly `smoke` + weekly `full`**: 30 x 37 + 4.25 x 125 ~= 1,640
+  minutes/month, leaving ~360 of the 2,000-minute allowance for `pr` runs and
+  dispatches. Nightly `full` would be ~3,800 minutes/month and does not fit; it
+  stays conditional on a public repository or an upgraded plan.
+- **Artifact count.** One library per (line, target) means ~52 packages per full
   run at ~1.1 MB each; retention is 14 days and release uploads are per tag.
   This is the deliberate cost of dropping fat binaries.
 - **Public API drift.** Until §4 item 3 lands, `rocprim_fill_kernel_int` and
@@ -531,6 +535,54 @@ No `min_rocm` entry changes: neither failure is a target rejection, and neither
 is a reason to stop claiming the configuration. The next `smoke` run is the
 proof that 3.4/4.2 now compile, and the first run that can show whether a 6.x
 build links and self-tests.
+
+### 12.7 Target coverage correction: gfx950 needs 7.2 (2026-11-14)
+
+The first full matrix built 54 of 55 jobs. The single failure was
+`ubuntu-22.04-rocm6.4 / gfx950`: the target was requested because
+`ci/gfx-targets.json` said `min_rocm: 6.4`, but rocPRIM 3.4.1 cannot compile
+CDNA4 there:
+
+```text
+rocprim/intrinsics/atomic.hpp:210:6: error: support for 128-bit atomics not
+  implemented for current architecture
+```
+
+The same target built cleanly on 7.2.4 (rocPRIM 4.2.0) and 10.1.0 (4.6.0), so the
+floor was wrong, not the code. `gfx950` is now `min_rocm: 7.2`; the 6.4 line
+builds 12 targets instead of 13, `full` is 54 jobs, and the planner drops the
+target automatically — no workflow change.
+
+This is the first correction of the class the design predicted ("a target
+rejection is a `min_rocm` correction, never a workflow patch"), and it was
+invisible to `pr` and `smoke`, which is exactly why `full` exists.
+
+### 12.8 Closing the dynamic symbol table (measured 2026-11-14)
+
+`-fvisibility=hidden` alone does **not** close the surface. Measured on gfx1100
+after adding it plus `PASROCM_EXPORT` on every prototype and including the
+generated header in both translation units:
+
+| symbol class | exported? |
+|---|---|
+| the 144 `rocprim_*` functions and the 5 identity functions | yes (intended) |
+| `rocprim_set_warp_size` (undeclared host helper) | **no** — hidden, as intended |
+| `rocprim_fill_kernel_int` and 30+ other `__global__` kernels | **yes** — still exported |
+
+HIP emits the host stub of a `__global__` function with default visibility so the
+runtime can register it, and the visibility attribute does not apply. The fix is
+a linker version script listing the 149 names with `local: *`, generated from the
+same specification by `ci/gen-shim-header.py` (`src/rocprim/rocprim_shim.map`),
+applied by both `build.sh` and CMake. Result on the same machine:
+
+- `nm -D --defined-only`: **149** symbols, **0** others;
+- `rocprim_fill_kernel_int` and `rocprim_set_warp_size`: gone;
+- `readelf -d`: `SONAME libpasrocm_shim_gfx1100.so` (the on-disk name);
+- `./test.sh`: **1701 tests, 0 failures** against this library on the real GPU.
+
+That last line is the point: visibility and the soname are launch-time changes,
+so the phase-1 definition of done is a real run, not a green compile. The same
+reasoning is why the CDNA rental (§13.6) comes after this, not before.
 
 ## 13. The Pascal loader (runtime binding)
 

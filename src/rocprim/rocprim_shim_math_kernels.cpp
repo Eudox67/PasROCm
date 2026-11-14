@@ -7,6 +7,11 @@
 #include <hip/hip_bfloat16.h>
 #include <cstddef>
 
+// Same reason as rocprim_shim.cpp: the prototypes carry PASROCM_EXPORT, so the
+// definitions in this translation unit inherit default visibility and nothing
+// else leaks out of a -fvisibility=hidden build.
+#include "rocprim_shim.h"
+
 extern "C" __global__ void elew_exp_float(const float* __restrict__ in, float* __restrict__ out, size_t n)
 {
     size_t idx = blockIdx.x * blockDim.x + threadIdx.x;

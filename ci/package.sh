@@ -12,9 +12,10 @@
 #   ...tar.gz.sha256
 #
 # Layout inside the tarball
-#   lib/libpasrocm_shim_<gfx>.so  the shim
-#   include/rocprim_shim.h      public header (once DESIGN phase 1 lands)
-#   pascal/*.pas                matching Pascal declarations
+#   lib/libpasrocm_shim_<gfx>.so  the shim (PASROCM_EXPORT surface, soname = this name)
+#   include/rocprim_shim.h      public C header: the complete exported surface
+#   pascal/*.pas                matching Pascal units
+#   pascal/rocprim_shim_abi.inc the ABI specification the units are generated from
 #   manifest.json               build provenance and claims
 #   SHA256SUMS                  checksums of every file in the package
 #   LICENSE, INSTALL.md
@@ -75,11 +76,14 @@ mkdir -p "$STAGE/lib" "$STAGE/pascal"
 
 LIB_FILE="${BUILD_LIBRARY:-libpasrocm_shim_${TARGET}.so}"
 cp "$LIB" "$STAGE/lib/$LIB_FILE"
-if [[ -f "$ROOT/src/rocprim/rocprim_shim.h" ]]; then
-    mkdir -p "$STAGE/include"
-    cp "$ROOT/src/rocprim/rocprim_shim.h" "$STAGE/include/"
-fi
+# Phase 1: the header exists for every build and is the complete exported
+# surface, so a missing one is an error, not a silent omission.
+[[ -f "$ROOT/src/rocprim/rocprim_shim.h" ]] \
+    || { echo "package: missing src/rocprim/rocprim_shim.h (run ci/gen-shim-header.py)" >&2; exit 1; }
+mkdir -p "$STAGE/include"
+cp "$ROOT/src/rocprim/rocprim_shim.h" "$STAGE/include/"
 cp "$ROOT"/src/rocprim/*.pas "$STAGE/pascal/"
+cp "$ROOT/src/rocprim/rocprim_shim_abi.inc" "$STAGE/pascal/"
 cp "$ROOT/LICENSE" "$STAGE/"
 
 cat >"$STAGE/INSTALL.md" <<EOF
@@ -97,7 +101,10 @@ GPU target: ${TARGET} (wavefront ${BUILD_WAVEFRONT}, widths mask ${BUILD_WIDTHS_
    matches the detected GPU. Point \`PASROCM_SHIM_DIR\` at \`lib/\`, or put the
    file next to your executable, or under \`~/.local/lib/pasrocm\`.
    \`PASROCM_SHIM=<full path>\` overrides the search entirely.
-3. Copy \`pascal/*.pas\` over \`src/rocprim/\` if they differ from your checkout.
+3. Copy \`pascal/*\` (the matching units plus \`rocprim_shim_abi.inc\`, the ABI
+   specification they are generated from) over \`src/rocprim/\` if they differ
+   from your checkout. \`include/rocprim_shim.h\` is the complete exported
+   surface if you want to call the shim from C or C++.
 
 The build is compile-verified and ABI-checked; it has **not** been run on a GPU
 (\`validation.gpu_runtime\` is \`not-run\` in \`manifest.json\`).

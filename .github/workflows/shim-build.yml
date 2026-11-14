@@ -3,10 +3,16 @@ name: shim-build
 # Compile the rocPRIM C++ shim against every supported (Ubuntu, ROCm) pair and
 # every GPU architecture group, one artifact per (configuration, arch group).
 #
-#   pull_request  -> profile "pr"    : 1 configuration, 3 arch groups (~3 jobs)
-#   push to main  -> profile "smoke" : all configurations, one arch group (9 jobs)
-#   schedule      -> profile "full"  : all configurations, all arch groups (45 jobs)
+#   pull_request  -> profile "pr"    : 1 configuration, 2 targets (2 jobs)
+#   push to main  -> profile "smoke" : all configurations, one target set (16 jobs)
+#   nightly cron  -> profile "smoke" : the same 16 jobs, every day
+#   Sunday cron   -> profile "full"  : all configurations, all targets (54 jobs)
 #   manual        -> profile chosen in the "Run workflow" dialog
+#
+# The two crons exist because minutes are finite: measured 2026-11-14, a smoke
+# run costs ~37 billed minutes and a full run ~125, so nightly-full (~3,800 per
+# month) does not fit the 2,000-minute allowance, while nightly smoke + weekly
+# full (~1,620) does. ci/DESIGN.md sections 5 and 9.
 #
 # Everything about the matrix comes from ci/supported-builds.json; this file only
 # says where to run it. See ci/DESIGN.md sections 5 and 7.
@@ -24,9 +30,11 @@ on:
       - 'ci/**'
       - '.github/workflows/shim-build.yml'
   schedule:
-    # Weekly, so a new AMD patch release or a runner image change is noticed
-    # without waiting for a pull request.
-    - cron: '0 4 * * 0'
+    # Nightly smoke keeps every SDK line honest; the weekly full matrix is the
+    # expensive one. Both fire the same workflow; the profile step tells them
+    # apart by github.event.schedule. See the header comment and DESIGN 9.
+    - cron: '0 4 * * *'   # nightly  -> smoke (16 jobs)
+    - cron: '0 5 * * 0'   # Sunday   -> full  (54 jobs)
   workflow_dispatch:
     inputs:
       profile:
@@ -55,20 +63,33 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Validate manifest
         run: python3 ci/manifest.py validate
-      - name: Check generated bindings are current
-        # The ABI specification is hand-edited; the two Pascal units are
-        # generated. A stale unit is a review finding, not an ABI change.
-        run: python3 ci/gen-shim-bindings.py --check
+      - name: Check generated bindings and header are current
+        # The ABI specification is hand-edited; the units, the public header and
+        # the version script are generated. A stale one is a review finding, not
+        # an ABI change.
+        run: |
+          python3 ci/gen-shim-bindings.py --check
+          python3 ci/gen-shim-header.py --check
       - name: Choose profile
         id: profile
         env:
           EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
           INPUT_PROFILE: ${{ inputs.profile }}
         run: |
           case "$EVENT" in
             pull_request) PROFILE=pr ;;
             push)         PROFILE=smoke ;;
-            schedule)     PROFILE=full ;;
+            schedule)
+              # Two cron entries fire this workflow. The Sunday one is the full
+              # matrix; every other night is smoke. A schedule run can only be
+              # told apart by the expression that fired it.
+              if [[ "$SCHEDULE" == '0 5 * * 0' ]]; then
+                PROFILE=full
+              else
+                PROFILE=smoke
+              fi
+              ;;
             *)            PROFILE="${INPUT_PROFILE:-pr}" ;;
           esac
           echo "profile=$PROFILE" >> "$GITHUB_OUTPUT"

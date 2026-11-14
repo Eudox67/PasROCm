@@ -7,14 +7,16 @@
     "There must never be a second copy of this mapping (DESIGN.md section 12.4).",
     "'wavefront' is what the build injects as PASROCM_WAVEFRONT_SIZE;",
     "'widths' lists the widths the hardware can actually run, which is how",
-    "RDNA4 differs from everything else (gfx1250 rejects wave64 outright)."
+    "RDNA4 differs from everything else (gfx1250 rejects wave64 outright).",
+    "gfx950 needs 7.2: rocPRIM 3.4.1 (6.4) has no 128-bit atomics for CDNA4,",
+    "measured 2026-11-14 in the full matrix (7.2 and 10.1 build it fine)."
   ],
 
   "targets": {
     "gfx908":  { "family": "cdna1",   "wavefront": 64, "widths": [64],     "min_rocm": "6.4" },
     "gfx90a":  { "family": "cdna2",   "wavefront": 64, "widths": [64],     "min_rocm": "6.4" },
     "gfx942":  { "family": "cdna3",   "wavefront": 64, "widths": [64],     "min_rocm": "6.4" },
-    "gfx950":  { "family": "cdna4",   "wavefront": 64, "widths": [64],     "min_rocm": "6.4" },
+    "gfx950":  { "family": "cdna4",   "wavefront": 64, "widths": [64],     "min_rocm": "7.2" },
 
     "gfx1030": { "family": "rdna2",   "wavefront": 32, "widths": [32],     "min_rocm": "6.4" },
     "gfx1100": { "family": "rdna3",   "wavefront": 32, "widths": [32],     "min_rocm": "6.4" },

@@ -295,7 +295,18 @@ COMPILE_CMD=(
     --rocm-path="$ROCM_ROOT"
     "${TARGET_FLAGS[@]}"
     "${STAMP_FLAGS[@]}"
+    -fvisibility=hidden
     -shared -fPIC -Xlinker --no-undefined
+    # SONAME is the on-disk file name, deliberately without a .so.N suffix: the
+    # Pascal loader resolves the library by exact name, so a versioned soname
+    # would silently diverge from it. ABI breaks are gated by
+    # ci/check-abi.sh --strict and the package version instead.
+    -Wl,-soname,${LIB_PATH##*/}
+    # -fvisibility=hidden does not hide __global__ kernels (HIP gives their host
+    # stubs default visibility so the runtime can register them, measured
+    # 2026-11-14), so the version script is what actually closes the dynamic
+    # symbol table to the 149 names. It is generated from the same spec.
+    -Wl,--version-script,"$SRC_DIR/rocprim_shim.map"
     -I"$ROCM_ROOT/include"
     -L"$LIB_DIR" -lamdhip64
     -o "$LIB_PATH"
@@ -316,6 +327,13 @@ strip "${STRIP_FLAGS[@]}" "$LIB_PATH" 2>/dev/null || true
 
 log "Linked against:"
 readelf -d "$LIB_PATH" | grep NEEDED || true
+
+# The loader finds the file by name; the soname must therefore be that name.
+SONAME="$(readelf -d "$LIB_PATH" 2>/dev/null | sed -n 's/.*SONAME.*\[\(.*\)\]/\1/p')"
+[[ "$SONAME" == "${LIB_PATH##*/}" ]] \
+    || die "SONAME '$SONAME' must equal the on-disk name '${LIB_PATH##*/}'"
+log "SONAME: $SONAME"
+
 # Show where the NEEDED HIP entry actually resolves, i.e. which libamdhip64 the
 # shim will load at runtime under the baked-in rpath / LD_LIBRARY_PATH.
 if command -v ldd >/dev/null 2>&1; then
