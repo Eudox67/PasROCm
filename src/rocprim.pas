@@ -1,5 +1,5 @@
-{ Pascal facade over the rocPRIM primitives implemented by librocprim_shim. }
-{ Pascal facade over the rocPRIM primitives implemented by librocprim_shim. }
+{ Pascal facade over the rocPRIM primitives implemented by the rocPRIM shim. }
+{ Pascal facade over the rocPRIM primitives implemented by the rocPRIM shim. }
 unit rocprim;
 
 { Copyright (c) 2017-2024 Advanced Micro Devices, Inc. All rights reserved.

@@ -2,13 +2,19 @@
 #
 # ABI gate for the shim.
 #
-#   ci/check-abi.sh --lib dist/work/<id>-<group>/librocprim_shim.so
-#   ci/check-abi.sh --update        # refresh ci/abi-expected.txt from the .pas
+#   ci/check-abi.sh --lib dist/work/<id>-<target>/libpasrocm_shim_<gfx>.so
+#   ci/check-abi.sh --update        # refresh ci/abi-expected.txt from the spec
 #
 # Checks
-#   1. src/rocprim/rocprim_bindings.pas  ==  ci/abi-expected.txt
+#   0. src/rocprim/rocprim_shim_api.pas and rocprim_bindings.pas are current
+#      with src/rocprim/rocprim_shim_abi.inc (ci/gen-shim-bindings.py --check)
+#   1. src/rocprim/rocprim_shim_abi.inc  ==  ci/abi-expected.txt
 #      (the declared contract may not drift without the golden list following)
 #   2. every declared name is exported by the library under test
+#
+# The specification is the hand-edited file; the two Pascal units are generated
+# from it. Checking the generator before the golden list means a stale unit is
+# reported as stale, never as an ABI change.
 #
 # Extra rocprim_* exports are reported, and fatal only with --strict. They are
 # the visible symptom of the missing -fvisibility=hidden described in
@@ -18,7 +24,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BINDINGS="$ROOT/src/rocprim/rocprim_bindings.pas"
+BINDINGS="$ROOT/src/rocprim/rocprim_shim_abi.inc"
 EXPECTED="$ROOT/ci/abi-expected.txt"
 LIB=""
 UPDATE=""
@@ -48,6 +54,14 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -f "$BINDINGS" ]] || die "missing $BINDINGS"
+
+# Check 0: the generated units must match the specification.
+if [[ -f "$ROOT/ci/gen-shim-bindings.py" ]]; then
+    python3 "$ROOT/ci/gen-shim-bindings.py" --check \
+        || die "generated units are stale; run 'python3 ci/gen-shim-bindings.py' and commit"
+else
+    die "missing $ROOT/ci/gen-shim-bindings.py"
+fi
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT

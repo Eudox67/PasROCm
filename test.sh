@@ -8,10 +8,10 @@
 #   SHIM_RESOLVE_ONLY=1 ./test.sh        # print which shim would be used, then stop
 #
 # The shim is built per GPU target (libpasrocm_shim_<gfx>.so). This script
-# detects the GPU, builds that target if needed, and creates a DEV-ONLY
-# compatibility symlink librocprim_shim.so -> libpasrocm_shim_<gfx>.so so the
-# Pascal units, examples and fpmake keep linking. Distribution goes through the
-# dynamic loader, which picks the file by GPU; the symlink is not part of it.
+# detects the GPU, builds that target if needed, and points the runtime loader
+# at this directory with PASROCM_SHIM_DIR. Nothing links against the shim any
+# more: rocprim_shim_loader.pas opens the matching file on the first rocPRIM
+# call and refuses it if its identity does not match the device.
 #
 # Everything is derived from this script's location, so it works from any
 # directory and from any checkout path.
@@ -50,16 +50,17 @@ if [ ! -f "$SHIM_FILE" ]; then
     ( cd "$SHIM_DIR" && GFX_ARCH="$GFX" REQUIRE_ARCH=1 ./build.sh )
 fi
 
-# Dev-only: the Pascal units declare `external librocprimshim`, which resolves to
-# librocprim_shim.so at link time. Replaced by the dynamic loader in distribution.
-ln -sfn "libpasrocm_shim_$GFX.so" "$SHIM_DIR/librocprim_shim.so"
+# Nothing links against the shim: rocprim_shim_loader.pas resolves
+# libpasrocm_shim_<gfx>.so at run time. PASROCM_SHIM_DIR names the exact
+# directory that holds it, so the loader never has to guess.
+export PASROCM_SHIM_DIR="$SHIM_DIR"
 
 if [ -n "${SHIM_RESOLVE_ONLY:-}" ]; then
-    echo "==> resolved shim: $(readlink "$SHIM_DIR/librocprim_shim.so")"
+    echo "==> loader will open: $SHIM_FILE"
     exit 0
 fi
 
-export LD_LIBRARY_PATH="$SHIM_DIR:$ROCM_PATH/lib:$ROCM_PATH/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="$ROCM_PATH/lib:$ROCM_PATH/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 mkdir -p "$ROOT/bin/units"
 
@@ -67,8 +68,8 @@ echo "==> Compiling tests/TestRunner.pas with FPC $(fpc -iV)"
 fpc -Mobjfpc -O1 \
     -Fu"$ROOT/src" -Fu"$ROOT/src/rocprim" -Fu"$ROOT/tests" \
     -I"$ROOT/src" \
-    -Fl"$SHIM_DIR" -Fl"$ROCM_PATH/lib" -Fl"$ROCM_PATH/lib64" \
-    -k"-rpath=$SHIM_DIR:$ROCM_PATH/lib:$ROCM_PATH/lib64" \
+    -Fl"$ROCM_PATH/lib" -Fl"$ROCM_PATH/lib64" \
+    -k"-rpath=$ROCM_PATH/lib:$ROCM_PATH/lib64" \
     -FU"$ROOT/bin/units" -FE"$ROOT/bin" \
     "$ROOT/tests/TestRunner.pas"
 

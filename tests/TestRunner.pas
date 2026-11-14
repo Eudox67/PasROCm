@@ -60,6 +60,7 @@ uses
   , Test_rocsolver
   , Test_rocsparse 
   , Test_hip_runtime
+  , Test_pasrocm_shim_loader
   ;
 
 type

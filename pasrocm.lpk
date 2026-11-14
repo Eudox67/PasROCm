@@ -90,6 +90,14 @@
         <UnitName Value="hip_specialized"/>
       </Item>
       <Item>
+        <Filename Value="src/rocprim/rocprim_shim_api.pas"/>
+        <UnitName Value="rocprim_shim_api"/>
+      </Item>
+      <Item>
+        <Filename Value="src/rocprim/rocprim_shim_loader.pas"/>
+        <UnitName Value="rocprim_shim_loader"/>
+      </Item>
+      <Item>
         <Filename Value="src/rocprim/rocprim_bindings.pas"/>
         <UnitName Value="rocprim_bindings"/>
       </Item>
