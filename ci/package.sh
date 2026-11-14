@@ -35,7 +35,7 @@ usage() {
     cat <<'EOF'
 usage: ci/package.sh --config <id> --target <gfx> --lib <path> [options]
 
-  --config <id>        configuration id from ci/supported-builds.json
+  --config <id>        configuration id from ci/supported-builds.conf
   --target <gfx>       GPU target that was built
   --lib <path>         libpasrocm_shim_<gfx>.so to package
   --build-info <path>  build-info.env written by src/rocprim/build.sh

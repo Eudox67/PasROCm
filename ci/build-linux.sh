@@ -32,7 +32,7 @@ usage() {
     cat <<'EOF'
 usage: ci/build-linux.sh --config <id> --target <gfxNNNN> [options]
 
-  --config <id>        configuration id from ci/supported-builds.json
+  --config <id>        configuration id from ci/supported-builds.conf
   --target <gfx>       one GPU target (one library per target, by design)
   --skip-install       do not provision ROCm (already installed)
   --no-package         build, self-test and ABI-check only

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Install the pinned ROCm SDK that one configuration in ci/supported-builds.json
+# Install the pinned ROCm SDK that one configuration in ci/supported-builds.conf
 # requires, and nothing more.
 #
 #   ci/install-rocm.sh --config ubuntu-24.04-rocm7.2
@@ -30,7 +30,7 @@ usage() {
     cat <<'EOF'
 usage: ci/install-rocm.sh --config <id> [--dry-run]
 
-  --config <id>   configuration id from ci/supported-builds.json
+  --config <id>   configuration id from ci/supported-builds.conf
   --dry-run       print the commands without changing the system
   -h, --help      this text
 EOF
