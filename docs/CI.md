@@ -74,6 +74,14 @@ proven by construction, but real kernel execution on MI hardware stays
 unverified until a one-off rented-MI run exercises those kernels and its
 result is written into the package manifest.
 
+## Runs are never dropped
+
+A pull request groups its runs by ref and cancels superseded ones -- only the
+newest matters. A push or a scheduled run groups by **commit**, because GitHub
+keeps a single pending run per concurrency group: with a ref-based group, a push
+that lands while another run is queued silently replaces it, and that commit is
+never built.
+
 ## Patch ranges
 
 A configuration claims a range of patches it can back up: `7.2` claims
