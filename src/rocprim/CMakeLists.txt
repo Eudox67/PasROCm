@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19)   # string(JSON) reads ci/gfx-targets.json
+cmake_minimum_required(VERSION 3.19)
 
 # Auto-detect a ROCm root unless ROCM_ROOT is given. Preference order matches
 # build.sh: /opt/rocm first, then the newest /opt/rocm-<version> install.
@@ -23,43 +23,61 @@ message(STATUS "Using ROCm: ${ROCM_ROOT}")
 # One target per build. The GPU target decides the wavefront width, which is
 # injected as a compile definition -- it is never guessed from preprocessor
 # macros (DESIGN.md section 12.3). The mapping lives in exactly one file:
-# ci/gfx-targets.json, shared with build.sh and the CI planner.
+# targets.conf, shared with build.sh and the CI planner.
 # ---------------------------------------------------------------------------
 if(NOT DEFINED GPU_TARGET)
-    message(FATAL_ERROR "Pass -DGPU_TARGET=gfxNNNN (one target per build; see ci/gfx-targets.json)")
+    message(FATAL_ERROR "Pass -DGPU_TARGET=gfxNNNN (one target per build; see targets.conf)")
 endif()
 if(GPU_TARGET MATCHES ";")
     message(FATAL_ERROR "GPU_TARGET must be a single target, got '${GPU_TARGET}'")
 endif()
 
-set(_target_table "${CMAKE_CURRENT_SOURCE_DIR}/../../ci/gfx-targets.json")
+set(_target_table "${CMAKE_CURRENT_SOURCE_DIR}/../../targets.conf")
 if(NOT EXISTS "${_target_table}")
     message(FATAL_ERROR "Missing target table: ${_target_table}")
 endif()
-file(READ "${_target_table}" _target_json)
+file(STRINGS "${_target_table}" _target_lines)
 
-string(JSON _wavefront ERROR_VARIABLE _json_error
-       GET "${_target_json}" targets "${GPU_TARGET}" wavefront)
-if(_json_error)
-    message(FATAL_ERROR "Unknown GPU_TARGET '${GPU_TARGET}' (not in ci/gfx-targets.json)")
+set(_wavefront "")
+set(_widths_csv "")
+foreach(_line IN LISTS _target_lines)
+    string(STRIP "${_line}" _stripped)
+    if(_stripped STREQUAL "" OR _stripped MATCHES "^#")
+        continue()
+    endif()
+    separate_arguments(_fields UNIX_COMMAND "${_stripped}")
+    list(LENGTH _fields _field_count)
+    if(_field_count LESS 4)
+        message(FATAL_ERROR "targets.conf: malformed line '${_stripped}'")
+    endif()
+    list(GET _fields 0 _t_target)
+    if(_t_target STREQUAL "${GPU_TARGET}")
+        list(GET _fields 2 _wavefront)
+        list(GET _fields 3 _widths_csv)
+        break()
+    endif()
+endforeach()
+
+if(_wavefront STREQUAL "")
+    message(FATAL_ERROR "Unknown GPU_TARGET '${GPU_TARGET}' (not in targets.conf)")
+endif()
+if(NOT _wavefront STREQUAL "32" AND NOT _wavefront STREQUAL "64")
+    message(FATAL_ERROR "targets.conf has wavefront '${_wavefront}' for '${GPU_TARGET}' (want 32 or 64)")
 endif()
 
-string(JSON _width_count ERROR_VARIABLE _json_error LENGTH
-       "${_target_json}" targets "${GPU_TARGET}" widths)
 set(_widths_mask 0)
-if(NOT _json_error)
-    math(EXPR _width_last "${_width_count} - 1")
-    foreach(_index RANGE 0 ${_width_last})
-        string(JSON _width GET "${_target_json}" targets "${GPU_TARGET}" widths ${_index})
-        if(_width STREQUAL "32")
-            math(EXPR _widths_mask "${_widths_mask} | 1")
-        elseif(_width STREQUAL "64")
-            math(EXPR _widths_mask "${_widths_mask} | 2")
-        endif()
-    endforeach()
-endif()
+string(REPLACE "," ";" _widths "${_widths_csv}")
+foreach(_width IN LISTS _widths)
+    if(_width STREQUAL "32")
+        math(EXPR _widths_mask "${_widths_mask} | 1")
+    elseif(_width STREQUAL "64")
+        math(EXPR _widths_mask "${_widths_mask} | 2")
+    else()
+        message(FATAL_ERROR "targets.conf has width '${_width}' for '${GPU_TARGET}'")
+    endif()
+endforeach()
 if(_widths_mask EQUAL 0)
-    message(FATAL_ERROR "ci/gfx-targets.json has no usable widths for '${GPU_TARGET}'")
+    message(FATAL_ERROR "targets.conf has no usable widths for '${GPU_TARGET}'")
 endif()
 message(STATUS "Target ${GPU_TARGET}: wavefront ${_wavefront}, widths mask ${_widths_mask}")
 

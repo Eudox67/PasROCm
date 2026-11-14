@@ -1,36 +1,16 @@
 # ---------------------------------------------------------------------------
 # PasROCm - Free Pascal bindings for the AMD ROCm libraries.
 # Copyright (c) 2024-2026 Eudox67. MIT License (see LICENSE).
+#
+# Export rules. `git archive` (and therefore the source tarball attached to a
+# release) applies these; a `git clone` does not - it always contains every
+# tracked file.
+#
+# The product is: Pascal units, the shim sources, targets.conf, examples and
+# docs. The build/CI machinery is maintainer tooling, so it is not part of the
+# source download a user makes.
 # ---------------------------------------------------------------------------
 
-# Normalize line endings on commit, adopt LF in the working tree.
-* text=auto eol=lf
-
-# Pascal and build sources must stay LF - CRLF breaks FPC string literals
-# and shell scripts.
-*.pas     text eol=lf
-*.pp        text eol=lf
-*.inc     text eol=lf
-*.lpk     text eol=lf
-*.lpi     text eol=lf
-*.lpr     text eol=lf
-*.xml     text eol=lf
-*.sh      text eol=lf
-*.md      text eol=lf
-*.adoc    text eol=lf
-*.c       text eol=lf
-*.cpp     text eol=lf
-*.h       text eol=lf
-*.hpp     text eol=lf
-*.txt     text eol=lf
-*.cfg     text eol=lf
-Makefile  text eol=lf
-
-# Explicit binary markers (no EOL conversion, no text diffing)
-*.so      binary
-*.a       binary
-*.o       binary
-*.ppu     binary
-*.exe     binary
-*.dll     binary
-*.dylib   binary
+/.github/       export-ignore
+/ci/            export-ignore
+/docs/dev/      export-ignore

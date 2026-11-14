@@ -45,7 +45,7 @@
 # (DESIGN.md section 3).
 #
 # The wavefront width is NOT guessed from preprocessor macros. It is looked up
-# in ci/gfx-targets.conf (the single mapping table) and injected as
+# in targets.conf (the single mapping table) and injected as
 # -DPASROCM_WAVEFRONT_SIZE, because the launch geometry lives in host code that
 # is compiled once and cannot know the device. The shim refuses to build without
 # it, and refuses to run when the device disagrees (DESIGN.md section 12.3).
@@ -188,7 +188,7 @@ expand_family() {
 
 # The one mapping table. Read directly: the shim build must not need an
 # interpreter or a compiled helper, only FPC and ROCm (see README).
-TARGET_TABLE="$(cd "$SRC_DIR/../.." && pwd)/ci/gfx-targets.conf"
+TARGET_TABLE="$(cd "$SRC_DIR/../.." && pwd)/targets.conf"
 
 resolve_targets() {
     local raw="$1" item target
@@ -240,10 +240,10 @@ while read -r table_target _family table_wave table_widths _min_rocm; do
     fi
 done <"$TARGET_TABLE"
 [[ -n "$WAVEFRONT" ]] \
-    || die "unknown GPU target '$TARGET' (not in ci/gfx-targets.conf)"
+    || die "unknown GPU target '$TARGET' (not in targets.conf)"
 case "$WAVEFRONT" in
     32 | 64) ;;
-    *) die "ci/gfx-targets.conf has wavefront '$WAVEFRONT' for $TARGET (want 32 or 64)" ;;
+    *) die "targets.conf has wavefront '$WAVEFRONT' for $TARGET (want 32 or 64)" ;;
 esac
 # Widths the hardware can actually run (1=32, 2=64, 3=both). The runtime gate
 # compares the device's reported width against this set, never against the
@@ -255,12 +255,12 @@ for _width in "${_target_widths[@]}"; do
     case "$_width" in
         32) WIDTHS_MASK=$((WIDTHS_MASK | 1)) ;;
         64) WIDTHS_MASK=$((WIDTHS_MASK | 2)) ;;
-        *) die "ci/gfx-targets.conf has width '$_width' for $TARGET (want 32 or 64)" ;;
+        *) die "targets.conf has width '$_width' for $TARGET (want 32 or 64)" ;;
     esac
 done
 case "$WIDTHS_MASK" in
     1 | 2 | 3) ;;
-    *) die "ci/gfx-targets.conf yields width mask '$WIDTHS_MASK' for $TARGET" ;;
+    *) die "targets.conf yields width mask '$WIDTHS_MASK' for $TARGET" ;;
 esac
 
 ROCM_VERSION="${ROCM_VERSION:-${HIP_VER:-unknown}}"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build matrix tooling. Reads ci/gfx-targets.conf and ci/supported-builds.conf,
+# Build matrix tooling. Reads targets.conf and ci/supported-builds.conf,
 # emits job matrices and environment assignments for CI workflows.
 #
 # Commands:
@@ -14,12 +14,12 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TARGETS_CONF="$ROOT/ci/gfx-targets.conf"
+TARGETS_CONF="$ROOT/targets.conf"
 SUPPORTED_CONF="$ROOT/ci/supported-builds.conf"
 
 die() { echo "manifest: $*" >&2; exit 2; }
 
-# Parse gfx-targets.conf into associative arrays
+# Parse targets.conf into associative arrays
 TARGET_ORDER=()
 declare -A TARGET_FAMILY TARGET_WAVEFRONT TARGET_WIDTHS TARGET_MIN_ROCM
 parse_targets() {

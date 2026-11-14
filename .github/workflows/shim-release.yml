@@ -199,6 +199,22 @@ jobs:
           print("\n".join(lines))
           PY
 
+      - name: Source archive
+        # What a user downloads to build from source. `git archive` honours
+        # .gitattributes export-ignore, so this tree has no ci/ and no
+        # .github/; a plain `git clone` always contains every tracked file.
+        run: |
+          eval "$(ci/manifest.sh meta)"
+          STEM="pasrocm-${SHIM_VERSION}"
+          git archive --format=tar.gz --prefix="${STEM}/" \
+            -o "dist/${STEM}-src.tar.gz" "$GITHUB_SHA"
+          if tar tzf "dist/${STEM}-src.tar.gz" | grep -qE '/\.github/|/ci/'; then
+            echo "source archive still contains CI paths" >&2
+            exit 1
+          fi
+          echo "dist/${STEM}-src.tar.gz" >> /tmp/assets.txt
+          echo "== ${STEM}-src.tar.gz: $(tar tzf "dist/${STEM}-src.tar.gz" | wc -l) entries, no ci/ or .github/"
+
       - name: Checksums
         run: |
           : > dist/SHA256SUMS

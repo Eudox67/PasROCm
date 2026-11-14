@@ -6,7 +6,7 @@
     "'sdk' selects the pinned SDK a job installs; 'covers' is the patch range the",
     "artifact may claim; 'covers_evidence' records why that claim holds.",
     "One build produces exactly one gfx target: libpasrocm_shim_<gfx>.so.",
-    "Target lists are derived from ci/gfx-targets.json ('auto') and filtered by",
+    "Target lists are derived from targets.conf ('auto') and filtered by",
     "each target's min_rocm, so a target can never be requested below the SDK",
     "line that ships it.",
     "A new SDK release is a reviewed change to this file, never an automatic bump."
