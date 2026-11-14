@@ -23,6 +23,11 @@
 /*.fpm
 /pasrocm.pas
 
+# CI output: build-linux.sh/package.sh write here, build.sh writes its
+# provenance next to the library
+/dist/
+/src/rocprim/build-info.env
+
 # Shared libraries built by hipcc (librocprim_shim.so)
 *.so
 
@@ -42,3 +47,7 @@ link.res
 
 # OS clutter
 .DS_Store
+
+# Python bytecode from ci/manifest.py
+__pycache__/
+*.pyc

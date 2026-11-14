@@ -1,29 +1,33 @@
 # Shim build and release pipeline
 
-**Status:** proposed, not implemented. Everything below was measured against the
-repository as it stands on branch `ci/shim-build-pipeline` (based on `8fab987`).
+**Status:** phases 2, 3 and 5 of §7 are implemented; phase 1 (public header,
+identity functions, closed visibility) is still open, so the ABI is checked but
+not yet *closed*, and phase 4 exists only as the build workflow (no tag-driven
+release and no GPU test workflow).
 
 The shim is `src/rocprim/librocprim_shim.so`: the C++/HIP layer that the Pascal
 units call into for the rocPRIM primitives that cannot be expressed as Pascal
 generics. This document defines how it is built, identified, packaged and
-validated.
+validated, and records the upstream facts the configuration policy rests on.
 
 ## 1. Scope
 
 In scope:
 
-- Linux x86_64 builds of the shim against **selected, pinned ROCm SDK releases**.
+- Linux x86_64 builds of the shim against **selected, pinned ROCm SDK lines**.
+- A GitHub Actions matrix over Ubuntu 22.04 / 24.04 / 26.04, one artifact per
+  (configuration, GPU architecture group).
 - Reproducible local builds using the same scripts CI uses.
 - Per-SDK packages carrying build metadata, checksums and notices.
-- A closed, versioned C ABI with a matching public header.
+- A versioned C ABI with a matching public header.
 
 Out of scope for now:
 
-- **Windows.** ROCm 6.3 has no Windows release, and the shim's Pascal loader
-  expects `rocprim_shim.dll`, which does not exist yet.
-- **Runtime testing in CI.** No GPU-equipped runner is available; runtime
-  validation stays manual until one exists.
-- **Cross-SDK fat binaries.** See §3 — they are impossible across HIP majors.
+- **Windows.** ROCm has no Windows release for the 6.x line, and the shim's
+  Pascal loader expects `rocprim_shim.dll`, which does not exist yet.
+- **Runtime testing in CI.** No AMD GPU runner is available; runtime validation
+  stays manual until one exists (phase F of §7).
+- **Cross-SDK fat binaries.** Impossible across HIP majors — see §3.
 - **fpdoc.** Public documentation, if any, uses pasdoc only. The fpdoc driver
   (`tools/dox2fpdoc.pas`, `tools/docs.sh`) is a local experiment, kept out of
   the public tree.
@@ -32,90 +36,180 @@ Out of scope for now:
 
 | Fact | Value |
 |---|---|
-| Dynamic exported symbols | **204** (`nm -D`, `T`), of which **146** are `rocprim_*` host API |
-| Visibility control | none — no `-fvisibility=hidden`, no export macro |
+| Dynamic exported symbols | 146 `rocprim_*` plus 5 `pasrocm_*` identity symbols |
+| Declared in Pascal | **149** `external librocprimshim` functions (144 + 5 identity) |
+| ABI gate | `ci/check-abi.sh`: 149/149 exported, 2 unexpected exports (see §12.4) |
+| Visibility control | none — no `-fvisibility=hidden`, no export macro (phase 1) |
 | SONAME | **absent** (`readelf -d` shows no SONAME) |
 | Public C header | **none** — the ABI is declared only in `rocprim_bindings.pas` |
-| Identity functions | **none** — nothing reports ABI version, git commit, SDK or targets |
+| Identity functions | `pasrocm_shim_target`, `_wavefront_size`, `_rocm_version`, `_wavefront_widths_mask` (GPU-free); ABI version/build-info still pending in phase 1 |
 | Runtime dependencies | `libamdhip64.so.7`, `libstdc++.so.6`, `libm.so.6`, `libgcc_s.so.1`, `libc.so.6` |
-| Build entry points | `src/rocprim/build.sh` (hipcc direct) and `src/rocprim/CMakeLists.txt` (both maintained) |
-| Explicit GPU targets | already supported: `GFX_ARCH=gfx1100;gfx942 ./build.sh` → repeated `--offload-arch=`; falls back to `rocminfo` detection when unset |
-| Compiler selection | hard-coded `$ROCM_ROOT/bin/hipcc`; no override, so ROCm 7.2+ (hipcc deprecated) is blocked |
-| Library name in Pascal | `rocprim_shim` (`rocprim_bindings.pas:45-47`), Windows `rocprim_shim.dll` |
+| Build entry points | `src/rocprim/build.sh` (canonical), `src/rocprim/CMakeLists.txt` |
+| Compiler selection | `COMPILER_KIND=hipcc` (6.x/7.x) or `COMPILER_KIND=clang` (10.x) |
+| Compiler flags | `-x hip` for the `clang` kind; `--rocm-path` for both; `-mwavefrontsize64` only when the table says 64 |
+| GPU target | exactly one per build: `GFX_ARCH=gfx1100 ./build.sh` → one `--offload-arch` and one `-DPASROCM_WAVEFRONT_SIZE` |
+| Arch inference | `rocm_agent_enumerator`, **disabled** when `REQUIRE_ARCH` is set |
+| Library name | `libpasrocm_shim_<gfx>.so` per target; Pascal still links `librocprimshim` through a dev-only symlink |
 | Layout | flat `src/rocprim/` (11 Pascal units + 2 `.cpp` + `build.sh` + `CMakeLists.txt`) |
-| CI | none — no `.github/` directory |
-| Local toolchain | `/opt/rocm` → HIP 7.16.26385, AMD clang 24.0.0 |
+| CI | `.github/workflows/shim-build.yml`, matrix from `ci/supported-builds.json` |
+| CI scripts | `ci/gfx-targets.json`, `ci/manifest.py`, `ci/install-rocm.sh`, `ci/build-linux.sh`, `ci/package.sh`, `ci/check-abi.sh` |
+| Local toolchain | `/opt/rocm` → ROCm **10.1.0**, HIP 7.16.26385, AMD clang 24.0.0 |
 
 `/opt/rocm-6.3.2` and `/opt/rocm-7.0.2` exist as directories but are **not
-installs** (stray `include/hip/` only, no `bin/hipcc`), so 6.x and 7.x support
-can only be proven in CI containers.
+installs** (stray `include/hip/`, no compiler), so 6.x and 7.x support is proven
+only in CI.
 
-## 3. Per-SDK packages are mandatory, not cosmetic
+## 3. What a binary is bound to: one target, one library
 
-The shipped library declares:
+The shipped libraries declare a HIP **major** — measured from the packages, not
+assumed:
 
-```
-NEEDED  libamdhip64.so.7
-```
+| SDK | HIP runtime | `libamdhip64.so` | rocPRIM headers |
+|---|---|---|---|
+| 6.4.0 (`apt/6.4`) | 6.4.43482 | `.so.6` | 3.4.0 |
+| 6.4.4 (`apt/6.4.4`) | 6.4.43484 | `.so.6` | 3.4.1 |
+| 7.2.0 (`apt/7.2`) | 7.2.26015 | `.so.7` | 4.2.0 |
+| 7.2.4 (`apt/7.2.4`) | 7.2.53211 | `.so.7` | 4.2.0 |
+| 10.1.0 (`stable`) | 7.16.26385 | `.so.7` | 4.6.0 |
 
-A shim built against one HIP **major** cannot load against another. Therefore:
+Consequences:
 
-- one package per (OS, SDK release) pair, always;
-- a "fat" binary can span **GPU architectures only**, never ROCm versions;
-- the package name must state its SDK, and the manifest must repeat it.
+- One package per **(OS, SDK line)**, always. A 6.x build cannot load against a
+  7.x/10.x runtime, and vice versa; `DT_NEEDED` on `libamdhip64.so.<major>`
+  makes a cross-major mix fail at `dlopen`, which is a loud enough failure that
+  the SDK line does not need to appear in the on-disk file name.
+- **No fat binaries.** One library per GPU target:
+  `libpasrocm_shim_<gfx>.so`. The loader picks the file that matches the device,
+  so a wrong choice is a file-not-found rather than a silently mis-sized kernel.
+- 7.x and 10.x share `libamdhip64.so.7`, so a 7.2-built artifact will *load*
+  under 10.1. Loading is not support: the device code came from a different
+  toolchain and a different target set. Packages stay per-SDK.
+- The wavefront width belongs to the target, not to the compiler's guess, and is
+  injected at build time — see §12.3 for the mechanism and §9 for the measured
+  reason it cannot be derived from a macro.
+
+**Why 19 targets and not the 24 that AMD publishes for 10.1.** The table
+(`ci/gfx-targets.json`) lists what all claimed SDK lines can actually build, plus
+what 10.1 adds:
+
+| Excluded | Reason |
+|---|---|
+| `gfx1010`, `gfx1011`, `gfx1012` | RDNA1; only 10.1 publishes packages, so `min_rocm` is 10.1 and they are absent from the 6.4/7.2 matrices |
+| `gfx1031` … `gfx1036` | RDNA2 variants with no separate CI value over `gfx1030`; add them when a user reports one |
+| `gfx940`, `gfx941` | CDNA3 parts that 10.1 does not publish (`gfx942` covers MI300) |
+| `gfx951` | Not published by 10.1; `gfx950` covers MI350/MI355 |
+
+The remaining 19 are: `gfx908`, `gfx90a`, `gfx942`, `gfx950`, `gfx1030`,
+`gfx1100`–`gfx1103`, `gfx1150`–`gfx1153`, `gfx1200`, `gfx1201`, `gfx1250`, and
+`gfx1010`–`gfx1012` (10.1 only). The table is the single source of truth: the
+planner filters it by each target's `min_rocm`, so a configuration can never ask
+a 6.4 build for a 10.1-only part.
 
 ## 4. ABI prerequisites, before any stability claim
 
-The current surface (204 exports, default visibility, no SONAME) cannot be
-called stable because nothing constrains it. Required, in order:
+The current surface (146 `rocprim_*` exports, default visibility, no SONAME)
+cannot be called stable because nothing constrains it. Measured today:
+
+- 144 names are declared in `rocprim_bindings.pas`; all 144 are exported.
+- 2 `rocprim_*` symbols are exported without a declaration:
+  `rocprim_fill_kernel_int` (a `__global__` kernel that leaked into the dynamic
+  symbol table) and `rocprim_set_warp_size` (host helper nothing calls).
+
+Required, in order (phase 1, still open):
 
 1. `src/rocprim/rocprim_shim.h` — the public header: export macro, identity
    functions, host API declarations.
 2. `rocprim_shim_abi_version()` and `rocprim_shim_build_info()` implemented in
    `rocprim_shim.cpp`, stamped via `-D` from git commit / SDK / compiler.
-3. `-fvisibility=hidden` plus explicit `PASROCM_EXPORT` on the exported
-   functions; `-Wl,-soname,librocprim_shim.so.1`.
-4. `ci/abi-expected.txt` — the golden export list.
-5. Two gates: `nm -D` output must equal the golden list, and every `external`
-   name parsed from `rocprim_bindings.pas` must exist in the built library.
+   (`build.sh` already passes `-DPASROCM_SHIM_VERSION` and
+   `-DPASROCM_GIT_COMMIT`; nothing consumes them yet.)
+3. `-fvisibility=hidden` plus explicit `PASROCM_EXPORT` on exported functions;
+   `-Wl,-soname,librocprim_shim.so.1`.
+4. `ci/abi-expected.txt` — the golden export list. **Done**: it is generated
+   from the Pascal declarations, so it is the contract rather than a snapshot
+   of whatever the compiler emitted.
+5. Two gates — **done** in `ci/check-abi.sh`: the declaration set must match the
+   golden list, and every declaration must resolve in the built library. Extra
+   exports are a warning today and become an error (`--strict`) with item 3.
 
-Names stay as they are: symbol prefix `rocprim_*`, library base name
-`rocprim_shim`. Renaming would break the Pascal loader and every existing
-consumer. If `libpasrocm_shim.so` is wanted later, add it as a SONAME plus a
-`librocprim_shim.so` symlink inside the package — not as a rename.
+Names stay as they are for the API: symbol prefix `rocprim_*`, library base name
+`pasrocm_shim_<gfx>`. Two exceptions are now part of the ABI and are recorded
+here deliberately:
+
+- the file name carries the GPU target (`libpasrocm_shim_gfx1100.so`), because
+  there is one library per target and the loader resolves by device;
+- five `pasrocm_*` identity symbols exist beside the `rocprim_*` API:
+  `pasrocm_shim_target`, `pasrocm_shim_wavefront_size`,
+  `pasrocm_shim_rocm_version`, `pasrocm_shim_wavefront_widths_mask` and the pure
+  predicate `pasrocm_wavefront_compatible`. They are GPU-free and exist so a
+  loader (and CI) can verify it opened the right library.
 
 ## 5. Supported-configuration policy
 
-- Pin **exact** SDK versions; never `latest`, never `7.x`.
-- One selected release per family initially (6.x, 7.x, 10.x).
-- Add patch releases only if PasROCm genuinely promises patch-by-patch coverage.
-- Record unsupported combinations in the manifest rather than letting CI retry
-  impossible builds.
-- A new SDK release is a **reviewed manifest change**, not an automatic bump.
-- GPU targets are an explicit list per configuration; CI must never infer them
-  (`REQUIRE_ARCH=1`), because compiler acceptance of a `gfx…` target does not
-  establish runtime support for that GPU.
+AMD's repositories do not offer a "latest patch" channel for 6.x/7.x: a bare
+minor directory **is the initial release** (`apt/6.4` ships 6.4.0; there is no
+`apt/6.4.0`), and every patch has its own directory. ROCm 10.x is the opposite:
+one rolling `stable` suite with minor-scoped package names. The policy therefore
+separates what we *claim* from what we *compile against*:
+
+- **`sdk_line`** — the line we claim: `6.4`, `7.2`, `10.1`.
+- **`pin`** — the exact SDK a job installs: repository directory for 6.x/7.x,
+  exact package versions for 10.x.
+- **`covers`** — the patch range the artifact may claim, with
+  **`covers_evidence`** recording why. 7.2 claims `7.2.0-7.2.4` because
+  `rocprim-dev` is 4.2.0 in both channels. 6.4 claims `6.4.0-6.4.4` only
+  because a **compile-probe** configuration builds against `apt/6.4`
+  (rocPRIM 3.4.0) alongside the 6.4.4 build (3.4.1).
+- A new SDK release is a **reviewed manifest change**, never an automatic bump.
+- One build produces one GPU target; CI sets `REQUIRE_ARCH=1` so inference can
+  never run there, because compiler acceptance of a `gfx…` target does not
+  establish runtime support. A family keyword that expands to several targets is
+  rejected by the build rather than silently fattening the library.
+- Impossible combinations are absent from the manifest rather than retried:
+  ROCm 6.x/7.x publish no Ubuntu 26.04 repository, so 26.04 runs 10.1 only, and
+  a target is never requested below its `min_rocm`.
+- **Profiles are the cost valve.** Each (line, target) is built once, on the
+  oldest supported OS (glibc is forward compatible); newer OSes rebuild a small
+  smoke set to prove the newer userland still works.
+
+Supported matrix (`ci/supported-builds.json`; `pr` = 2 jobs, `smoke` = 16,
+`full`/`release` = 55):
+
+| Runner | Ubuntu repo dir | ROCm line | Pin | Compiler | Targets built in `full` |
+|---|---|---|---|---|---|
+| `ubuntu-22.04` | `ubuntu2204` | 6.4 | 6.4.4 | `hipcc` | all 13 that 6.4 ships |
+| `ubuntu-24.04` | `ubuntu2404` | 6.4 | 6.4.4 | `hipcc` | `gfx1100`, `gfx942` |
+| `ubuntu-22.04` | `ubuntu2204` | 6.4 | **6.4.0 (probe)** | `hipcc` | `gfx1100` |
+| `ubuntu-24.04` | `ubuntu2404` | 6.4 | **6.4.0 (probe)** | `hipcc` | `gfx1100` |
+| `ubuntu-22.04` | `ubuntu2204` | 7.2 | 7.2.4 | `hipcc` | all 13 that 7.2 ships |
+| `ubuntu-24.04` | `ubuntu2404` | 7.2 | 7.2.4 | `hipcc` | `gfx1100`, `gfx942` |
+| `ubuntu-22.04` | `ubuntu2204` | 10.1 | 10.1.0 | `clang` | all 19 that 10.1 ships |
+| `ubuntu-24.04` | `ubuntu2404` | 10.1 | 10.1.0 | `clang` | `gfx1100`, `gfx942` |
+| `ubuntu-26.04` | `ubuntu2604` | 10.1 | 10.1.0 | `clang` | `gfx1100`, `gfx942` |
 
 ## 6. Validation levels
 
 Three distinct levels; a configuration must not be labelled above the level it
-reached.
+reached, and `manifest.json` records exactly which ones ran.
 
 | Level | What is checked | What it does not prove |
 |---|---|---|
-| Compile | Headers, instantiated primitives, kernels, host code, linking | Correctness on hardware |
-| ABI / package | Exports match the golden list, Pascal declarations resolve, package contents and metadata | GPU execution or performance |
+| Compile | Headers, instantiated primitives, kernels, host code, linking (`-Xlinker --no-undefined`) | Correctness on hardware |
+| ABI / package | Declared names vs golden list vs exports; package contents and metadata | GPU execution or performance |
 | GPU runtime | Real operations against a CPU reference on a named OS/GPU/runtime | Untested devices or releases |
+
 
 ## 7. Phases and gates
 
-| Phase | Work | Gate |
-|---|---|---|
-| 1. ABI identity | `rocprim_shim.h`, identity functions, hidden visibility, SONAME, golden export list | `ci/check-abi.sh` passes against a locally rebuilt library |
-| 2. CI-callable build | `COMPILER=`, `OUT_DIR=`, `VERSION=`/`GIT_COMMIT=`, `REQUIRE_ARCH=1` in `build.sh` | `REQUIRE_ARCH=1 ./build.sh` without `GFX_ARCH` exits non-zero; `OUT_DIR` keeps `src/` clean |
-| 3. Manifest + driver | `ci/supported-builds.json`, `ci/build-linux.sh --config <id>`, `ci/package.py` | Two consecutive local builds of one config produce identical package contents (modulo timestamps) |
-| 4. Workflows | `shim-build.yml` (dynamic matrix from the manifest), `shim-release.yml` (tag → assets), `shim-gpu-tests.yml` (self-hosted, manual/scheduled) | A PR run produces one package per enabled configuration; a tag run attaches them to the release |
-| 5. Documentation | Supported-configuration table derived from the manifest; local reproduction notes | Table matches the manifest exactly |
+| Phase | Work | Gate | Status |
+|---|---|---|---|
+| 1. ABI identity | `rocprim_shim.h`, hidden visibility, SONAME | `ci/check-abi.sh` passes with `--strict` | **open** — golden list, gate and the five `pasrocm_*` identity symbols exist; the public header, `-fvisibility=hidden` and SONAME do not |
+| 2. CI-callable build | `COMPILER_KIND`/`COMPILER`, `OUT_DIR`, `VERSION`/`GIT_COMMIT`/`ROCM_VERSION`, `REQUIRE_ARCH`, one target per build | `REQUIRE_ARCH=1 ./src/rocprim/build.sh` without `GFX_ARCH` exits non-zero; a multi-target `GFX_ARCH` exits non-zero | **done** — both compiler kinds and both wavefront widths built locally |
+| 3. Manifest + driver | `ci/gfx-targets.json`, `ci/supported-builds.json`, `ci/manifest.py`, `ci/install-rocm.sh`, `ci/build-linux.sh`, `ci/package.sh` | two consecutive builds of one config produce identical package contents | **done** — 55-job `full` matrix; byte-identical packaging |
+| 4. Workflows | `shim-build.yml` (matrix from the manifest), `shim-release.yml` (tag → assets), `shim-gpu-tests.yml` (self-hosted, manual) | a PR run produces one package per enabled configuration; a tag run attaches them | **partly done** — `shim-build.yml` with `pr`/`smoke`/`full`; no release or GPU workflow |
+| 5. Documentation | Supported-configuration table derived from the manifest; local reproduction notes | table matches the manifest exactly | **done** — §5 mirrors the manifest; `validate` rejects structural drift |
+| 6. Wavefront correctness | table-driven width injection, hardware guards, runtime gate, identity self-test | no CDNA build can be wave32, and a wrong library refuses to run | **done** — see §12.3 |
+| 7. GPU runtime | self-hosted AMD runner, `./test.sh` | named OS/GPU/runtime passes | **not started** — no runner available |
 
 Actions in workflows are pinned by commit SHA. Substantive build logic lives in
 `ci/*.sh` and `build.sh`, not in YAML, so a failed CI build can be reproduced
@@ -123,64 +217,228 @@ verbatim on a workstation.
 
 ## 8. Packaging
 
-Name: `pasrocm-shim-<version>-linux-x86_64-rocm-<sdk>-<targets>.tar.gz`
-(for a fat binary, `<targets>` is an architecture-set label and the full list is
-repeated inside `manifest.json`).
+Name: `pasrocm-shim-<version>-linux-x86_64-rocm-<sdk-line>-<gfx>.tar.gz`.
 
-Contents: the shared library, `rocprim_shim.h`, the matching Pascal declarations,
-`manifest.json`, `SHA256SUMS`, `LICENSE`, and short install instructions.
+Contents: `lib/libpasrocm_shim_<gfx>.so`, `include/rocprim_shim.h` (once §4 item
+1 lands), `pascal/*.pas`, `manifest.json`, `SHA256SUMS`, `LICENSE`, `INSTALL.md`.
+A `<tarball>.sha256` file sits next to the archive for release uploads. The SDK
+line appears in the package name, never in the on-disk library name: the loader
+resolves by GPU, and `DT_NEEDED libamdhip64.so.<major>` already rejects a
+cross-major mix at `dlopen`.
+
+`manifest.json` fields: `schema`, `package`, `gpu_target`, `wavefront_size`,
+`widths_mask`, `library`, `shim{name,version,abi_version}`, `git_commit`,
+`os{name,codename}`, `host_architecture`,
+`sdk{line,version,packages,covers,covers_evidence}`, `rocprim_version`,
+`compiler{kind,path,version}`, `hip_version`, and
+`validation{compile,abi,gpu_runtime}`. `rocprim_version` is read from
+`include/rocprim/rocprim_version.hpp`, because package versions encode the SDK,
+not
+rocPRIM.
 
 The package never bundles AMD runtime or driver files; it depends on a ROCm
 installation being present, exactly as `libamdhip64.so.N` implies.
 
-`manifest.json` fields: `shim_version`, `shim_abi_version`, `git_commit`, `os`,
-`host_architecture`, `sdk_version`, `rocprim_version`, `compiler_version`,
-`gpu_targets[]`, and `validation: {compile, abi, gpu_runtime}`.
-
 ## 9. Risks
 
-- **Container tags must be verified** before pinning; a `rocm/dev-*` tag that
-does not exist fails every job in the matrix.
-- **hipcc is deprecated from ROCm 7.2**, so the compiler is per-configuration
-(`hipcc` vs `amdclang++`), not a global default.
+- **The wavefront width cannot be inferred from a macro** (§12.3), and the
+  runtime property does not follow the compiled width either. Measured
+  2026-11-13 on gfx1100 (RDNA3) with a standalone probe:
+
+  | build | host `props.warpSize` | device `__builtin_amdgcn_wavefrontsize()` | launch rc |
+  |---|---|---|---|
+  | default | 32 | 32 | 0 |
+  | `-mwavefrontsize64` | **32** | **64** | 0 (no error) |
+
+  **RDNA3 proxy; RDNA4 unverified.** Two consequences:
+
+  1. `-mwavefrontsize64` is *silently accepted* on RDNA3 and changes what the
+     device code believes without failing the launch. It must never be exposed
+     as a user knob — only `ci/gfx-targets.json` may select wave64, and a
+     wave32-on-`__GFX9__` or wave64-on-`__GFX10/11__` combination is a compile
+     error.
+  2. A future wave64-RDNA gate must **not** compare `props.warpSize` with the
+     compiled width; it must test the reported width against the table's
+     `widths` set. That is what `pasrocm_wavefront_compatible(compiled, reported,
+     allowed_mask)` does: single-width hardware requires agreement, dual-width
+     hardware (mask `3`) accepts either width. Today every RDNA target pins 32,
+     so nothing shipping is affected — but enabling a 64-bit RDNA4 entry must not
+     trip a false rejection.
+
+  What remains unproven: whether RDNA4 reports 32 or 64 in `props.warpSize` when
+  a wave64 kernel runs. The 7900 XTX cannot answer it. The pure predicate makes
+  the question testable the moment such a device appears, and the CI self-test
+  already exercises every branch with fixed inputs.
 - **Flaky batched tests.** `CTRMM_Batched_64` and `CTRSM_Batched_64` fail
-intermittently on tolerance on this machine (proven run-to-run nondeterminism).
-Release gates need an explicit policy: retry, widen tolerance, or exclude with a
-recorded reason.
-- **Fat binaries cost size** (the current single-arch library is ~12 MB before
-stripping) and lengthen builds; start with one architecture per job.
-- **Public API drift.** Until the export list is golden-tested, any internal
-symbol can leak into the ABI unnoticed.
+  intermittently on tolerance (proven run-to-run nondeterminism). Any release
+  gate needs an explicit policy: retry, widen tolerance, or exclude with a
+  recorded reason.
+- **6.x header drift.** `apt/6.4` ships rocPRIM 3.4.0 and `apt/6.4.4` ships
+  3.4.1, so a 6.4.4 build does not prove 6.4.0; the probe configurations exist
+  for exactly that reason. 7.2 has no such drift (4.2.0 in both).
+- **Ubuntu 22.04 runners retire** on 2027-04-17. The 22.04 configurations then
+  move to `container: ubuntu:22.04` (or `rocm/dev-ubuntu-22.04`) on a newer
+  host runner; the build logic does not change.
+- **`ubuntu-latest` is migrating to 26.04** during Oct 19 – Nov 19, 2026. Every
+  workflow pins an explicit label, so the migration cannot move a job.
+- **A new ROCm patch can remove a pinned version** from the rolling 10.x suite.
+  The build then fails loudly with an apt "version not found" and needs a
+  reviewed manifest bump — intended behaviour, not a flake.
+- **Private repository minutes.** The `full` profile is 55 jobs (13 targets on
+  the oldest OS per line, 2 targets on the newer ones, plus 2 probes); at ~4
+  minutes per job that is ~220 minutes per run against a 2,000 min/month
+  allowance. `pr` is 2 jobs and `smoke` is 16, so everyday work stays cheap and
+  `full` runs nightly and on tags.
+- **Artifact count.** One library per (line, target) means ~55 packages per full
+  run at ~1.1 MB each; retention is 14 days and release uploads are per tag.
+  This is the deliberate cost of dropping fat binaries.
+- **Public API drift.** Until §4 item 3 lands, `rocprim_fill_kernel_int` and
+  `rocprim_set_warp_size` are exported without being part of the contract.
+
 
 ## 10. Open decisions
 
-| # | Decision | Recommendation |
+| # | Decision | Resolution |
 |---|---|---|
-| 1 | Artifact name | keep `librocprim_shim.so`; add SONAME/symlink later if wanted |
-| 2 | Exact SDK releases to pin (6.x, 7.x, 10.x) | verify image tags first, then pin one per family |
-| 3 | GPU runners | none today: ship runtime tests as manual/self-hosted only |
-| 4 | Symbol prefix | keep `rocprim_*` |
-| 5 | Layout | keep flat `src/rocprim/`; add `ci/` beside it |
+| 1 | Artifact name | **resolved** — one library per target, `libpasrocm_shim_<gfx>.so`; the SDK line lives in the package name only |
+| 2 | Exact SDK releases to pin | **resolved** — lines 6.4 / 7.2 / 10.1, pinned to 6.4.4 / 7.2.4 / 10.1.0, plus a 6.4.0 compile probe (§5) |
+| 3 | GPU runners | **resolved for now** — none; runtime tests stay manual/self-hosted (phase 7) |
+| 4 | Symbol prefix | **resolved** — keep `rocprim_*`; the five `pasrocm_*` identity symbols are a recorded, deliberate exception (§4) |
+| 5 | Layout | **resolved** — keep flat `src/rocprim/`, `ci/` beside it, `ci/gfx-targets.json` as the shared table |
+| 6 | CDNA runtime execution | **open, deliberately deferred** — nothing local can run gfx9xx. Decide between a self-hosted MI runner and a rented MI instance before any release claims CDNA support; until then every gfx9xx package is labelled `validation.gpu_runtime = not-run` |
 
 ## 11. Reproduce a build locally
 
 ```bash
-# one architecture, explicit, no rocminfo probing
+# one target per build -- the only supported form
 GFX_ARCH=gfx1100 REQUIRE_ARCH=1 ./src/rocprim/build.sh
 
-# several architectures in one fat binary
-GFX_ARCH='gfx1100;gfx942' ./src/rocprim/build.sh
+# the wave64 path (CDNA); the table picks the width and the wave flag
+GFX_ARCH=gfx942 REQUIRE_ARCH=1 ./src/rocprim/build.sh
 
-# alternate compiler / ROCm root
-COMPILER=/opt/rocm/bin/amdclang++ ROCM_ROOT=/opt/rocm ./src/rocprim/build.sh
+# ROCm 10.x compiler path (clang++ -x hip, what modern hipcc wraps)
+COMPILER_KIND=clang GFX_ARCH=gfx1100 ./src/rocprim/build.sh
+
+# a family keyword fails on purpose: it expands to several targets
+GFX_ARCH=rdna3 ./src/rocprim/build.sh      # exit 1, lists the expansion
 
 # show the resolved toolchain without building
-DRY_RUN=1 ./src/rocprim/build.sh
+DRY_RUN=1 GFX_ARCH=gfx1100 ./src/rocprim/build.sh
 
-# compile + run the test suite (builds the shim if missing)
+# CMake path (same table, same defines, same output name)
+cmake -S src/rocprim -B build -DGPU_TARGET=gfx1100 -DROCM_VERSION=10.1.0
+cmake --build build
+
+# exactly what CI runs (installs the pinned SDK, builds, self-tests, ABI-checks, packages)
+ci/install-rocm.sh --config ubuntu-24.04-rocm10.1 --dry-run   # inspect first
+ci/build-linux.sh  --config ubuntu-24.04-rocm10.1 --target gfx1100
+
+# the host-only identity probe on its own (no GPU needed)
+cc -std=c99 -o /tmp/info src/rocprim/pasrocm_shim_info.c \
+   -Lsrc/rocprim -l:libpasrocm_shim_gfx1100.so -Wl,-rpath,$PWD/src/rocprim
+/tmp/info
+
+# compile + run the test suite (detects the GPU, builds that target, links)
+SHIM_RESOLVE_ONLY=1 ./test.sh     # show which shim would be used
 ./test.sh
 ```
 
-The build already reports the resolved compiler (via `readlink -f`), the HIP
-version, the library directory, and the runtime resolution of the result, so a
-CI log answers "which toolchain produced this binary?" on its own.
+The build writes `$OUT_DIR/build-info.env` (compiler, target, wavefront, widths
+mask, SDK, commit), and `ci/package.sh` turns it into `manifest.json`, so an
+artifact answers "which toolchain produced this, for which GPU?" on its own.
+
+## 12. Measured upstream facts and open defects
+
+### 12.1 Repository layout (measured 2026-11-13)
+
+| Query | Result |
+|---|---|
+| `repo.radeon.com/rocm/apt/6.4` | **exists** = 6.4.0 channel (`hipcc 1.1.1.60400-47`); `apt/6.4.0` does not exist |
+| `apt/6.4.1` … `apt/6.4.4` | exist individually; `apt/6.4.5` does not |
+| `apt/7.2` | = 7.2.0 channel (`hipcc 1.1.1.70200-43`) |
+| `apt/7.2.1` … `apt/7.2.4` | exist individually; `apt/7.2.5` does not |
+| `apt/7.14`, `apt/7.13` | **do not exist** — 7.14 is a docs preview and a Docker tag only |
+| `stable.repo.amd.com/rocm/core/packages/` | `ubuntu2204`, `ubuntu2404`, `ubuntu2604`, debian12/13, rhel8/9/10, sles15/16, azl3 |
+| `stable` suite packages | `amdrocm-base10.0`/`10.1` coexist; `amdrocm-llvm10.1` = 10.1.0-3 (823 MB installed), `amdrocm-ccl-dev10.1` = 27 MB |
+| ROCm 10.1 gfx packages | gfx908, gfx90a, gfx942, gfx950, gfx1010–1012, gfx1030–1036, gfx1100–1103, gfx1150–1153, gfx1200/1201, gfx1250 |
+| clang target probe | `gfx942` accepted, `gfx1250` accepted, **`gfx1300` rejected** ("unsupported HIP gpu architecture") |
+| Docker fallback tags | `rocm/dev-ubuntu-{22.04,24.04}:{6.4.4,7.2.4}-complete`, `…:10.1.0-full` (5.5–8.9 GB compressed); `dev-ubuntu-26.04` starts at 7.14 |
+| Runner labels | `ubuntu-22.04` (deprecating 2026-09-17, unsupported 2027-04-17), `ubuntu-24.04`, `ubuntu-26.04` (26.04.1 LTS, codename `resolute`) |
+
+### 12.2 Compiler equivalence (measured locally, ROCm 10.1.0)
+
+`amdclang++ -x hip --rocm-path=/opt/rocm --offload-arch=gfx1100` on the two
+shim translation units: 127 s, 14 MB library, **146 `rocprim_*` exports**,
+`NEEDED libamdhip64.so.7` — identical to the `hipcc` output. The clang path is
+therefore a drop-in replacement for hipcc, which the ROCm 7.2+ deprecation
+requires.
+
+### 12.3 Wavefront size: mechanism and measurements
+
+**Closed.** The width is a build input, never a guess:
+
+- `ci/gfx-targets.json` holds `wavefront` and `widths` per target. It is the
+  only copy of that mapping.
+- `src/rocprim/build.sh` and `CMakeLists.txt` look it up and inject
+  `PASROCM_WAVEFRONT_SIZE`, `PASROCM_WAVEFRONT_WIDTHS_MASK`, `PASROCM_GPU_TARGET`
+  and `PASROCM_ROCM_VERSION`, and add `-mwavefrontsize64` **only** when the table
+  says 64.
+- `rocprim_shim.cpp` `#error`s when any definition is missing, `static_assert`s
+  the width is 32 or 64, and refuses a wave32 build on `__GFX9__` or a wave64
+  build on `__GFX10__`/`__GFX11__`. RDNA4 gets no width guard: it can run either
+  width, and `gfx1250` rejects the wave64 flag outright, so the table decides.
+- At first use the shim compares the device's reported width with the table's
+  `widths` via the pure predicate `pasrocm_wavefront_compatible()`; a mismatch
+  latches `hipErrorInvalidDevice` and no kernel is launched.
+- `pasrocm_shim_target()`, `pasrocm_shim_wavefront_size()`,
+  `pasrocm_shim_rocm_version()` and `pasrocm_shim_wavefront_widths_mask()` are
+  GPU-free accessors, so `src/rocprim/pasrocm_shim_info.c` can assert in CI that
+  a build carries the parameters the matrix requested. That is the difference
+  between "it compiled" and "it compiled with the right parameters".
+
+Why no macro is involved (measured on clang 24 / ROCm 10.1):
+
+| Probe | Result |
+|---|---|
+| `__AMDGCN_TARGET__` | **not defined** — the original bug |
+| `__AMDGCN__` | defined on gfx942 **and** gfx1100 |
+| `__AMDGPU__` | defined on gfx942 **and** gfx1100 |
+| `__AMDGCN_WAVEFRONT_SIZE` | **absent for every target** |
+| `__builtin_amdgcn_wavefrontsize()` | correct, folds at `-O2`, but is **not an integral constant expression**, so it cannot size a template or feed `static_assert` |
+| `__GFX9__` / `__GFX10__` / `__GFX11__` / `__GFX12__` | present and correct — used only as compile-time hardware guards |
+| `ROCPRIM_NAVI` | 1 on gfx1100, 0 on gfx942 (upstream equivalent of the guard) |
+
+The launch geometry is host code, compiled once, so no device-only signal can
+reach it; the injected constant is what makes host and device agree.
+**A third, independent guard exists upstream.** rocPRIM itself refuses a virtual
+wavefront larger than the hardware's: `rocprim/detail/check_virtual_wave_size`
+`static_assert`s `VirtualWaveSize <= size_from_target()`. Measured by instantiating
+`rocprim::warp_reduce<int, 64>` for gfx1100 (RDNA3, wave32), even with
+`-mwavefrontsize64`:
+
+```text
+rocprim/intrinsics/arch.hpp:268: static assertion failed
+  in instantiation of 'check_virtual_wave_size<64, wavefront::target::size32>'
+```
+
+Two consequences: a wave64 build for RDNA cannot be produced by accident (the
+compiler refuses before our guard is reached), and the "instantiate both widths
+and dispatch at runtime" design is **impossible** with rocPRIM 4.6 — one library
+per target is the only shape that works. The two guards are complementary:
+rocPRIM rejects `virtual > hardware`; our `#error` rejects a wave32 build on CDNA,
+which rocPRIM permits (`32 <= 64`) and which would silently halve the geometry we
+launch.
+ §9 records
+the runtime measurement that makes an equality check wrong on dual-width parts.
+
+### 12.4 Defects fixed alongside
+
+1. **Stale architecture family map.** The previous `build.sh` mapped
+   `cdna5 → gfx1010/gfx1011` (RDNA1 parts), `rdna5 → gfx1300/gfx1301` (rejected
+   by the 10.1 toolchain) and put gfx940/941 in CDNA3 (not published for 10.x).
+   The family map now only produces a helpful error, and the target list lives in
+   `ci/gfx-targets.json`.
+2. **Two exports outside the contract.** `rocprim_fill_kernel_int` (a
+   `__global__` kernel in the dynamic symbol table) and `rocprim_set_warp_size`.
+   Both disappear with `-fvisibility=hidden` plus the export macro in §4 item 3;
+   until then `ci/check-abi.sh` reports them as warnings.
