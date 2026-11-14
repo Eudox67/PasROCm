@@ -1,0 +1,212 @@
+{
+  "schema": 2,
+  "notes": [
+    "Single source of truth for the shim build matrix. Workflows read this file;",
+    "no configuration is hard-coded in YAML. See DESIGN.md sections 5, 7 and 12.",
+    "'sdk' selects the pinned SDK a job installs; 'covers' is the patch range the",
+    "artifact may claim; 'covers_evidence' records why that claim holds.",
+    "One build produces exactly one gfx target: libpasrocm_shim_<gfx>.so.",
+    "Target lists are derived from ci/gfx-targets.json ('auto') and filtered by",
+    "each target's min_rocm, so a target can never be requested below the SDK",
+    "line that ships it.",
+    "A new SDK release is a reviewed change to this file, never an automatic bump."
+  ],
+
+  "shim": {
+    "name": "pasrocm_shim",
+    "library": "libpasrocm_shim_{gfx}.so",
+    "version": "1.0.0",
+    "abi_version": 0
+  },
+
+  "sdks": {
+    "6.4.4": {
+      "line": "6.4",
+      "version": "6.4.4",
+      "compiler": "hipcc",
+      "pin": {
+        "kind": "radeon-apt",
+        "repo": "https://repo.radeon.com/rocm/apt/6.4.4",
+        "key": "https://repo.radeon.com/rocm/rocm.gpg.key",
+        "packages": ["rocm-core", "hipcc", "hip-dev", "rocprim-dev", "rocm-device-libs"]
+      }
+    },
+    "6.4.0": {
+      "line": "6.4",
+      "version": "6.4.0",
+      "compiler": "hipcc",
+      "pin": {
+        "kind": "radeon-apt",
+        "repo": "https://repo.radeon.com/rocm/apt/6.4",
+        "key": "https://repo.radeon.com/rocm/rocm.gpg.key",
+        "packages": ["rocm-core", "hipcc", "hip-dev", "rocprim-dev", "rocm-device-libs"]
+      }
+    },
+    "7.2.4": {
+      "line": "7.2",
+      "version": "7.2.4",
+      "compiler": "hipcc",
+      "pin": {
+        "kind": "radeon-apt",
+        "repo": "https://repo.radeon.com/rocm/apt/7.2.4",
+        "key": "https://repo.radeon.com/rocm/rocm.gpg.key",
+        "packages": ["rocm-core", "hipcc", "hip-dev", "rocprim-dev", "rocm-device-libs"]
+      }
+    },
+    "10.1.0": {
+      "line": "10.1",
+      "version": "10.1.0",
+      "compiler": "clang",
+      "pin": {
+        "kind": "amdrocm-stable",
+        "repo": "https://stable.repo.amd.com/rocm/core/packages/{ubuntu}",
+        "key": "https://stable.repo.amd.com/rocm/gpg/packages.gpg",
+        "packages": [
+          "amdrocm-base10.1",
+          "amdrocm-runtime10.1",
+          "amdrocm-runtime-dev10.1",
+          "amdrocm-llvm10.1",
+          "amdrocm-ccl-dev10.1"
+        ],
+        "exact_versions": {
+          "amdrocm-base10.1": "10.1.0-3",
+          "amdrocm-runtime10.1": "10.1.0-3",
+          "amdrocm-runtime-dev10.1": "10.1.0-3",
+          "amdrocm-llvm10.1": "10.1.0-3",
+          "amdrocm-ccl-dev10.1": "10.1.0-3"
+        }
+      }
+    }
+  },
+
+  "profiles": {
+    "pr": {
+      "configs": ["ubuntu-24.04-rocm10.1"],
+      "targets": ["gfx1100", "gfx942"]
+    },
+    "smoke": {
+      "all_configs": true,
+      "targets": ["gfx1100", "gfx942"]
+    },
+    "full": {
+      "all_configs": true,
+      "all_targets": true
+    },
+    "release": {
+      "all_configs": true,
+      "all_targets": true
+    }
+  },
+
+  "configurations": [
+
+    {
+      "id": "ubuntu-22.04-rocm6.4",
+      "mode": "build",
+      "os": "ubuntu-22.04",
+      "ubuntu": "ubuntu2204",
+      "codename": "jammy",
+      "sdk": "6.4.4",
+      "targets": "auto",
+      "full_targets": "all",
+      "covers": "6.4.0-6.4.4",
+      "covers_evidence": "compiled at 6.4.4 (rocprim-dev 3.4.1) and at 6.4.0 via the *-probe configs (rocprim-dev 3.4.0); intermediate patches are not compiled"
+    },
+    {
+      "id": "ubuntu-24.04-rocm6.4",
+      "mode": "build",
+      "os": "ubuntu-24.04",
+      "ubuntu": "ubuntu2404",
+      "codename": "noble",
+      "sdk": "6.4.4",
+      "targets": "auto",
+      "full_targets": ["gfx1100", "gfx942"],
+      "covers": "6.4.0-6.4.4",
+      "covers_evidence": "compiled at 6.4.4 (rocprim-dev 3.4.1) and at 6.4.0 via the *-probe configs (rocprim-dev 3.4.0); intermediate patches are not compiled"
+    },
+    {
+      "id": "ubuntu-22.04-rocm6.4-probe",
+      "mode": "compile-probe",
+      "os": "ubuntu-22.04",
+      "ubuntu": "ubuntu2204",
+      "codename": "jammy",
+      "sdk": "6.4.0",
+      "targets": ["gfx1100"],
+      "artifact": false,
+      "covers": "6.4.0 (oldest patch of the claimed 6.4.0-6.4.4 range)",
+      "covers_evidence": "apt/6.4 is the 6.4.0 channel: rocprim-dev is 3.4.0 there and 3.4.1 in apt/6.4.4, so the range claim needs this probe"
+    },
+    {
+      "id": "ubuntu-24.04-rocm6.4-probe",
+      "mode": "compile-probe",
+      "os": "ubuntu-24.04",
+      "ubuntu": "ubuntu2404",
+      "codename": "noble",
+      "sdk": "6.4.0",
+      "targets": ["gfx1100"],
+      "artifact": false,
+      "covers": "6.4.0 (oldest patch of the claimed 6.4.0-6.4.4 range)",
+      "covers_evidence": "apt/6.4 is the 6.4.0 channel: rocprim-dev is 3.4.0 there and 3.4.1 in apt/6.4.4, so the range claim needs this probe"
+    },
+    {
+      "id": "ubuntu-22.04-rocm7.2",
+      "mode": "build",
+      "os": "ubuntu-22.04",
+      "ubuntu": "ubuntu2204",
+      "codename": "jammy",
+      "sdk": "7.2.4",
+      "targets": "auto",
+      "full_targets": "all",
+      "covers": "7.2.0-7.2.4",
+      "covers_evidence": "rocprim-dev is 4.2.0 in both apt/7.2 and apt/7.2.4 (measured 2026-11-13), so the headers are identical across the line and no extra probe is needed"
+    },
+    {
+      "id": "ubuntu-24.04-rocm7.2",
+      "mode": "build",
+      "os": "ubuntu-24.04",
+      "ubuntu": "ubuntu2404",
+      "codename": "noble",
+      "sdk": "7.2.4",
+      "targets": "auto",
+      "full_targets": ["gfx1100", "gfx942"],
+      "covers": "7.2.0-7.2.4",
+      "covers_evidence": "rocprim-dev is 4.2.0 in both apt/7.2 and apt/7.2.4 (measured 2026-11-13), so the headers are identical across the line and no extra probe is needed"
+    },
+    {
+      "id": "ubuntu-22.04-rocm10.1",
+      "mode": "build",
+      "os": "ubuntu-22.04",
+      "ubuntu": "ubuntu2204",
+      "codename": "jammy",
+      "sdk": "10.1.0",
+      "targets": "auto",
+      "full_targets": "all",
+      "covers": "10.1.x",
+      "covers_evidence": "package names are minor-scoped (amdrocm-*10.1) inside one rolling 'stable' suite; this build pins 10.1.0-3 exactly, so a new patch forces a reviewed manifest change"
+    },
+    {
+      "id": "ubuntu-24.04-rocm10.1",
+      "mode": "build",
+      "os": "ubuntu-24.04",
+      "ubuntu": "ubuntu2404",
+      "codename": "noble",
+      "sdk": "10.1.0",
+      "targets": "auto",
+      "full_targets": ["gfx1100", "gfx942"],
+      "covers": "10.1.x",
+      "covers_evidence": "package names are minor-scoped (amdrocm-*10.1) inside one rolling 'stable' suite; this build pins 10.1.0-3 exactly, so a new patch forces a reviewed manifest change"
+    },
+    {
+      "id": "ubuntu-26.04-rocm10.1",
+      "mode": "build",
+      "os": "ubuntu-26.04",
+      "ubuntu": "ubuntu2604",
+      "codename": "resolute",
+      "sdk": "10.1.0",
+      "targets": "auto",
+      "full_targets": ["gfx1100", "gfx942"],
+      "covers": "10.1.x",
+      "covers_evidence": "ROCm 6.x/7.x publish no Ubuntu 26.04 repository, so 10.1 is the only line that can run here; pins 10.1.0-3 exactly"
+    }
+  ]
+}
