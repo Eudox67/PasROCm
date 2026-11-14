@@ -32,8 +32,8 @@ jobs:
         run: ci/manifest.sh validate
       - name: Check generated artifacts are current
         run: |
-          ci/gen-shim-bindings.sh --check
-          ci/gen-shim-header.sh --check
+          python3 ci/gen-shim-bindings.py --check
+          python3 ci/gen-shim-header.py --check
       - name: Check the tag matches the shim version
         # The version is compiled into build_info() and into every package name,
         # so a tag that disagrees with the manifest would publish assets whose

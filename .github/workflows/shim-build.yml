@@ -68,8 +68,8 @@ jobs:
         # the version script are generated. A stale one is a review finding, not
         # an ABI change.
         run: |
-          ci/gen-shim-bindings.sh --check
-          ci/gen-shim-header.sh --check
+          python3 ci/gen-shim-bindings.py --check
+          python3 ci/gen-shim-header.py --check
       - name: Choose profile
         id: profile
         env:
