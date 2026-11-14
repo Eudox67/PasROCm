@@ -812,6 +812,12 @@ project, Python is not a Pascal developer's tool.
 workflow matrix and the package environment, so it is covered by `--check`-style
 comparisons against the files rather than by unit tests.
 
+`ci/check-abi.sh` runs without an interpreter too: the one step that still needs
+the Python generator (proving the committed units are current) degrades to a
+warning when `python3` is absent, and to a hard error when `CI` is set, so a
+contributor on a Pascal-only machine can still run the export and symbol checks
+while CI keeps the full gate.
+
 ### 14.3 Generated files are checked, not trusted
 
 Every generated artifact — `rocprim_shim_api.pas`, `rocprim_bindings.pas`,

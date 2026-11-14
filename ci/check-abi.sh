@@ -55,12 +55,16 @@ done
 
 [[ -f "$BINDINGS" ]] || die "missing $BINDINGS"
 
-# Check 0: the generated units must match the specification.
-if [[ -f "$ROOT/ci/gen-shim-bindings.py" ]]; then
+# Check 0: the generated units must match the specification. The generator is
+# the last Python in the tree (DESIGN.md section 14.4); a Pascal machine without
+# it can still run the export checks below, but CI always proves staleness.
+if [[ -f "$ROOT/ci/gen-shim-bindings.py" ]] && command -v python3 >/dev/null 2>&1; then
     python3 "$ROOT/ci/gen-shim-bindings.py" --check \
         || die "generated units are stale; run 'python3 ci/gen-shim-bindings.py' and commit"
+elif [[ -n "${CI:-}" ]]; then
+    die "python3 is required in CI to prove the generated units are current"
 else
-    die "missing $ROOT/ci/gen-shim-bindings.py"
+    echo "check-abi: WARNING: python3 not found; skipping the generated-units staleness check" >&2
 fi
 
 TMP="$(mktemp -d)"
