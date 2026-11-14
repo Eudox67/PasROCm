@@ -252,11 +252,18 @@ rocPRIM.
 
 The archive is deterministic for identical inputs (sorted entries, fixed
 mtime/owner), and the manifest carries **no wall-clock timestamp**: `built_at`
-was removed once the release workflow began rebuilding at the tag, because a
-release must attach the byte-identical files a hardware run validated (§13.6).
-Provenance is the commit plus the pinned SDK. `validation.gpu_runtime` is
-`not-run` unless `ci/gpu-runtime-evidence.json` has a recorded entry for that
-(line, target); only that file can flip it.
+was removed once the release workflow began rebuilding at the tag. Provenance is
+the commit plus the pinned SDK. `validation.gpu_runtime` is `not-run` unless
+`ci/gpu-runtime-evidence.json` has a recorded entry for that (line, target); only
+that file can flip it.
+
+One consequence of that last sentence: flipping the evidence *changes the
+manifest*, so the tagged tarball cannot be byte-identical to the one the rental
+validated — the difference is exactly the evidence the rental produced. The
+invariant that transfers is the **library hash**. `build_info()` does not contain
+`gpu_runtime`, so `lib/*.so` is byte-identical, and the release notes publish its
+SHA256 per target (first 16 hex characters) next to the package. A hardware run
+records the same value in §13.6 step 5; the two must match.
 
 The package never bundles AMD runtime or driver files; it depends on a ROCm
 installation being present, exactly as `libamdhip64.so.N` implies.
@@ -761,9 +768,10 @@ adventure:
    `PASROCM_SHIM_DIR=<pkg>/lib ./test.sh --all --format=plain`.
 5. Freeze the evidence: test count, failures, `rocminfo` gfx target, SDK
    version, the shim's `TShimLoadInfo` (target, wavefront, mask and
-   `build_info`), the artifact's `manifest.json`, and its **SHA256** — the
-   release workflow attaches the same file, so the hash proves the tagged asset
-   is the validated one (determinism, §8).
+   `build_info`), the artifact's `manifest.json`, and the **SHA256 of
+   `lib/*.so`** — the release notes publish the same hash per target, and it is
+   the value that must match, because the tarball manifest legitimately changes
+   when this evidence flips (determinism, §8).
 6. Flip `validation.gpu_runtime` from `not-run` to `pass` in that manifest and
    record date + SDK + instance class in the package notes. Until step 6, the
    labels do not move and no README or release note claims CDNA support.

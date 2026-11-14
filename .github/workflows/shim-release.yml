@@ -101,6 +101,7 @@ jobs:
       - name: Select one artifact per (SDK line, target) and write the notes
         run: |
           python3 - <<'PY'
+          import hashlib
           import json
           import pathlib
           import sys
@@ -145,13 +146,28 @@ jobs:
               name = "manifest-rocm-%s-%s.json" % (line, target)
               (manifests / name).write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
+          def library_sha256(path):
+              """Hash of lib/*.so: the artifact identity a hardware run validates.
+
+              The tarball itself legitimately differs from the validated one when
+              gpu_runtime moves from not-run to passed, because that lives in the
+              manifest. The library does not change, so its hash is the evidence
+              that transfers (DESIGN sections 8 and 13.6).
+              """
+              with tarfile.open(path) as tar:
+                  member = next(m for m in tar.getmembers()
+                                if m.name.startswith("./lib/") or m.name.startswith("lib/"))
+                  return hashlib.sha256(tar.extractfile(member).read()).hexdigest()
+
           lines = [
               "Packages rebuilt at the tag from the same commit and pinned SDKs as the",
-              "validated artifacts; `ci/package.sh` output is deterministic, so these",
-              "files are byte-identical to the ones a hardware run validated.",
+              "validated artifacts. The tarballs are deterministic; the manifest of a",
+              "validated target differs only by its recorded `gpu_runtime` evidence,",
+              "so the invariant is the **library hash** below: it is identical to the",
+              "one a hardware run validated (DESIGN sections 8 and 13.6).",
               "",
-              "| SDK line | GPU target | wavefront (widths) | abi | GPU runtime |",
-              "|---|---|---|---|---|",
+              "| SDK line | GPU target | wavefront (widths) | abi | GPU runtime | library sha256 |",
+              "|---|---|---|---|---|---|",
           ]
           for (line, target), (_rank, path, manifest) in chosen.items():
               validation = manifest["validation"]
@@ -164,9 +180,10 @@ jobs:
               widths = manifest.get("widths_mask")
               widths = {1: "32", 2: "64", 3: "32/64"}.get(widths, str(widths))
               lines.append(
-                  "| %s | %s | %s (%s) | %s | %s |"
+                  "| %s | %s | %s (%s) | %s | %s | `%s` |"
                   % (line, target, manifest["wavefront_size"], widths,
-                     manifest["shim"]["abi_version"], runtime)
+                     manifest["shim"]["abi_version"], runtime,
+                     library_sha256(path)[:16] + "...")
               )
           lines += [
               "",
