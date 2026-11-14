@@ -7,7 +7,7 @@ Python. Every script is shell and reads its data from the two `.conf` files.
 |---|---|
 | `gfx-targets.conf` | GPU target → wavefront width, runnable widths, minimum SDK line |
 | `supported-builds.conf` | Ubuntu/ROCm pins, profiles (`pr`/`smoke`/`full`), patch claims |
-| `manifest.sh` | queries: `validate`, `matrix`, `env`, `wave`, `mask`, `targets` |
+| `manifest.sh` | queries: `validate`, `matrix`, `env`, `wave`, `mask`, `targets`, `meta` |
 | `install-rocm.sh` | install a pinned SDK (`--config <id>`, `--dry-run` first) |
 | `build-linux.sh` | one CI job: install, build, ABI check, package |
 | `check-abi.sh` | exports vs. `rocprim_shim_abi.inc` (`--strict` also rejects extras) |

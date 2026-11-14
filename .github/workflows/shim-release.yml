@@ -39,7 +39,8 @@ jobs:
         # so a tag that disagrees with the manifest would publish assets whose
         # bytes differ from the ones a hardware run validated.
         run: |
-          EXPECTED="$(python3 -c 'import json; print(json.load(open("ci/supported-builds.json"))["shim"]["version"])')"
+          eval "$(ci/manifest.sh meta)"
+          EXPECTED="$SHIM_VERSION"
           if [[ "${GITHUB_REF_NAME#v}" != "$EXPECTED" ]]; then
             echo "tag '$GITHUB_REF_NAME' does not match shim version '$EXPECTED'" >&2
             exit 1

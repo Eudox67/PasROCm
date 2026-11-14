@@ -2,7 +2,7 @@
   "schema": 1,
   "notes": [
     "Single source of truth for GPU targets: hardware wavefront width and the",
-    "earliest SDK line that ships the target. Consumed by ci/manifest.py,",
+    "earliest SDK line that ships the target. Consumed by ci/manifest.sh and CMake,",
     "src/rocprim/build.sh, src/rocprim/CMakeLists.txt and the CI workflow.",
     "There must never be a second copy of this mapping (DESIGN.md section 12.4).",
     "'wavefront' is what the build injects as PASROCM_WAVEFRONT_SIZE;",

@@ -10,6 +10,7 @@
 #   wave --target <gfx>                   emit wavefront width
 #   mask --target <gfx>                   emit widths mask (1=32, 2=64, 3=both)
 #   targets --config <id>                 emit semicolon-separated target list
+#   meta                                  emit SHIM_VERSION/SHIM_ABI_VERSION
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -313,6 +314,21 @@ cmd_matrix() {
     fi
 }
 
+cmd_meta() {
+    # The shim's own identity, straight from the data file: the release workflow
+    # asserts the tag against SHIM_VERSION and every package's abi against
+    # SHIM_ABI_VERSION. Printed as key=value so a caller can `eval` it.
+    parse_supported
+
+    [[ -n "${SHIM[version]:-}" ]] || die "supported-builds.conf: shim.version is missing"
+    [[ -n "${SHIM[abi_version]:-}" ]] || die "supported-builds.conf: shim.abi_version is missing"
+
+    echo "SHIM_NAME=${SHIM[name]:-}"
+    echo "SHIM_LIBRARY=${SHIM[library]:-}"
+    echo "SHIM_VERSION=${SHIM[version]}"
+    echo "SHIM_ABI_VERSION=${SHIM[abi_version]}"
+}
+
 cmd_env() {
     local config_id=""
     
@@ -484,6 +500,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         validate) cmd_validate "$@" ;;
         matrix) cmd_matrix "$@" ;;
         env) cmd_env "$@" ;;
+        meta) cmd_meta "$@" ;;
         wave) cmd_wave "$@" ;;
         mask) cmd_mask "$@" ;;
         targets) cmd_targets "$@" ;;

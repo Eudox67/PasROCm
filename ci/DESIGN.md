@@ -54,7 +54,7 @@ Out of scope for now:
 | Pascal binding mechanism | `rocprim_shim_abi.inc` (hand-edited spec) → generated `rocprim_shim_api.pas` (pointer table) and `rocprim_bindings.pas` (149 wrappers); no symbol is resolved at link time |
 | Layout | flat `src/rocprim/` (13 Pascal units incl. 2 generated + 1 spec `.inc` + 2 `.cpp` + `build.sh` + `CMakeLists.txt`) |
 | CI | `.github/workflows/shim-build.yml`, matrix from `ci/supported-builds.json` |
-| CI scripts | `ci/gfx-targets.json`, `ci/manifest.py`, `ci/install-rocm.sh`, `ci/build-linux.sh`, `ci/package.sh`, `ci/check-abi.sh` |
+| CI scripts | `ci/gfx-targets.conf`, `ci/supported-builds.conf`, `ci/manifest.sh`, `ci/install-rocm.sh`, `ci/build-linux.sh`, `ci/package.sh`, `ci/check-abi.sh` |
 | Local toolchain | `/opt/rocm` → ROCm **10.1.0**, HIP 7.16.26385, AMD clang 24.0.0 |
 
 `/opt/rocm-6.3.2` and `/opt/rocm-7.0.2` exist as directories but are **not
@@ -219,7 +219,7 @@ reached, and `manifest.json` records exactly which ones ran.
 |---|---|---|---|
 | 1. ABI identity | `rocprim_shim.h`, hidden visibility, SONAME | `ci/check-abi.sh` passes with `--strict` | **done** — generated header, `-fvisibility=hidden` plus a generated version script (149 exports, 0 others), SONAME = on-disk name, strict gate by default, real gfx1100 run. `rocprim_shim_abi_version()`/`build_info()` remain (§4) |
 | 2. CI-callable build | `COMPILER_KIND`/`COMPILER`, `OUT_DIR`, `VERSION`/`GIT_COMMIT`/`ROCM_VERSION`, `REQUIRE_ARCH`, one target per build | `REQUIRE_ARCH=1 ./src/rocprim/build.sh` without `GFX_ARCH` exits non-zero; a multi-target `GFX_ARCH` exits non-zero | **done** — both compiler kinds and both wavefront widths built locally |
-| 3. Manifest + driver | `ci/gfx-targets.json`, `ci/supported-builds.json`, `ci/manifest.py`, `ci/install-rocm.sh`, `ci/build-linux.sh`, `ci/package.sh` | two consecutive builds of one config produce identical package contents | **done** — 55-job `full` matrix; byte-identical packaging |
+| 3. Manifest + driver | `ci/gfx-targets.conf`, `ci/supported-builds.conf`, `ci/manifest.sh`, `ci/install-rocm.sh`, `ci/build-linux.sh`, `ci/package.sh` | two consecutive builds of one config produce identical package contents | **done** — 55-job `full` matrix; byte-identical packaging |
 | 4. Workflows | `shim-build.yml` (matrix from the manifest), `shim-release.yml` (tag → assets), `shim-gpu-tests.yml` (self-hosted, manual) | a PR run produces one package per enabled configuration; a tag run attaches them | **partly done** — `shim-build.yml` (`pr`/`smoke`/`full`) and `shim-release.yml` (tag → full rebuild, one artifact per (line, target), SHA256SUMS, per-target manifests, gpu_runtime in the notes); no GPU workflow |
 | 5. Documentation | Supported-configuration table derived from the manifest; local reproduction notes | table matches the manifest exactly | **done** — §5 mirrors the manifest; `validate` rejects structural drift |
 | 6. Wavefront correctness | table-driven width injection, hardware guards, runtime gate, identity self-test | no CDNA build can be wave32, and a wrong library refuses to run | **done** — see §12.3 |
