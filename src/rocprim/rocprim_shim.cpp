@@ -43,7 +43,10 @@
 #endif
 #include <rocprim/types.hpp>
 #include <rocprim/intrinsics/thread.hpp>
-#include <rocprim/intrinsics/arch.hpp>
+// No explicit <rocprim/intrinsics/arch.hpp>: the shim only needs lane_id(),
+// which thread.hpp provides (and which includes arch.hpp itself on 4.x). The
+// 6.4.0 channel ships rocPRIM 3.4.0, where that header does not exist at all --
+// the 6.4.0 probe job caught the redundant include.
 
 // This shim provides a simplified, C-style interface to the C++ rocprim template functions.
 // It encapsulates the two-step (get-size, execute) API for temporary storage

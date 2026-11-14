@@ -495,24 +495,37 @@ compiler, and each failed for a different, genuine reason:
 
 | line | rocPRIM | compiler | first error |
 |---|---|---|---|
+| 6.4.0 (probe) | 3.4.0 | clang 19 | `'rocprim/intrinsics/arch.hpp' file not found` |
 | 6.4.4 | 3.4.1 | clang 19 | `no member named 'merge_inplace' in namespace 'rocprim'` |
 | 7.2.4 | 4.2.0 | clang 20 | `texture_cache_iterator.hpp:178: no matching function for call to 'memset'` |
 | 10.1.0 | 4.6.0 | clang 24 | — |
 
-Both are fixed in one translation unit, `rocprim_shim.cpp`, without changing the
-ABI:
+All three are fixed in one translation unit, `rocprim_shim.cpp`, without changing
+the ABI:
 
 1. **`merge_inplace` is feature-detected, not version-guessed.** The header is
    included when `__has_include(<rocprim/device/device_merge_inplace.hpp>)` is
    true, and the entry point compiles only then; otherwise
    `rocprim_merge_inplace_int` returns `hipErrorNotSupported`. The symbol is
-   always present, so the surface stays at 149. Measured: absent in 3.4.1,
-   present in 4.2.0 and 4.6.0. Consequence: on the 6.4 line that one primitive
-   is a **capability gap reported as an error code**, not a missing symbol.
+   always present, so the surface stays at 149. Measured: absent in 3.4.0 and
+   3.4.1, present in 4.2.0 and 4.6.0. Consequence: on the 6.4 line that one
+   primitive is a **capability gap reported as an error code**, not a missing
+   symbol.
 2. **rocPRIM 4.2 relies on a transitive `<cstring>`.** Its
    `iterator/texture_cache_iterator.hpp` calls `memset` unqualified; clang 20
    rejects that where clang 24 (with 4.6, which fixed the header) does not.
    Including `<cstring>` before the rocPRIM headers fixes it for every line.
+3. **rocPRIM 3.4.0 has no `intrinsics/arch.hpp`** — it appeared in 3.4.1, so the
+   probe caught it and the 3.4.4 build did not. The include was redundant: the
+   only symbol needed from that area is `lane_id()`, which `thread.hpp` provides
+   (and which includes `arch.hpp` itself on 4.x). Removed. Measured by
+   extracting both 6.4-era `rocprim-dev` packages: 200 headers in 3.4.0, 201 in
+   3.4.1, the only difference being `intrinsics/arch.hpp`; a sweep of every
+   entry point the shim wraps found `merge_inplace` as the only absence.
+
+The probe configurations are what made item 3 visible at all: a 6.4.4-only
+matrix would have shipped a build that cannot be produced from the 6.4.0
+channel the same `covers` range claims.
 
 No `min_rocm` entry changes: neither failure is a target rejection, and neither
 is a reason to stop claiming the configuration. The next `smoke` run is the
