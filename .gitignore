@@ -42,12 +42,17 @@
 ppas.sh
 link.res
 
-# Generated documentation output (pasdoc / fpdoc renderings)
-/docs/
+# Generated documentation output (pasdoc / fpdoc renderings); the hand-written
+# pages under docs/ are tracked
+/docs/*
+!/docs/*.md
+
+# Compiled CI tooling
+/ci/bin/
 
 # OS clutter
 .DS_Store
 
-# Python bytecode from ci/manifest.py
+# Python bytecode from the remaining ci/ helpers
 __pycache__/
 *.pyc

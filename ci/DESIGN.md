@@ -779,3 +779,56 @@ adventure:
 **If it fails**, it is a shim/wave64 defect, not a packaging one. File it with
 the numbers from step 5 — `compiled` width, `props.warpSize`, widths mask — the
 three values that distinguish "wrong library" from "wrong kernel".
+
+## 14. Tooling
+
+### 14.1 One table per fact
+
+| fact | file | read by |
+|---|---|---|
+| GPU target, wavefront width, widths the hardware can run, minimum SDK line | `ci/gfx-targets.conf` | `build.sh`, `manifest.sh`, CMake |
+| Ubuntu/ROCm pins, profiles, patch claims | `ci/supported-builds.conf` | `manifest.sh`, both workflows |
+
+No second copy of either table exists: `gen-shim-bindings.py` and
+`gen-shim-header.py` read the declaration list from
+`src/rocprim/rocprim_shim_abi.inc`, and the workflows read their matrices by
+asking `ci/manifest.sh` rather than by building one in YAML.
+
+### 14.2 No interpreter on the user path
+
+```bash
+cd src/rocprim && ./build.sh
+```
+
+is the contract. It needs FPC and ROCm and nothing else, so it reads the target
+table with a shell loop instead of calling a helper. The same rule removed
+`python3` from every script a user runs: `build.sh`, `setup_env.sh`, `test.sh`,
+`ci/install-rocm.sh`, `ci/build-linux.sh`, `ci/package.sh` and
+`ci/check-abi.sh` are shell only. Free Pascal is already a prerequisite of the
+project, Python is not a Pascal developer's tool.
+
+`ci/manifest.sh` is shell for the same reason. It answers `validate`, `matrix`,
+`env`, `wave`, `mask` and `targets` from the two data files; its output is the
+workflow matrix and the package environment, so it is covered by `--check`-style
+comparisons against the files rather than by unit tests.
+
+### 14.3 Generated files are checked, not trusted
+
+Every generated artifact — `rocprim_shim_api.pas`, `rocprim_bindings.pas`,
+`rocprim_shim.h`, `rocprim_shim.map`, and the package `manifest.json` — is
+committed and re-generatable, and CI fails when the working tree differs from
+the generator output. The generator is therefore allowed to be replaced without
+changing any committed byte: byte equality is the acceptance test for a rewrite
+(§12.1).
+
+### 14.4 Remaining direction
+
+The two generators are the last Python in the tree. They are text transforms
+over the declaration list in `rocprim_shim_abi.inc` and the C++ definitions, so
+they move into one Free Pascal program (`gen-bindings`, `gen-header`), using the
+vendored LightStrings units for line and string handling, with the same
+`--check` interface. Acceptance stays "zero diff against the committed files".
+The package-manifest and release-asset emitters, currently embedded in
+`package.sh` and `shim-release.yml`, move in the same pass. After that a
+fresh clone builds with FPC alone, on any machine, with no interpreter of any
+kind.

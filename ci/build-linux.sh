@@ -61,7 +61,7 @@ done
 [[ -n "$TARGET" ]] || { usage >&2; die "--target is required (one gfx target per build)"; }
 
 set -a
-eval "$(python3 "$ROOT/ci/manifest.py" env --id "$CONFIG")"
+eval "$("$ROOT/ci/manifest.sh" env --id "$CONFIG")"
 set +a
 
 case " $CFG_TARGETS " in
@@ -69,8 +69,8 @@ case " $CFG_TARGETS " in
     *) die "configuration $CFG_ID does not support target '$TARGET' (has: $CFG_TARGETS)" ;;
 esac
 
-WAVEFRONT="$(python3 "$ROOT/ci/manifest.py" wave --target "$TARGET")"
-WIDTHS_MASK="$(python3 "$ROOT/ci/manifest.py" mask --target "$TARGET")"
+WAVEFRONT="$("$ROOT/ci/manifest.sh" wave --target "$TARGET")"
+WIDTHS_MASK="$("$ROOT/ci/manifest.sh" mask --target "$TARGET")"
 LIB_FILE="${CFG_LIBRARY//\{gfx\}/$TARGET}"
 WORK="$ROOT/dist/work/$CFG_ID-$TARGET"
 mkdir -p "$WORK"

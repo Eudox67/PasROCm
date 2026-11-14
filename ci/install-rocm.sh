@@ -49,7 +49,7 @@ done
 
 [[ -n "$CONFIG" ]] || { usage >&2; die "--config is required"; }
 
-eval "$(python3 "$ROOT/ci/manifest.py" env --id "$CONFIG")"
+eval "$("$ROOT/ci/manifest.sh" env --id "$CONFIG")"
 
 SUDO=()
 [[ ${EUID} -eq 0 ]] || SUDO=(sudo)

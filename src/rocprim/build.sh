@@ -45,7 +45,7 @@
 # (DESIGN.md section 3).
 #
 # The wavefront width is NOT guessed from preprocessor macros. It is looked up
-# in ci/gfx-targets.json (the single mapping table) and injected as
+# in ci/gfx-targets.conf (the single mapping table) and injected as
 # -DPASROCM_WAVEFRONT_SIZE, because the launch geometry lives in host code that
 # is compiled once and cannot know the device. The shim refuses to build without
 # it, and refuses to run when the device disagrees (DESIGN.md section 12.3).
@@ -186,7 +186,9 @@ expand_family() {
     esac
 }
 
-MANIFEST_TOOL="$(cd "$SRC_DIR/../.." && pwd)/ci/manifest.py"
+# The one mapping table. Read directly: the shim build must not need an
+# interpreter or a compiled helper, only FPC and ROCm (see README).
+TARGET_TABLE="$(cd "$SRC_DIR/../.." && pwd)/ci/gfx-targets.conf"
 
 resolve_targets() {
     local raw="$1" item target
@@ -225,22 +227,40 @@ if [[ ${#SELECTED[@]} -ne 1 ]]; then
 fi
 TARGET="${SELECTED[0]}"
 
-[[ -f "$MANIFEST_TOOL" ]] || die "missing $MANIFEST_TOOL -- the gfx/wavefront table lives in the repository (ci/gfx-targets.json)"
-WAVEFRONT="$(python3 "$MANIFEST_TOOL" wave --target "$TARGET" 2>/dev/null)" \
-    || die "unknown GPU target '$TARGET' (not in ci/gfx-targets.json)"
+[[ -f "$TARGET_TABLE" ]] \
+    || die "missing $TARGET_TABLE -- the GPU target table ships with the repository"
+WAVEFRONT=""
+TARGET_WIDTHS=""
+while read -r table_target _family table_wave table_widths _min_rocm; do
+    case "$table_target" in '' | \#*) continue ;; esac
+    if [[ "$table_target" == "$TARGET" ]]; then
+        WAVEFRONT="$table_wave"
+        TARGET_WIDTHS="$table_widths"
+        break
+    fi
+done <"$TARGET_TABLE"
+[[ -n "$WAVEFRONT" ]] \
+    || die "unknown GPU target '$TARGET' (not in ci/gfx-targets.conf)"
 case "$WAVEFRONT" in
     32 | 64) ;;
-    *) die "ci/gfx-targets.json returned wavefront '$WAVEFRONT' for $TARGET" ;;
+    *) die "ci/gfx-targets.conf has wavefront '$WAVEFRONT' for $TARGET (want 32 or 64)" ;;
 esac
 # Widths the hardware can actually run (1=32, 2=64, 3=both). The runtime gate
 # compares the device's reported width against this set, never against the
 # compiled width: measured on gfx1100, a -mwavefrontsize64 kernel reports 64
 # while hipDeviceProp_t::warpSize still says 32 (DESIGN.md section 9).
-WIDTHS_MASK="$(python3 "$MANIFEST_TOOL" mask --target "$TARGET" 2>/dev/null)" \
-    || die "cannot read the width mask for '$TARGET'"
+WIDTHS_MASK=0
+IFS=',' read -ra _target_widths <<<"$TARGET_WIDTHS"
+for _width in "${_target_widths[@]}"; do
+    case "$_width" in
+        32) WIDTHS_MASK=$((WIDTHS_MASK | 1)) ;;
+        64) WIDTHS_MASK=$((WIDTHS_MASK | 2)) ;;
+        *) die "ci/gfx-targets.conf has width '$_width' for $TARGET (want 32 or 64)" ;;
+    esac
+done
 case "$WIDTHS_MASK" in
     1 | 2 | 3) ;;
-    *) die "ci/gfx-targets.json returned width mask '$WIDTHS_MASK' for $TARGET" ;;
+    *) die "ci/gfx-targets.conf yields width mask '$WIDTHS_MASK' for $TARGET" ;;
 esac
 
 ROCM_VERSION="${ROCM_VERSION:-${HIP_VER:-unknown}}"

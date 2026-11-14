@@ -29,11 +29,11 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Validate manifest
-        run: python3 ci/manifest.py validate
+        run: ci/manifest.sh validate
       - name: Check generated artifacts are current
         run: |
-          python3 ci/gen-shim-bindings.py --check
-          python3 ci/gen-shim-header.py --check
+          ci/gen-shim-bindings.sh --check
+          ci/gen-shim-header.sh --check
       - name: Check the tag matches the shim version
         # The version is compiled into build_info() and into every package name,
         # so a tag that disagrees with the manifest would publish assets whose
@@ -48,7 +48,7 @@ jobs:
 
       - name: Plan full matrix
         id: plan
-        run: python3 ci/manifest.py matrix --profile full --github-output
+        run: ci/manifest.sh matrix --profile full --github-output
 
   build:
     name: ${{ matrix.config }} / ${{ matrix.target }}

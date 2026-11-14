@@ -64,7 +64,7 @@ done
 
 set -a
 . "$BUILD_INFO"
-eval "$(python3 "$ROOT/ci/manifest.py" env --id "$CONFIG")"
+eval "$("$ROOT/ci/manifest.sh" env --id "$CONFIG")"
 set +a
 
 VERSION="${BUILD_VERSION:-0.0.0}"

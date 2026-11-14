@@ -62,14 +62,14 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Validate manifest
-        run: python3 ci/manifest.py validate
+        run: ci/manifest.sh validate
       - name: Check generated bindings and header are current
         # The ABI specification is hand-edited; the units, the public header and
         # the version script are generated. A stale one is a review finding, not
         # an ABI change.
         run: |
-          python3 ci/gen-shim-bindings.py --check
-          python3 ci/gen-shim-header.py --check
+          ci/gen-shim-bindings.sh --check
+          ci/gen-shim-header.sh --check
       - name: Choose profile
         id: profile
         env:
@@ -97,7 +97,7 @@ jobs:
       - name: Plan matrix
         id: plan
         run: |
-          python3 ci/manifest.py matrix \
+          ci/manifest.sh matrix \
             --profile "${{ steps.profile.outputs.profile }}" \
             --github-output
       - name: Summarize plan
