@@ -39,6 +39,8 @@ IDENTITY = [
     ("pasrocm_shim_rocm_version", "ROCM_VERSION"),
     ("pasrocm_shim_wavefront_widths_mask", "WIDTHS_MASK"),
     ("pasrocm_wavefront_compatible", "WAVEFRONT_COMPATIBLE"),
+    ("pasrocm_shim_abi_version", "ABI_VERSION"),
+    ("pasrocm_shim_build_info", "BUILD_INFO"),
 ]
 
 NAME_RE = re.compile(r"^(?:rocprim|pasrocm)_[a-z0-9_]+$")
@@ -170,6 +172,18 @@ def parse_blocks(text: str) -> list[dict]:
     return items
 
 
+def abi_version() -> int:
+    """The ABI revision declared in the spec's CONST section."""
+    text = SPEC.read_text(encoding="utf-8")
+    match = re.search(r"PASROCM_ABI_REVISION\s*=\s*(\d+)\s*;", text)
+    if not match:
+        raise SpecError("missing PASROCM_ABI_REVISION in the CONST section")
+    value = int(match.group(1))
+    if value < 1:
+        raise SpecError("PASROCM_ABI_REVISION must be >= 1")
+    return value
+
+
 def validate(items: list[dict], text: str) -> None:
     """Fail before anything is written. Runs in --check mode as well."""
     if not items:
@@ -259,8 +273,12 @@ def render_api(license_text: str, uses_text: str, items: list[dict]) -> str:
         "  rocprim_bindings;",
         "",
         "const",
-        "  { Symbols the shim must export: 5 identity + 144 rocPRIM entry points. }",
+        "  { Symbols the shim must export: 7 identity + 144 rocPRIM entry points. }",
         "  ROCPRIM_SHIM_SYMBOL_COUNT = %d;" % count,
+        "",
+        "  { ABI revision this unit was generated for; the loader refuses a",
+        "    library whose pasrocm_shim_abi_version() differs (DESIGN 13.2). }",
+        "  ROCPRIM_SHIM_ABI_VERSION = %d;" % abi_version(),
         "",
         "  { Indexes of the identity exports. They are the first declarations in the",
         "    specification because the loader must call them before it can trust the",

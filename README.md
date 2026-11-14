@@ -297,9 +297,14 @@ depends on a rocPRIM feature that only arrived after 3.4:
 | 7.2 | 4.2.0 | supported |
 | 10.1 | 4.6.0 | supported |
 
-Everything else in the 149-function surface is available on all three. The
+Everything else in the 151-function surface is available on all three. The
 symbol is always exported, so this is a capability gap the caller can see and
 test, not a missing symbol at load time (`ci/DESIGN.md` §12.6).
+
+Target coverage follows `ci/gfx-targets.json`. `gfx950` (CDNA4) needs ROCm 7.2
+or newer: the 6.4 rocPRIM cannot compile it (no 128-bit atomics for that
+architecture), which is a rocPRIM capability floor rather than compiler support
+(`ci/DESIGN.md` §12.7).
 
 **One target per build.** `GFX_ARCH` names exactly one GPU target, for example
 `gfx1100` (RDNA 3 — Radeon RX 7000) or `gfx942` (CDNA 3 — MI300). A family
@@ -374,11 +379,13 @@ anything that does not belong to this machine:
 1. read the device's architecture from HIP (`hipGetDeviceProperties`, or
    `PASROCM_EXPECT_GFX` for host-only checks);
 2. find and open `libpasrocm_shim_<gfx>.so`;
-3. read `pasrocm_shim_target`, `_wavefront_size`, `_rocm_version` and
-   `_wavefront_widths_mask` — pure exports, no kernels involved;
-4. refuse the library if the target or the wavefront width disagrees with the
-   device;
-5. resolve all 149 entry points, and publish them only if every one resolves.
+3. read `pasrocm_shim_target`, `_wavefront_size`, `_rocm_version`,
+   `_wavefront_widths_mask`, `_abi_version` and `_build_info` — pure exports, no
+   kernels involved;
+4. refuse the library if its ABI revision differs from the one the Pascal units
+   were generated for, or if the target or the wavefront width disagrees with
+   the device;
+5. resolve all 151 entry points, and publish them only if every one resolves.
 
 A wrong library therefore raises `EShimIdentityError` naming both targets,
 instead of launching kernels with the wrong geometry. There is no
@@ -510,7 +517,7 @@ LD_LIBRARY_PATH="$ROCM_PATH/lib:$ROCM_PATH/lib64" \
   ./bin/TestRunner --all --format=plain
 ```
 
-Current status on ROCm 10.1 (HIP 7.16, MIOpen 3.6.1, gfx1100): **1701 tests
+Current status on ROCm 10.1 (HIP 7.16, MIOpen 3.6.1, gfx1100): **1702 tests
 run, 0 errors, 0 failures, 16 ignores**, in about 12 s. Each ignore is an
 expected "not supported by this ROCm build" case and quotes the library's real
 return status. So a real regression shows up as a failure — it never hides as a

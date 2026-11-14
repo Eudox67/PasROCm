@@ -1,0 +1,189 @@
+name: shim-release
+
+# A v* tag rebuilds the full matrix at that commit and publishes the packages.
+# Determinism is the point: ci/package.sh emits byte-identical archives for one
+# commit and one pinned SDK, so the assets attached here are the ones a hardware
+# run validated (DESIGN sections 8 and 13.6). The release notes carry the
+# gpu_runtime state of every target, taken from the package manifests, so no
+# claim runs ahead of evidence.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # gh release create / upload
+
+concurrency:
+  group: shim-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: plan release matrix
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Validate manifest
+        run: python3 ci/manifest.py validate
+      - name: Check generated artifacts are current
+        run: |
+          python3 ci/gen-shim-bindings.py --check
+          python3 ci/gen-shim-header.py --check
+      - name: Plan full matrix
+        id: plan
+        run: python3 ci/manifest.py matrix --profile full --github-output
+
+  build:
+    name: ${{ matrix.config }} / ${{ matrix.target }}
+    needs: plan
+    if: needs.plan.outputs.count != '0'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Provision ROCm ${{ matrix.sdk_line }} (${{ matrix.sdk_version }})
+        run: ci/install-rocm.sh --config "${{ matrix.config }}"
+
+      - name: Build, self-test and ABI-check (${{ matrix.target }}, wave ${{ matrix.wavefront }})
+        run: |
+          ci/build-linux.sh \
+            --config "${{ matrix.config }}" \
+            --target "${{ matrix.target }}" \
+            --skip-install
+
+      - name: Upload package
+        if: matrix.artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ matrix.config }}__${{ matrix.target }}
+          path: |
+            dist/*.tar.gz
+            dist/*.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: publish assets
+    needs: [plan, build]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Download packages
+        # No merge: two OSes build the same (line, target) file name, and merging
+        # would silently overwrite one with the other before we can choose.
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: dist
+
+      - name: Select one artifact per (SDK line, target) and write the notes
+        run: |
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import sys
+          import tarfile
+
+          dist = pathlib.Path("dist")
+          expected_abi = json.load(open("ci/supported-builds.json", encoding="utf-8"))["shim"]["abi_version"]
+          # The oldest supported Ubuntu per line is the artifact; newer OSes
+          # rebuild a smoke set to prove the userland, not to ship duplicates.
+          order = {"ubuntu-22.04": 0, "ubuntu-24.04": 1, "ubuntu-26.04": 2}
+
+          chosen = {}
+          for path in sorted(dist.rglob("*.tar.gz")):
+              with tarfile.open(path) as tar:
+                  member = next(m for m in tar.getmembers() if m.name.endswith("manifest.json"))
+                  manifest = json.load(tar.extractfile(member))
+              key = (manifest["sdk"]["line"], manifest["gpu_target"])
+              rank = order.get(manifest["os"]["name"], 9)
+              if key not in chosen or rank < chosen[key][0]:
+                  chosen[key] = (rank, path, manifest)
+
+          problems = []
+          for (line, target), (_rank, path, manifest) in sorted(chosen.items()):
+              if manifest["shim"]["abi_version"] != expected_abi:
+                  problems.append("%s: abi %s != %s" % (path.name, manifest["shim"]["abi_version"], expected_abi))
+              for level in ("compile", "abi"):
+                  if manifest["validation"][level] != "passed":
+                      problems.append("%s: %s is %s" % (path.name, level, manifest["validation"][level]))
+          if problems:
+              print("\n".join(problems), file=sys.stderr)
+              sys.exit(1)
+
+          chosen = dict(sorted(chosen.items()))
+          assets = [str(entry[1]) for entry in chosen.values()]
+          pathlib.Path("/tmp/assets.txt").write_text("\n".join(assets) + "\n", encoding="utf-8")
+
+          # One manifest per target ships beside the archives, so a consumer can
+          # read the claims without unpacking anything.
+          manifests = dist / "manifests"
+          manifests.mkdir(exist_ok=True)
+          for (line, target), (_rank, path, manifest) in chosen.items():
+              name = "manifest-rocm-%s-%s.json" % (line, target)
+              (manifests / name).write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+          lines = [
+              "Packages rebuilt at the tag from the same commit and pinned SDKs as the",
+              "validated artifacts; `ci/package.sh` output is deterministic, so these",
+              "files are byte-identical to the ones a hardware run validated.",
+              "",
+              "| SDK line | GPU target | wavefront (widths) | abi | GPU runtime |",
+              "|---|---|---|---|---|",
+          ]
+          for (line, target), (_rank, path, manifest) in chosen.items():
+              validation = manifest["validation"]
+              runtime = validation["gpu_runtime"]
+              if runtime == "passed":
+                  evidence = validation.get("gpu_runtime_evidence", {})
+                  runtime = "validated-on-MI"
+                  if evidence.get("date"):
+                      runtime += " (%s)" % evidence["date"]
+              widths = manifest.get("widths_mask")
+              widths = {1: "32", 2: "64", 3: "32/64"}.get(widths, str(widths))
+              lines.append(
+                  "| %s | %s | %s (%s) | %s | %s |"
+                  % (line, target, manifest["wavefront_size"], widths,
+                     manifest["shim"]["abi_version"], runtime)
+              )
+          lines += [
+              "",
+              "`not-run` means no recorded hardware run for that target: the package is",
+              "compile- and ABI-verified only. See `ci/DESIGN.md` section 13.6.",
+              "",
+              "Known per-line difference: on the 6.4 line, `rocprim_merge_inplace_int`",
+              "returns `hipErrorNotSupported` (rocPRIM 3.4 has no `merge_inplace`;",
+              "DESIGN section 12.6).",
+          ]
+          pathlib.Path("/tmp/release-notes.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          print("\n".join(lines))
+          PY
+
+      - name: Checksums
+        run: |
+          : > dist/SHA256SUMS
+          while IFS= read -r archive; do
+            printf '%s  %s\n' "$(sha256sum "$archive" | cut -d' ' -f1)" "$(basename "$archive")" >> dist/SHA256SUMS
+          done < /tmp/assets.txt
+          cat dist/SHA256SUMS
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mapfile -t ASSETS < /tmp/assets.txt
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --title "PasROCm shim $GITHUB_REF_NAME" \
+            --notes-file /tmp/release-notes.md \
+            "${ASSETS[@]}" dist/SHA256SUMS dist/manifests/*.json

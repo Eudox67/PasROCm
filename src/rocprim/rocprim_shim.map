@@ -9,6 +9,8 @@
     pasrocm_shim_rocm_version;
     pasrocm_shim_wavefront_widths_mask;
     pasrocm_wavefront_compatible;
+    pasrocm_shim_abi_version;
+    pasrocm_shim_build_info;
     rocprim_reduce_int;
     rocprim_reduce_int128;
     rocprim_reduce_reverse_int;

@@ -132,11 +132,16 @@ matches the file the loader opens. What that took, and what is left:
    `gen-shim-bindings.py --check` and `gen-shim-header.py --check` in the plan
    job, so no generated artifact can be stale.
 
-Still open from the original list: `rocprim_shim_abi_version()` /
-`rocprim_shim_build_info()`. The identity symbols today carry target, width,
-widths mask and SDK stamp; a numeric ABI version and a build-info string are
-what a *stable* contract still lacks. They are additive, so they can land
-without another break.
+6. `pasrocm_shim_abi_version()` and `pasrocm_shim_build_info()` — **done**,
+   and they are why the first release is v0.1.0 at **151** symbols rather than
+   149. The revision is one monotonic integer owned by the spec
+   (`PASROCM_ABI_REVISION`), emitted into the generated units and the header,
+   returned by the library, and enforced by the loader as a hard gate: a loaded
+   shim whose value differs from the one the Pascal units were generated for is
+   refused before any pointer is bound. `build_info()` is deterministic —
+   version, abi, commit, target, wavefront, widths mask, SDK and compiler
+   (`__VERSION__`), never `__DATE__`/`__TIME__` — so two builds of one commit
+   stay byte-identical (§8).
 
 Names stay as they are for the API: symbol prefix `rocprim_*`, library base name
 `pasrocm_shim_<gfx>`. Two exceptions are now part of the ABI and are recorded
@@ -215,7 +220,7 @@ reached, and `manifest.json` records exactly which ones ran.
 | 1. ABI identity | `rocprim_shim.h`, hidden visibility, SONAME | `ci/check-abi.sh` passes with `--strict` | **done** — generated header, `-fvisibility=hidden` plus a generated version script (149 exports, 0 others), SONAME = on-disk name, strict gate by default, real gfx1100 run. `rocprim_shim_abi_version()`/`build_info()` remain (§4) |
 | 2. CI-callable build | `COMPILER_KIND`/`COMPILER`, `OUT_DIR`, `VERSION`/`GIT_COMMIT`/`ROCM_VERSION`, `REQUIRE_ARCH`, one target per build | `REQUIRE_ARCH=1 ./src/rocprim/build.sh` without `GFX_ARCH` exits non-zero; a multi-target `GFX_ARCH` exits non-zero | **done** — both compiler kinds and both wavefront widths built locally |
 | 3. Manifest + driver | `ci/gfx-targets.json`, `ci/supported-builds.json`, `ci/manifest.py`, `ci/install-rocm.sh`, `ci/build-linux.sh`, `ci/package.sh` | two consecutive builds of one config produce identical package contents | **done** — 55-job `full` matrix; byte-identical packaging |
-| 4. Workflows | `shim-build.yml` (matrix from the manifest), `shim-release.yml` (tag → assets), `shim-gpu-tests.yml` (self-hosted, manual) | a PR run produces one package per enabled configuration; a tag run attaches them | **partly done** — `shim-build.yml` with `pr`/`smoke`/`full`; no release or GPU workflow |
+| 4. Workflows | `shim-build.yml` (matrix from the manifest), `shim-release.yml` (tag → assets), `shim-gpu-tests.yml` (self-hosted, manual) | a PR run produces one package per enabled configuration; a tag run attaches them | **partly done** — `shim-build.yml` (`pr`/`smoke`/`full`) and `shim-release.yml` (tag → full rebuild, one artifact per (line, target), SHA256SUMS, per-target manifests, gpu_runtime in the notes); no GPU workflow |
 | 5. Documentation | Supported-configuration table derived from the manifest; local reproduction notes | table matches the manifest exactly | **done** — §5 mirrors the manifest; `validate` rejects structural drift |
 | 6. Wavefront correctness | table-driven width injection, hardware guards, runtime gate, identity self-test | no CDNA build can be wave32, and a wrong library refuses to run | **done** — see §12.3 |
 | 7. GPU runtime | one-off rented MI instance (§13.6), `./test.sh` against the gfx942 package | named OS/GPU/runtime passes and the result is written into `manifest.json` | **decided, not run** — rental procedure recorded; every gfx9xx package stays `validation.gpu_runtime = not-run` until the run is logged |
@@ -244,6 +249,14 @@ cross-major mix at `dlopen`.
 `include/rocprim/rocprim_version.hpp`, because package versions encode the SDK,
 not
 rocPRIM.
+
+The archive is deterministic for identical inputs (sorted entries, fixed
+mtime/owner), and the manifest carries **no wall-clock timestamp**: `built_at`
+was removed once the release workflow began rebuilding at the tag, because a
+release must attach the byte-identical files a hardware run validated (§13.6).
+Provenance is the commit plus the pinned SDK. `validation.gpu_runtime` is
+`not-run` unless `ci/gpu-runtime-evidence.json` has a recorded entry for that
+(line, target); only that file can flip it.
 
 The package never bundles AMD runtime or driver files; it depends on a ROCm
 installation being present, exactly as `libamdhip64.so.N` implies.
@@ -549,7 +562,11 @@ rocprim/intrinsics/atomic.hpp:210:6: error: support for 128-bit atomics not
 ```
 
 The same target built cleanly on 7.2.4 (rocPRIM 4.2.0) and 10.1.0 (4.6.0), so the
-floor was wrong, not the code. `gfx950` is now `min_rocm: 7.2`; the 6.4 line
+floor was wrong, not the code. `min_rocm` therefore means **the oldest line that
+produces a working package**: a rocPRIM capability floor, not compiler support
+for the architecture. AMD's 6.4 toolchain accepts `gfx950`; its rocPRIM cannot
+build it. A later rocPRIM backport could lower the value, as a reviewed table
+change with a probe build to prove it. `gfx950` is now `min_rocm: 7.2`; the 6.4 line
 builds 12 targets instead of 13, `full` is 54 jobs, and the planner drops the
 target automatically — no workflow change.
 
@@ -649,6 +666,8 @@ nothing.
 | `pasrocm_shim_wavefront_size` | is 32 or 64, and its bit is in the mask | `EShimIdentityError` |
 | `pasrocm_shim_wavefront_widths_mask` | 1..3, covers the compiled width | `EShimIdentityError` |
 | `pasrocm_wavefront_compatible` | returns 1 for (compiled, reported, mask) | `EShimIdentityError` with the three numbers |
+| `pasrocm_shim_abi_version` | equals the revision the units were generated for, and is non-zero | `EShimIdentityError` with both revisions, before any pointer is bound |
+| `pasrocm_shim_build_info` | none; recorded in `TShimLoadInfo` for diagnostics | — |
 | `pasrocm_shim_rocm_version` | see 13.3 | warning by default |
 
 `reported` is `prop.warpSize`; with `PASROCM_EXPECT_GFX` and no device it is
@@ -741,8 +760,10 @@ adventure:
 4. Run the Pascal suite against the package's `lib/`:
    `PASROCM_SHIM_DIR=<pkg>/lib ./test.sh --all --format=plain`.
 5. Freeze the evidence: test count, failures, `rocminfo` gfx target, SDK
-   version, the shim's `TShimLoadInfo` (target, wavefront, mask) and the
-   artifact's `manifest.json`.
+   version, the shim's `TShimLoadInfo` (target, wavefront, mask and
+   `build_info`), the artifact's `manifest.json`, and its **SHA256** — the
+   release workflow attaches the same file, so the hash proves the tagged asset
+   is the validated one (determinism, §8).
 6. Flip `validation.gpu_runtime` from `not-run` to `pass` in that manifest and
    record date + SDK + instance class in the package notes. Until step 6, the
    labels do not move and no README or release note claims CDNA support.

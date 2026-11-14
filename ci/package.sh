@@ -111,7 +111,7 @@ The build is compile-verified and ABI-checked; it has **not** been run on a GPU
 EOF
 
 export PKG_STEM TARGET LIB_FILE
-python3 - "$STAGE/manifest.json" "$ROOT/ci/supported-builds.json" <<'PY'
+python3 - "$STAGE/manifest.json" "$ROOT/ci/supported-builds.json" "$ROOT/ci/gpu-runtime-evidence.json" <<'PY'
 import datetime
 import json
 import os
@@ -162,6 +162,20 @@ env = os.environ
 packages = {name: dpkg_version(name) for name in env.get("PIN_PACKAGES", "").split()}
 shim = supported["shim"]
 
+runtime_verdict = {"gpu_runtime": "not-run"}
+try:
+    with open(sys.argv[3], encoding="utf-8") as handle:
+        recorded = json.load(handle).get("validated", [])
+except FileNotFoundError:
+    recorded = []
+for entry in recorded:
+    if entry.get("sdk_line") == env["CFG_SDK_LINE"] and entry.get("target") == env["TARGET"]:
+        runtime_verdict["gpu_runtime"] = entry.get("result", "not-run")
+        runtime_verdict["gpu_runtime_evidence"] = {
+            key: entry[key] for key in ("date", "instance", "notes") if entry.get(key)
+        }
+        break
+
 manifest = {
     "schema": 1,
     "package": env["PKG_STEM"] + ".tar.gz",
@@ -172,7 +186,7 @@ manifest = {
     "shim": {
         "name": shim["name"],
         "version": env.get("BUILD_VERSION") or shim["version"],
-        "abi_version": shim["abi_version"],
+        "abi_version": int(env.get("BUILD_ABI_VERSION") or shim["abi_version"]),
     },
     "git_commit": env.get("BUILD_GIT_COMMIT") or None,
     "os": {"name": env["CFG_OS"], "codename": env["CFG_CODENAME"]},
@@ -192,10 +206,22 @@ manifest = {
     },
     "hip_version": env.get("BUILD_HIP_VERSION") or None,
 
-    "validation": {"compile": "passed", "abi": "passed", "gpu_runtime": "not-run"},
-    "built_at": env.get("BUILD_TIMESTAMP")
-        or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "validation": {
+        "compile": "passed",
+        "abi": "passed",
+        # Flipped only by a recorded hardware run: ci/gpu-runtime-evidence.json
+        # is the one owner of that claim (DESIGN 13.6), so no build can assert
+        # runtime validation on its own.
+        "gpu_runtime": runtime_verdict["gpu_runtime"],
+    },
 }
+if "gpu_runtime_evidence" in runtime_verdict:
+    manifest["validation"]["gpu_runtime_evidence"] = runtime_verdict["gpu_runtime_evidence"]
+
+# No wall-clock timestamp: it would make two builds of one commit differ and
+# break the release promise that the rebuilt assets are the validated ones
+# (DESIGN section 8). Provenance is the commit plus the pinned SDK.
+manifest.pop("built_at", None)
 
 with open(destination, "w", encoding="utf-8") as handle:
     json.dump(manifest, handle, indent=2, sort_keys=True)

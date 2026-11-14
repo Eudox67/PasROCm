@@ -55,8 +55,12 @@ uses
   rocprim_bindings;
 
 const
-  { Symbols the shim must export: 5 identity + 144 rocPRIM entry points. }
-  ROCPRIM_SHIM_SYMBOL_COUNT = 149;
+  { Symbols the shim must export: 7 identity + 144 rocPRIM entry points. }
+  ROCPRIM_SHIM_SYMBOL_COUNT = 151;
+
+  { ABI revision this unit was generated for; the loader refuses a
+    library whose pasrocm_shim_abi_version() differs (DESIGN 13.2). }
+  ROCPRIM_SHIM_ABI_VERSION = 1;
 
   { Indexes of the identity exports. They are the first declarations in the
     specification because the loader must call them before it can trust the
@@ -66,6 +70,8 @@ const
   ROCPRIM_SHIM_IDX_ROCM_VERSION = 2;
   ROCPRIM_SHIM_IDX_WIDTHS_MASK = 3;
   ROCPRIM_SHIM_IDX_WAVEFRONT_COMPATIBLE = 4;
+  ROCPRIM_SHIM_IDX_ABI_VERSION = 5;
+  ROCPRIM_SHIM_IDX_BUILD_INFO = 6;
 
 var
   { Raw entry points, assigned by rocprim_shim_loader. Never call these
@@ -89,6 +95,19 @@ var
   __pasrocm_shim_wavefront_widths_mask: function: cuint; cdecl;
 
   __pasrocm_wavefront_compatible: function(compiled, reported, allowed_mask: cuint): cint; cdecl;
+
+
+// Monotonic ABI revision (see PASROCM_ABI_REVISION). It belongs to the
+// identity block because a loader must be able to reject a mismatched library
+// before it binds anything.
+  __pasrocm_shim_abi_version: function: cuint; cdecl;
+
+
+// Deterministic provenance string: version, git commit, GPU target, wavefront
+// width, widths mask, SDK stamp and compiler version. It never contains a build
+// timestamp, so two builds of one commit stay byte-identical (the packaging
+// determinism gate).
+  __pasrocm_shim_build_info: function: PAnsiChar; cdecl;
 
 
 // --- rocprim::reduce ---
@@ -1359,6 +1378,8 @@ const
     'pasrocm_shim_rocm_version',
     'pasrocm_shim_wavefront_widths_mask',
     'pasrocm_wavefront_compatible',
+    'pasrocm_shim_abi_version',
+    'pasrocm_shim_build_info',
     'rocprim_reduce_int',
     'rocprim_reduce_int128',
     'rocprim_reduce_reverse_int',
@@ -1528,149 +1549,151 @@ initialization
   SHIM_SYMBOL_SLOTS[2] := PPointer(@__pasrocm_shim_rocm_version);
   SHIM_SYMBOL_SLOTS[3] := PPointer(@__pasrocm_shim_wavefront_widths_mask);
   SHIM_SYMBOL_SLOTS[4] := PPointer(@__pasrocm_wavefront_compatible);
-  SHIM_SYMBOL_SLOTS[5] := PPointer(@__rocprim_reduce_int);
-  SHIM_SYMBOL_SLOTS[6] := PPointer(@__rocprim_reduce_int128);
-  SHIM_SYMBOL_SLOTS[7] := PPointer(@__rocprim_reduce_reverse_int);
-  SHIM_SYMBOL_SLOTS[8] := PPointer(@__rocprim_block_reduce_int);
-  SHIM_SYMBOL_SLOTS[9] := PPointer(@__rocprim_block_scan_int);
-  SHIM_SYMBOL_SLOTS[10] := PPointer(@__rocprim_block_sort_int);
-  SHIM_SYMBOL_SLOTS[11] := PPointer(@__rocprim_block_histogram_int);
-  SHIM_SYMBOL_SLOTS[12] := PPointer(@__rocprim_warp_reduce_int8);
-  SHIM_SYMBOL_SLOTS[13] := PPointer(@__rocprim_warp_reduce_int16);
-  SHIM_SYMBOL_SLOTS[14] := PPointer(@__rocprim_warp_reduce_int32);
-  SHIM_SYMBOL_SLOTS[15] := PPointer(@__rocprim_warp_reduce_uint32);
-  SHIM_SYMBOL_SLOTS[16] := PPointer(@__rocprim_warp_reduce_int64);
-  SHIM_SYMBOL_SLOTS[17] := PPointer(@__rocprim_warp_reduce_uint64);
-  SHIM_SYMBOL_SLOTS[18] := PPointer(@__rocprim_warp_scan_int8);
-  SHIM_SYMBOL_SLOTS[19] := PPointer(@__rocprim_warp_scan_int16);
-  SHIM_SYMBOL_SLOTS[20] := PPointer(@__rocprim_warp_scan_int32);
-  SHIM_SYMBOL_SLOTS[21] := PPointer(@__rocprim_warp_scan_uint32);
-  SHIM_SYMBOL_SLOTS[22] := PPointer(@__rocprim_warp_scan_int64);
-  SHIM_SYMBOL_SLOTS[23] := PPointer(@__rocprim_warp_scan_uint64);
-  SHIM_SYMBOL_SLOTS[24] := PPointer(@__rocprim_warp_sort_int8);
-  SHIM_SYMBOL_SLOTS[25] := PPointer(@__rocprim_warp_sort_int16);
-  SHIM_SYMBOL_SLOTS[26] := PPointer(@__rocprim_warp_sort_int32);
-  SHIM_SYMBOL_SLOTS[27] := PPointer(@__rocprim_warp_sort_uint32);
-  SHIM_SYMBOL_SLOTS[28] := PPointer(@__rocprim_warp_sort_int64);
-  SHIM_SYMBOL_SLOTS[29] := PPointer(@__rocprim_warp_sort_uint64);
-  SHIM_SYMBOL_SLOTS[30] := PPointer(@__rocprim_histogram_range_int);
-  SHIM_SYMBOL_SLOTS[31] := PPointer(@__rocprim_merge_sort_pairs_int);
-  SHIM_SYMBOL_SLOTS[32] := PPointer(@__rocprim_gather_float);
-  SHIM_SYMBOL_SLOTS[33] := PPointer(@__rocprim_clamp_float);
-  SHIM_SYMBOL_SLOTS[34] := PPointer(@__rocprim_bernoulli_float);
-  SHIM_SYMBOL_SLOTS[35] := PPointer(@__rocprim_exp_float);
-  SHIM_SYMBOL_SLOTS[36] := PPointer(@__rocprim_log_float);
-  SHIM_SYMBOL_SLOTS[37] := PPointer(@__rocprim_sqrt_float);
-  SHIM_SYMBOL_SLOTS[38] := PPointer(@__rocprim_recip_float);
-  SHIM_SYMBOL_SLOTS[39] := PPointer(@__rocprim_div_float);
-  SHIM_SYMBOL_SLOTS[40] := PPointer(@__rocprim_scale_inplace_float);
-  SHIM_SYMBOL_SLOTS[41] := PPointer(@__rocprim_relu_bwd_float);
-  SHIM_SYMBOL_SLOTS[42] := PPointer(@__rocprim_add_float);
-  SHIM_SYMBOL_SLOTS[43] := PPointer(@__rocprim_sub_float);
-  SHIM_SYMBOL_SLOTS[44] := PPointer(@__rocprim_mul_float);
-  SHIM_SYMBOL_SLOTS[45] := PPointer(@__rocprim_scale_float);
-  SHIM_SYMBOL_SLOTS[46] := PPointer(@__rocprim_sigmoid_float);
-  SHIM_SYMBOL_SLOTS[47] := PPointer(@__rocprim_sigmoid_bwd_float);
-  SHIM_SYMBOL_SLOTS[48] := PPointer(@__rocprim_tanh_float);
-  SHIM_SYMBOL_SLOTS[49] := PPointer(@__rocprim_tanh_bwd_float);
-  SHIM_SYMBOL_SLOTS[50] := PPointer(@__rocprim_sigmoid_bwd_out_float);
-  SHIM_SYMBOL_SLOTS[51] := PPointer(@__rocprim_tanh_bwd_out_float);
-  SHIM_SYMBOL_SLOTS[52] := PPointer(@__rocprim_gelu_float);
-  SHIM_SYMBOL_SLOTS[53] := PPointer(@__rocprim_gelu_bwd_float);
-  SHIM_SYMBOL_SLOTS[54] := PPointer(@__rocprim_silu_float);
-  SHIM_SYMBOL_SLOTS[55] := PPointer(@__rocprim_silu_bwd_float);
-  SHIM_SYMBOL_SLOTS[56] := PPointer(@__rocprim_gelu_half);
-  SHIM_SYMBOL_SLOTS[57] := PPointer(@__rocprim_gelu_bf16);
-  SHIM_SYMBOL_SLOTS[58] := PPointer(@__rocprim_gelu_bwd_half);
-  SHIM_SYMBOL_SLOTS[59] := PPointer(@__rocprim_gelu_bwd_bf16);
-  SHIM_SYMBOL_SLOTS[60] := PPointer(@__rocprim_silu_half);
-  SHIM_SYMBOL_SLOTS[61] := PPointer(@__rocprim_silu_bf16);
-  SHIM_SYMBOL_SLOTS[62] := PPointer(@__rocprim_silu_bwd_half);
-  SHIM_SYMBOL_SLOTS[63] := PPointer(@__rocprim_silu_bwd_bf16);
-  SHIM_SYMBOL_SLOTS[64] := PPointer(@__rocprim_bcast_op_float);
-  SHIM_SYMBOL_SLOTS[65] := PPointer(@__rocprim_bcast_op_half);
-  SHIM_SYMBOL_SLOTS[66] := PPointer(@__rocprim_bcast_op_bf16);
-  SHIM_SYMBOL_SLOTS[67] := PPointer(@__rocprim_gather_strided_float);
-  SHIM_SYMBOL_SLOTS[68] := PPointer(@__rocprim_add_half);
-  SHIM_SYMBOL_SLOTS[69] := PPointer(@__rocprim_add_bf16);
-  SHIM_SYMBOL_SLOTS[70] := PPointer(@__rocprim_sub_half);
-  SHIM_SYMBOL_SLOTS[71] := PPointer(@__rocprim_sub_bf16);
-  SHIM_SYMBOL_SLOTS[72] := PPointer(@__rocprim_mul_half);
-  SHIM_SYMBOL_SLOTS[73] := PPointer(@__rocprim_mul_bf16);
-  SHIM_SYMBOL_SLOTS[74] := PPointer(@__rocprim_sum_float);
-  SHIM_SYMBOL_SLOTS[75] := PPointer(@__rocprim_fill_float);
-  SHIM_SYMBOL_SLOTS[76] := PPointer(@__rocprim_softmax_float);
-  SHIM_SYMBOL_SLOTS[77] := PPointer(@__rocprim_softmax_bwd_float);
-  SHIM_SYMBOL_SLOTS[78] := PPointer(@__rocprim_logsoftmax_float);
-  SHIM_SYMBOL_SLOTS[79] := PPointer(@__rocprim_logsoftmax_bwd_float);
-  SHIM_SYMBOL_SLOTS[80] := PPointer(@__rocprim_cumsum_float);
-  SHIM_SYMBOL_SLOTS[81] := PPointer(@__rocprim_softmax_strided_float);
-  SHIM_SYMBOL_SLOTS[82] := PPointer(@__rocprim_cumsum_strided_float);
-  SHIM_SYMBOL_SLOTS[83] := PPointer(@__rocprim_transpose_float);
-  SHIM_SYMBOL_SLOTS[84] := PPointer(@__rocprim_topk_float);
-  SHIM_SYMBOL_SLOTS[85] := PPointer(@__rocprim_rowsum_float);
-  SHIM_SYMBOL_SLOTS[86] := PPointer(@__rocprim_rowmax_float);
-  SHIM_SYMBOL_SLOTS[87] := PPointer(@__rocprim_rowmin_float);
-  SHIM_SYMBOL_SLOTS[88] := PPointer(@__rocprim_repeat_interleave_float);
-  SHIM_SYMBOL_SLOTS[89] := PPointer(@__rocprim_convert_f16_to_f32);
-  SHIM_SYMBOL_SLOTS[90] := PPointer(@__rocprim_convert_f32_to_f16);
-  SHIM_SYMBOL_SLOTS[91] := PPointer(@__rocprim_convert_bf16_to_f32);
-  SHIM_SYMBOL_SLOTS[92] := PPointer(@__rocprim_convert_f32_to_bf16);
-  SHIM_SYMBOL_SLOTS[93] := PPointer(@__rocprim_scatter_float);
-  SHIM_SYMBOL_SLOTS[94] := PPointer(@__rocprim_inclusive_scan_int);
-  SHIM_SYMBOL_SLOTS[95] := PPointer(@__rocprim_deterministic_inclusive_scan_int);
-  SHIM_SYMBOL_SLOTS[96] := PPointer(@__rocprim_exclusive_scan_int);
-  SHIM_SYMBOL_SLOTS[97] := PPointer(@__rocprim_deterministic_exclusive_scan_int);
-  SHIM_SYMBOL_SLOTS[98] := PPointer(@__rocprim_radix_sort_keys_int);
-  SHIM_SYMBOL_SLOTS[99] := PPointer(@__rocprim_transform_int);
-  SHIM_SYMBOL_SLOTS[100] := PPointer(@__rocprim_partition_int);
-  SHIM_SYMBOL_SLOTS[101] := PPointer(@__rocprim_select_int);
-  SHIM_SYMBOL_SLOTS[102] := PPointer(@__rocprim_reduce_by_key_int);
-  SHIM_SYMBOL_SLOTS[103] := PPointer(@__rocprim_inclusive_scan_by_key_int);
-  SHIM_SYMBOL_SLOTS[104] := PPointer(@__rocprim_exclusive_scan_by_key_int);
-  SHIM_SYMBOL_SLOTS[105] := PPointer(@__rocprim_histogram_even_int);
-  SHIM_SYMBOL_SLOTS[106] := PPointer(@__rocprim_merge_int);
-  SHIM_SYMBOL_SLOTS[107] := PPointer(@__rocprim_radix_sort_keys_int_io);
-  SHIM_SYMBOL_SLOTS[108] := PPointer(@__rocprim_unique_int);
-  SHIM_SYMBOL_SLOTS[109] := PPointer(@__rocprim_copy_int);
-  SHIM_SYMBOL_SLOTS[110] := PPointer(@__rocprim_fill_int);
-  SHIM_SYMBOL_SLOTS[111] := PPointer(@__rocprim_adjacent_difference_int);
-  SHIM_SYMBOL_SLOTS[112] := PPointer(@__rocprim_adjacent_find_int);
-  SHIM_SYMBOL_SLOTS[113] := PPointer(@__rocprim_merge_inplace_int);
-  SHIM_SYMBOL_SLOTS[114] := PPointer(@__rocprim_binary_search_int);
-  SHIM_SYMBOL_SLOTS[115] := PPointer(@__rocprim_find_end_int);
-  SHIM_SYMBOL_SLOTS[116] := PPointer(@__rocprim_find_first_of_int);
-  SHIM_SYMBOL_SLOTS[117] := PPointer(@__rocprim_merge_sort_keys_int);
-  SHIM_SYMBOL_SLOTS[118] := PPointer(@__rocprim_nth_element_int);
-  SHIM_SYMBOL_SLOTS[119] := PPointer(@__rocprim_partial_sort_copy_int);
-  SHIM_SYMBOL_SLOTS[120] := PPointer(@__rocprim_radix_sort_keys_int_asc);
-  SHIM_SYMBOL_SLOTS[121] := PPointer(@__rocprim_radix_sort_pairs_int);
-  SHIM_SYMBOL_SLOTS[122] := PPointer(@__rocprim_partial_sort_int);
-  SHIM_SYMBOL_SLOTS[123] := PPointer(@__rocprim_run_length_encode_int);
-  SHIM_SYMBOL_SLOTS[124] := PPointer(@__rocprim_run_length_encode_non_trivial_runs_int);
-  SHIM_SYMBOL_SLOTS[125] := PPointer(@__rocprim_search_int);
-  SHIM_SYMBOL_SLOTS[126] := PPointer(@__rocprim_search_n_int);
-  SHIM_SYMBOL_SLOTS[127] := PPointer(@__rocprim_segmented_reduce_int);
-  SHIM_SYMBOL_SLOTS[128] := PPointer(@__rocprim_segmented_inclusive_scan_int);
-  SHIM_SYMBOL_SLOTS[129] := PPointer(@__rocprim_segmented_exclusive_scan_int);
-  SHIM_SYMBOL_SLOTS[130] := PPointer(@__rocprim_segmented_radix_sort_keys_int);
-  SHIM_SYMBOL_SLOTS[131] := PPointer(@__rocprim_segmented_radix_sort_pairs_int);
-  SHIM_SYMBOL_SLOTS[132] := PPointer(@__rocprim_radix_sort_keys_desc_int);
-  SHIM_SYMBOL_SLOTS[133] := PPointer(@__rocprim_radix_sort_pairs_desc_int);
-  SHIM_SYMBOL_SLOTS[134] := PPointer(@__rocprim_segmented_radix_sort_keys_desc_int);
-  SHIM_SYMBOL_SLOTS[135] := PPointer(@__rocprim_numeric_limits_int_min);
-  SHIM_SYMBOL_SLOTS[136] := PPointer(@__rocprim_numeric_limits_int_max);
-  SHIM_SYMBOL_SLOTS[137] := PPointer(@__rocprim_numeric_limits_float_epsilon);
-  SHIM_SYMBOL_SLOTS[138] := PPointer(@__rocprim_numeric_limits_float_infinity);
-  SHIM_SYMBOL_SLOTS[139] := PPointer(@__rocprim_numeric_limits_float_nan);
-  SHIM_SYMBOL_SLOTS[140] := PPointer(@__rocprim_argmax_float);
-  SHIM_SYMBOL_SLOTS[141] := PPointer(@__rocprim_gt_float);
-  SHIM_SYMBOL_SLOTS[142] := PPointer(@__rocprim_lt_float);
-  SHIM_SYMBOL_SLOTS[143] := PPointer(@__rocprim_eq_float);
-  SHIM_SYMBOL_SLOTS[144] := PPointer(@__rocprim_ge_float);
-  SHIM_SYMBOL_SLOTS[145] := PPointer(@__rocprim_le_float);
-  SHIM_SYMBOL_SLOTS[146] := PPointer(@__rocprim_ne_float);
-  SHIM_SYMBOL_SLOTS[147] := PPointer(@__rocprim_where_float);
-  SHIM_SYMBOL_SLOTS[148] := PPointer(@__rocprim_maskedfill_float);
+  SHIM_SYMBOL_SLOTS[5] := PPointer(@__pasrocm_shim_abi_version);
+  SHIM_SYMBOL_SLOTS[6] := PPointer(@__pasrocm_shim_build_info);
+  SHIM_SYMBOL_SLOTS[7] := PPointer(@__rocprim_reduce_int);
+  SHIM_SYMBOL_SLOTS[8] := PPointer(@__rocprim_reduce_int128);
+  SHIM_SYMBOL_SLOTS[9] := PPointer(@__rocprim_reduce_reverse_int);
+  SHIM_SYMBOL_SLOTS[10] := PPointer(@__rocprim_block_reduce_int);
+  SHIM_SYMBOL_SLOTS[11] := PPointer(@__rocprim_block_scan_int);
+  SHIM_SYMBOL_SLOTS[12] := PPointer(@__rocprim_block_sort_int);
+  SHIM_SYMBOL_SLOTS[13] := PPointer(@__rocprim_block_histogram_int);
+  SHIM_SYMBOL_SLOTS[14] := PPointer(@__rocprim_warp_reduce_int8);
+  SHIM_SYMBOL_SLOTS[15] := PPointer(@__rocprim_warp_reduce_int16);
+  SHIM_SYMBOL_SLOTS[16] := PPointer(@__rocprim_warp_reduce_int32);
+  SHIM_SYMBOL_SLOTS[17] := PPointer(@__rocprim_warp_reduce_uint32);
+  SHIM_SYMBOL_SLOTS[18] := PPointer(@__rocprim_warp_reduce_int64);
+  SHIM_SYMBOL_SLOTS[19] := PPointer(@__rocprim_warp_reduce_uint64);
+  SHIM_SYMBOL_SLOTS[20] := PPointer(@__rocprim_warp_scan_int8);
+  SHIM_SYMBOL_SLOTS[21] := PPointer(@__rocprim_warp_scan_int16);
+  SHIM_SYMBOL_SLOTS[22] := PPointer(@__rocprim_warp_scan_int32);
+  SHIM_SYMBOL_SLOTS[23] := PPointer(@__rocprim_warp_scan_uint32);
+  SHIM_SYMBOL_SLOTS[24] := PPointer(@__rocprim_warp_scan_int64);
+  SHIM_SYMBOL_SLOTS[25] := PPointer(@__rocprim_warp_scan_uint64);
+  SHIM_SYMBOL_SLOTS[26] := PPointer(@__rocprim_warp_sort_int8);
+  SHIM_SYMBOL_SLOTS[27] := PPointer(@__rocprim_warp_sort_int16);
+  SHIM_SYMBOL_SLOTS[28] := PPointer(@__rocprim_warp_sort_int32);
+  SHIM_SYMBOL_SLOTS[29] := PPointer(@__rocprim_warp_sort_uint32);
+  SHIM_SYMBOL_SLOTS[30] := PPointer(@__rocprim_warp_sort_int64);
+  SHIM_SYMBOL_SLOTS[31] := PPointer(@__rocprim_warp_sort_uint64);
+  SHIM_SYMBOL_SLOTS[32] := PPointer(@__rocprim_histogram_range_int);
+  SHIM_SYMBOL_SLOTS[33] := PPointer(@__rocprim_merge_sort_pairs_int);
+  SHIM_SYMBOL_SLOTS[34] := PPointer(@__rocprim_gather_float);
+  SHIM_SYMBOL_SLOTS[35] := PPointer(@__rocprim_clamp_float);
+  SHIM_SYMBOL_SLOTS[36] := PPointer(@__rocprim_bernoulli_float);
+  SHIM_SYMBOL_SLOTS[37] := PPointer(@__rocprim_exp_float);
+  SHIM_SYMBOL_SLOTS[38] := PPointer(@__rocprim_log_float);
+  SHIM_SYMBOL_SLOTS[39] := PPointer(@__rocprim_sqrt_float);
+  SHIM_SYMBOL_SLOTS[40] := PPointer(@__rocprim_recip_float);
+  SHIM_SYMBOL_SLOTS[41] := PPointer(@__rocprim_div_float);
+  SHIM_SYMBOL_SLOTS[42] := PPointer(@__rocprim_scale_inplace_float);
+  SHIM_SYMBOL_SLOTS[43] := PPointer(@__rocprim_relu_bwd_float);
+  SHIM_SYMBOL_SLOTS[44] := PPointer(@__rocprim_add_float);
+  SHIM_SYMBOL_SLOTS[45] := PPointer(@__rocprim_sub_float);
+  SHIM_SYMBOL_SLOTS[46] := PPointer(@__rocprim_mul_float);
+  SHIM_SYMBOL_SLOTS[47] := PPointer(@__rocprim_scale_float);
+  SHIM_SYMBOL_SLOTS[48] := PPointer(@__rocprim_sigmoid_float);
+  SHIM_SYMBOL_SLOTS[49] := PPointer(@__rocprim_sigmoid_bwd_float);
+  SHIM_SYMBOL_SLOTS[50] := PPointer(@__rocprim_tanh_float);
+  SHIM_SYMBOL_SLOTS[51] := PPointer(@__rocprim_tanh_bwd_float);
+  SHIM_SYMBOL_SLOTS[52] := PPointer(@__rocprim_sigmoid_bwd_out_float);
+  SHIM_SYMBOL_SLOTS[53] := PPointer(@__rocprim_tanh_bwd_out_float);
+  SHIM_SYMBOL_SLOTS[54] := PPointer(@__rocprim_gelu_float);
+  SHIM_SYMBOL_SLOTS[55] := PPointer(@__rocprim_gelu_bwd_float);
+  SHIM_SYMBOL_SLOTS[56] := PPointer(@__rocprim_silu_float);
+  SHIM_SYMBOL_SLOTS[57] := PPointer(@__rocprim_silu_bwd_float);
+  SHIM_SYMBOL_SLOTS[58] := PPointer(@__rocprim_gelu_half);
+  SHIM_SYMBOL_SLOTS[59] := PPointer(@__rocprim_gelu_bf16);
+  SHIM_SYMBOL_SLOTS[60] := PPointer(@__rocprim_gelu_bwd_half);
+  SHIM_SYMBOL_SLOTS[61] := PPointer(@__rocprim_gelu_bwd_bf16);
+  SHIM_SYMBOL_SLOTS[62] := PPointer(@__rocprim_silu_half);
+  SHIM_SYMBOL_SLOTS[63] := PPointer(@__rocprim_silu_bf16);
+  SHIM_SYMBOL_SLOTS[64] := PPointer(@__rocprim_silu_bwd_half);
+  SHIM_SYMBOL_SLOTS[65] := PPointer(@__rocprim_silu_bwd_bf16);
+  SHIM_SYMBOL_SLOTS[66] := PPointer(@__rocprim_bcast_op_float);
+  SHIM_SYMBOL_SLOTS[67] := PPointer(@__rocprim_bcast_op_half);
+  SHIM_SYMBOL_SLOTS[68] := PPointer(@__rocprim_bcast_op_bf16);
+  SHIM_SYMBOL_SLOTS[69] := PPointer(@__rocprim_gather_strided_float);
+  SHIM_SYMBOL_SLOTS[70] := PPointer(@__rocprim_add_half);
+  SHIM_SYMBOL_SLOTS[71] := PPointer(@__rocprim_add_bf16);
+  SHIM_SYMBOL_SLOTS[72] := PPointer(@__rocprim_sub_half);
+  SHIM_SYMBOL_SLOTS[73] := PPointer(@__rocprim_sub_bf16);
+  SHIM_SYMBOL_SLOTS[74] := PPointer(@__rocprim_mul_half);
+  SHIM_SYMBOL_SLOTS[75] := PPointer(@__rocprim_mul_bf16);
+  SHIM_SYMBOL_SLOTS[76] := PPointer(@__rocprim_sum_float);
+  SHIM_SYMBOL_SLOTS[77] := PPointer(@__rocprim_fill_float);
+  SHIM_SYMBOL_SLOTS[78] := PPointer(@__rocprim_softmax_float);
+  SHIM_SYMBOL_SLOTS[79] := PPointer(@__rocprim_softmax_bwd_float);
+  SHIM_SYMBOL_SLOTS[80] := PPointer(@__rocprim_logsoftmax_float);
+  SHIM_SYMBOL_SLOTS[81] := PPointer(@__rocprim_logsoftmax_bwd_float);
+  SHIM_SYMBOL_SLOTS[82] := PPointer(@__rocprim_cumsum_float);
+  SHIM_SYMBOL_SLOTS[83] := PPointer(@__rocprim_softmax_strided_float);
+  SHIM_SYMBOL_SLOTS[84] := PPointer(@__rocprim_cumsum_strided_float);
+  SHIM_SYMBOL_SLOTS[85] := PPointer(@__rocprim_transpose_float);
+  SHIM_SYMBOL_SLOTS[86] := PPointer(@__rocprim_topk_float);
+  SHIM_SYMBOL_SLOTS[87] := PPointer(@__rocprim_rowsum_float);
+  SHIM_SYMBOL_SLOTS[88] := PPointer(@__rocprim_rowmax_float);
+  SHIM_SYMBOL_SLOTS[89] := PPointer(@__rocprim_rowmin_float);
+  SHIM_SYMBOL_SLOTS[90] := PPointer(@__rocprim_repeat_interleave_float);
+  SHIM_SYMBOL_SLOTS[91] := PPointer(@__rocprim_convert_f16_to_f32);
+  SHIM_SYMBOL_SLOTS[92] := PPointer(@__rocprim_convert_f32_to_f16);
+  SHIM_SYMBOL_SLOTS[93] := PPointer(@__rocprim_convert_bf16_to_f32);
+  SHIM_SYMBOL_SLOTS[94] := PPointer(@__rocprim_convert_f32_to_bf16);
+  SHIM_SYMBOL_SLOTS[95] := PPointer(@__rocprim_scatter_float);
+  SHIM_SYMBOL_SLOTS[96] := PPointer(@__rocprim_inclusive_scan_int);
+  SHIM_SYMBOL_SLOTS[97] := PPointer(@__rocprim_deterministic_inclusive_scan_int);
+  SHIM_SYMBOL_SLOTS[98] := PPointer(@__rocprim_exclusive_scan_int);
+  SHIM_SYMBOL_SLOTS[99] := PPointer(@__rocprim_deterministic_exclusive_scan_int);
+  SHIM_SYMBOL_SLOTS[100] := PPointer(@__rocprim_radix_sort_keys_int);
+  SHIM_SYMBOL_SLOTS[101] := PPointer(@__rocprim_transform_int);
+  SHIM_SYMBOL_SLOTS[102] := PPointer(@__rocprim_partition_int);
+  SHIM_SYMBOL_SLOTS[103] := PPointer(@__rocprim_select_int);
+  SHIM_SYMBOL_SLOTS[104] := PPointer(@__rocprim_reduce_by_key_int);
+  SHIM_SYMBOL_SLOTS[105] := PPointer(@__rocprim_inclusive_scan_by_key_int);
+  SHIM_SYMBOL_SLOTS[106] := PPointer(@__rocprim_exclusive_scan_by_key_int);
+  SHIM_SYMBOL_SLOTS[107] := PPointer(@__rocprim_histogram_even_int);
+  SHIM_SYMBOL_SLOTS[108] := PPointer(@__rocprim_merge_int);
+  SHIM_SYMBOL_SLOTS[109] := PPointer(@__rocprim_radix_sort_keys_int_io);
+  SHIM_SYMBOL_SLOTS[110] := PPointer(@__rocprim_unique_int);
+  SHIM_SYMBOL_SLOTS[111] := PPointer(@__rocprim_copy_int);
+  SHIM_SYMBOL_SLOTS[112] := PPointer(@__rocprim_fill_int);
+  SHIM_SYMBOL_SLOTS[113] := PPointer(@__rocprim_adjacent_difference_int);
+  SHIM_SYMBOL_SLOTS[114] := PPointer(@__rocprim_adjacent_find_int);
+  SHIM_SYMBOL_SLOTS[115] := PPointer(@__rocprim_merge_inplace_int);
+  SHIM_SYMBOL_SLOTS[116] := PPointer(@__rocprim_binary_search_int);
+  SHIM_SYMBOL_SLOTS[117] := PPointer(@__rocprim_find_end_int);
+  SHIM_SYMBOL_SLOTS[118] := PPointer(@__rocprim_find_first_of_int);
+  SHIM_SYMBOL_SLOTS[119] := PPointer(@__rocprim_merge_sort_keys_int);
+  SHIM_SYMBOL_SLOTS[120] := PPointer(@__rocprim_nth_element_int);
+  SHIM_SYMBOL_SLOTS[121] := PPointer(@__rocprim_partial_sort_copy_int);
+  SHIM_SYMBOL_SLOTS[122] := PPointer(@__rocprim_radix_sort_keys_int_asc);
+  SHIM_SYMBOL_SLOTS[123] := PPointer(@__rocprim_radix_sort_pairs_int);
+  SHIM_SYMBOL_SLOTS[124] := PPointer(@__rocprim_partial_sort_int);
+  SHIM_SYMBOL_SLOTS[125] := PPointer(@__rocprim_run_length_encode_int);
+  SHIM_SYMBOL_SLOTS[126] := PPointer(@__rocprim_run_length_encode_non_trivial_runs_int);
+  SHIM_SYMBOL_SLOTS[127] := PPointer(@__rocprim_search_int);
+  SHIM_SYMBOL_SLOTS[128] := PPointer(@__rocprim_search_n_int);
+  SHIM_SYMBOL_SLOTS[129] := PPointer(@__rocprim_segmented_reduce_int);
+  SHIM_SYMBOL_SLOTS[130] := PPointer(@__rocprim_segmented_inclusive_scan_int);
+  SHIM_SYMBOL_SLOTS[131] := PPointer(@__rocprim_segmented_exclusive_scan_int);
+  SHIM_SYMBOL_SLOTS[132] := PPointer(@__rocprim_segmented_radix_sort_keys_int);
+  SHIM_SYMBOL_SLOTS[133] := PPointer(@__rocprim_segmented_radix_sort_pairs_int);
+  SHIM_SYMBOL_SLOTS[134] := PPointer(@__rocprim_radix_sort_keys_desc_int);
+  SHIM_SYMBOL_SLOTS[135] := PPointer(@__rocprim_radix_sort_pairs_desc_int);
+  SHIM_SYMBOL_SLOTS[136] := PPointer(@__rocprim_segmented_radix_sort_keys_desc_int);
+  SHIM_SYMBOL_SLOTS[137] := PPointer(@__rocprim_numeric_limits_int_min);
+  SHIM_SYMBOL_SLOTS[138] := PPointer(@__rocprim_numeric_limits_int_max);
+  SHIM_SYMBOL_SLOTS[139] := PPointer(@__rocprim_numeric_limits_float_epsilon);
+  SHIM_SYMBOL_SLOTS[140] := PPointer(@__rocprim_numeric_limits_float_infinity);
+  SHIM_SYMBOL_SLOTS[141] := PPointer(@__rocprim_numeric_limits_float_nan);
+  SHIM_SYMBOL_SLOTS[142] := PPointer(@__rocprim_argmax_float);
+  SHIM_SYMBOL_SLOTS[143] := PPointer(@__rocprim_gt_float);
+  SHIM_SYMBOL_SLOTS[144] := PPointer(@__rocprim_lt_float);
+  SHIM_SYMBOL_SLOTS[145] := PPointer(@__rocprim_eq_float);
+  SHIM_SYMBOL_SLOTS[146] := PPointer(@__rocprim_ge_float);
+  SHIM_SYMBOL_SLOTS[147] := PPointer(@__rocprim_le_float);
+  SHIM_SYMBOL_SLOTS[148] := PPointer(@__rocprim_ne_float);
+  SHIM_SYMBOL_SLOTS[149] := PPointer(@__rocprim_where_float);
+  SHIM_SYMBOL_SLOTS[150] := PPointer(@__rocprim_maskedfill_float);
 
 end.

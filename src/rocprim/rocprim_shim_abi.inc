@@ -73,6 +73,13 @@ type
 
 {@@CONST}
 const
+  { Monotonic ABI revision of this surface. Bump it for any change a consumer
+    could notice: a removed or renamed symbol, a changed parameter or return
+    type, a changed enum value. Adding a symbol is also a bump, because the
+    strict gate counts. The loader refuses a library whose value differs from
+    the one its generated units were built with. }
+  PASROCM_ABI_REVISION = 1;
+
   { Kept for source compatibility only: nothing links against it any more. }
   {$IFDEF MSWINDOWS}
     librocprimshim = 'rocprim_shim.dll';
@@ -96,6 +103,17 @@ function pasrocm_shim_rocm_version: PAnsiChar; cdecl; external librocprimshim;
 function pasrocm_shim_wavefront_widths_mask: cuint; cdecl; external librocprimshim;
 function pasrocm_wavefront_compatible(compiled, reported, allowed_mask: cuint): cint;
     cdecl; external librocprimshim;
+
+// Monotonic ABI revision (see PASROCM_ABI_REVISION). It belongs to the
+// identity block because a loader must be able to reject a mismatched library
+// before it binds anything.
+function pasrocm_shim_abi_version: cuint; cdecl; external librocprimshim;
+
+// Deterministic provenance string: version, git commit, GPU target, wavefront
+// width, widths mask, SDK stamp and compiler version. It never contains a build
+// timestamp, so two builds of one commit stay byte-identical (the packaging
+// determinism gate).
+function pasrocm_shim_build_info: PAnsiChar; cdecl; external librocprimshim;
 
 // --- rocprim::reduce ---
 function rocprim_reduce_int(

@@ -1,3 +1,5 @@
+pasrocm_shim_abi_version
+pasrocm_shim_build_info
 pasrocm_shim_rocm_version
 pasrocm_shim_target
 pasrocm_shim_wavefront_size

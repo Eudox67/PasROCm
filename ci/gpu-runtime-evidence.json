@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "notes": [
+    "The one owner of the gpu_runtime claim. An entry exists only after the",
+    "procedure in ci/DESIGN.md section 13.6 has run on real hardware and its",
+    "evidence was frozen; ci/package.sh reads this file and every other package",
+    "keeps validation.gpu_runtime = 'not-run'. Adding an entry is a reviewed",
+    "change with the date, the instance class and the observed test result."
+  ],
+  "validated": []
+}

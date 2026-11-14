@@ -18,6 +18,8 @@ extern const char* pasrocm_shim_rocm_version(void);
 extern unsigned    pasrocm_shim_wavefront_widths_mask(void);
 extern int pasrocm_wavefront_compatible(unsigned compiled, unsigned reported,
                                          unsigned allowed_mask);
+extern unsigned    pasrocm_shim_abi_version(void);
+extern const char* pasrocm_shim_build_info(void);
 
 struct compat_case {
     unsigned compiled;
@@ -51,6 +53,8 @@ int main(void)
     printf("wavefront=%u\n", pasrocm_shim_wavefront_size());
     printf("widths_mask=%u\n", pasrocm_shim_wavefront_widths_mask());
     printf("rocm=%s\n", pasrocm_shim_rocm_version());
+    printf("abi=%u\n", pasrocm_shim_abi_version());
+    printf("build=%s\n", pasrocm_shim_build_info());
 
     for (i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i) {
         const int got = pasrocm_wavefront_compatible(cases[i].compiled,

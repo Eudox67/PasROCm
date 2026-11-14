@@ -82,6 +82,18 @@ def abi_enum() -> tuple[str, list[str]]:
     return name, members
 
 
+def abi_version() -> int:
+    """The ABI revision declared in the spec's CONST section."""
+    text = SPEC.read_text(encoding="utf-8")
+    match = re.search(r"PASROCM_ABI_REVISION\s*=\s*(\d+)\s*;", text)
+    if not match:
+        raise HeaderError("missing PASROCM_ABI_REVISION in the CONST section")
+    value = int(match.group(1))
+    if value < 1:
+        raise HeaderError("PASROCM_ABI_REVISION must be >= 1")
+    return value
+
+
 def license_text() -> str:
     """The spec's Pascal-style licence block, rewrapped as a C comment."""
     text = SPEC.read_text(encoding="utf-8")
@@ -207,6 +219,10 @@ def render() -> str:
 #  define PASROCM_EXPORT
 #endif
 
+/* ABI revision, generated from the spec. A consumer compares this with
+ * pasrocm_shim_abi_version() before trusting the prototypes below. */
+#define PASROCM_SHIM_ABI_VERSION ABI_VERSION_PLACEHOLDER
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -225,6 +241,7 @@ ENUM_MEMBERS
             for index, member in enumerate(enum_members)
         ),
     )
+    out[-1] = out[-1].replace("ABI_VERSION_PLACEHOLDER", str(abi_version()))
     for name in names:
         # rocprim::int128_t is `using int128_t = __int128_t` (rocprim/types.hpp),
         # so the builtin spelling is the same type and keeps the header free of

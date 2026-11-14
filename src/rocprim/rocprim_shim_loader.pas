@@ -97,6 +97,10 @@ type
     RocmVersion: string;
     WavefrontSize: Cardinal;
     WidthsMask: Cardinal;
+    { ABI revision the library reports (pasrocm_shim_abi_version). }
+    AbiVersion: Cardinal;
+    { Deterministic provenance string (pasrocm_shim_build_info). }
+    BuildInfo: string;
     { GPU the loader selected (normalized gcnArchName). }
     DeviceGfx: string;
     DeviceIndex: Integer;
@@ -141,6 +145,11 @@ function PasROCmShimCandidatePaths(const AGfx: string): TShimPathArray;
 function PasROCmClassifyIdentity(const AShimTarget, ADeviceGfx: string;
   ACompiledWidth, AReportedWidth, AAllowedMask: Cardinal;
   ACompatOk: Boolean): TShimIdentityVerdict;
+
+{ ABI gate. A revision of 0 means the library does not report one (a pre-1
+  build); any difference means the prototypes this executable was generated
+  from do not describe that library. Pure, so the rule is testable. }
+function PasROCmAbiVersionAccepted(ALoaded, AExpected: Cardinal): Boolean;
 
 { Open the shim for this device if it is not open yet. Raises EShimError (one
   of the subclasses) on failure, and re-raises the latched error on later
@@ -290,6 +299,11 @@ begin
   { Last resort: the bare name, resolved by the dynamic loader itself, which
     keeps LD_LIBRARY_PATH working as it did before this unit existed. }
   AddCandidate(Result, FileName);
+end;
+
+function PasROCmAbiVersionAccepted(ALoaded, AExpected: Cardinal): Boolean;
+begin
+  Result := (ALoaded <> 0) and (ALoaded = AExpected);
 end;
 
 function PasROCmClassifyIdentity(const AShimTarget, ADeviceGfx: string;
@@ -493,6 +507,8 @@ var
   HipRuntime: Int32;
   ShimTarget: string;
   RocmVersion: string;
+  BuildInfo: string;
+  AbiVersion: Cardinal;
   CompiledWidth: Cardinal;
   Mask: Cardinal;
   Reported: Cardinal;
@@ -605,6 +621,8 @@ begin
     RequireIdentity(ROCPRIM_SHIM_IDX_ROCM_VERSION, 'pasrocm_shim_rocm_version');
     RequireIdentity(ROCPRIM_SHIM_IDX_WIDTHS_MASK, 'pasrocm_shim_wavefront_widths_mask');
     RequireIdentity(ROCPRIM_SHIM_IDX_WAVEFRONT_COMPATIBLE, 'pasrocm_wavefront_compatible');
+    RequireIdentity(ROCPRIM_SHIM_IDX_ABI_VERSION, 'pasrocm_shim_abi_version');
+    RequireIdentity(ROCPRIM_SHIM_IDX_BUILD_INFO, 'pasrocm_shim_build_info');
     if IdentityMissing <> '' then
       Fail(EShimBindError.CreateFmt(
         'PasROCm: %s is not a PasROCm shim: it does not export%s',
@@ -614,6 +632,17 @@ begin
     CompiledWidth := rocprim_shim_api.__pasrocm_shim_wavefront_size();
     Mask := rocprim_shim_api.__pasrocm_shim_wavefront_widths_mask();
     RocmVersion := string(rocprim_shim_api.__pasrocm_shim_rocm_version());
+    AbiVersion := rocprim_shim_api.__pasrocm_shim_abi_version();
+    BuildInfo := string(rocprim_shim_api.__pasrocm_shim_build_info());
+
+    { Hard gate, before anything else is interpreted: a different ABI means
+      the prototypes this executable was generated from do not describe this
+      library. 0 means the library reports none, which is also refused. }
+    if not PasROCmAbiVersionAccepted(AbiVersion, ROCPRIM_SHIM_ABI_VERSION) then
+      Fail(EShimIdentityError.CreateFmt(
+        'PasROCm: %s reports ABI %d but this build expects %d%s'
+        + 'Install the matching PasROCm units and shim package.%s',
+        [Chosen, AbiVersion, ROCPRIM_SHIM_ABI_VERSION, LineEnding, LineEnding]));
 
     { No device (PASROCM_EXPECT_GFX): the mask pins the hardware width when it
       is single-valued, exactly the way the C identity self-test does. }
@@ -676,6 +705,8 @@ begin
     GInfo.RocmVersion := RocmVersion;
     GInfo.WavefrontSize := CompiledWidth;
     GInfo.WidthsMask := Mask;
+    GInfo.AbiVersion := AbiVersion;
+    GInfo.BuildInfo := BuildInfo;
     GInfo.DeviceGfx := Gfx;
     GInfo.DeviceIndex := DeviceIndex;
     GInfo.DeviceWarpSize := DeviceWarp;

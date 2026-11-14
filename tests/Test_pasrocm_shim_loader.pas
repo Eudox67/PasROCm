@@ -74,6 +74,7 @@ type
     procedure TestIdentityRejectsImpossibleCompiledWidth;
     procedure TestIdentityRejectsBadMask;
     procedure TestIdentityRejectsCompatFailure;
+    procedure TestAbiVersionGate;
 
     { Real load -- needs a shim and a GPU. }
     procedure TestLoadsShimForThisDevice;
@@ -260,6 +261,20 @@ begin
     Ord(PasROCmClassifyIdentity('gfx942', 'gfx942', 32, 64, 2, True)));
 end;
 
+procedure TTestShimLoader.TestAbiVersionGate;
+begin
+  AssertTrue('same revision is accepted',
+    PasROCmAbiVersionAccepted(1, 1));
+  AssertFalse('a newer library is refused',
+    PasROCmAbiVersionAccepted(2, 1));
+  AssertFalse('an older library is refused',
+    PasROCmAbiVersionAccepted(1, 2));
+  AssertFalse('a library with no revision is refused',
+    PasROCmAbiVersionAccepted(0, 1));
+  AssertFalse('a build expecting nothing never accepts',
+    PasROCmAbiVersionAccepted(1, 0));
+end;
+
 procedure TTestShimLoader.TestIdentityRejectsCompatFailure;
 begin
   { The shim's own predicate said no: never second-guess it in Pascal. }
@@ -288,6 +303,11 @@ begin
     (Info.WavefrontSize = 32) or (Info.WavefrontSize = 64));
   AssertTrue('widths mask is 1..3',
     (Info.WidthsMask >= 1) and (Info.WidthsMask <= 3));
+  AssertEquals('the library reports the ABI this build was generated for',
+    ROCPRIM_SHIM_ABI_VERSION, Info.AbiVersion);
+  AssertTrue('build info is reported', Info.BuildInfo <> '');
+  AssertTrue('build info names the target',
+    Pos('target=' + Info.Target, Info.BuildInfo) > 0);
   if not Info.DeviceOverridden then
   begin
     AssertTrue('device gfx was detected', Info.DeviceGfx <> '');
@@ -302,7 +322,8 @@ var
 begin
   if not EnsureShimOrIgnore then
     Exit;
-  AssertEquals('table size', 149, ROCPRIM_SHIM_SYMBOL_COUNT);
+  { 7 identity exports + 144 rocPRIM entry points. }
+  AssertEquals('table size', 151, ROCPRIM_SHIM_SYMBOL_COUNT);
   for Index := 0 to ROCPRIM_SHIM_SYMBOL_COUNT - 1 do
   begin
     AssertTrue('name at ' + IntToStr(Index) + ' is set',

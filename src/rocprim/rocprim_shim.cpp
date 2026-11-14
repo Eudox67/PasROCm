@@ -112,6 +112,34 @@ const char* pasrocm_shim_rocm_version(void)   { return PASROCM_ROCM_VERSION; }
 // Widths this build's hardware can run: bit 0 = 32, bit 1 = 64.
 unsigned pasrocm_shim_wavefront_widths_mask(void) { return PASROCM_WAVEFRONT_WIDTHS_MASK; }
 
+// Monotonic ABI revision, taken from the generated header (which takes it from
+// the specification, the single owner of the number).
+unsigned pasrocm_shim_abi_version(void) { return PASROCM_SHIM_ABI_VERSION; }
+
+// Deterministic provenance string. Deliberately no __DATE__/__TIME__: a
+// timestamp would make two builds of one commit differ and break the packaging
+// determinism gate. Everything here is a build input or a compiler fact.
+#ifndef PASROCM_SHIM_VERSION
+#  define PASROCM_SHIM_VERSION "unknown"
+#endif
+#ifndef PASROCM_GIT_COMMIT
+#  define PASROCM_GIT_COMMIT "unknown"
+#endif
+#define PASROCM_STRINGIZE_(x) #x
+#define PASROCM_STRINGIZE(x) PASROCM_STRINGIZE_(x)
+
+const char* pasrocm_shim_build_info(void)
+{
+    return "pasrocm-shim " PASROCM_SHIM_VERSION
+           " abi=" PASROCM_STRINGIZE(PASROCM_SHIM_ABI_VERSION)
+           " commit=" PASROCM_GIT_COMMIT
+           " target=" PASROCM_GPU_TARGET
+           " wavefront=" PASROCM_STRINGIZE(PASROCM_WAVEFRONT_SIZE)
+           " widths_mask=" PASROCM_STRINGIZE(PASROCM_WAVEFRONT_WIDTHS_MASK)
+           " rocm=" PASROCM_ROCM_VERSION
+           " compiler=" __VERSION__;
+}
+
 // Pure compatibility test, exposed so the mismatch branch is testable without
 // CDNA hardware.
 //

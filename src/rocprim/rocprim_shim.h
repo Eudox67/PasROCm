@@ -59,6 +59,10 @@
 #  define PASROCM_EXPORT
 #endif
 
+/* ABI revision, generated from the spec. A consumer compares this with
+ * pasrocm_shim_abi_version() before trusting the prototypes below. */
+#define PASROCM_SHIM_ABI_VERSION 1
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -81,6 +85,8 @@ PASROCM_EXPORT unsigned pasrocm_shim_wavefront_widths_mask(void);
 PASROCM_EXPORT int pasrocm_wavefront_compatible(unsigned compiled,
                                  unsigned reported,
                                  unsigned allowed_mask);
+PASROCM_EXPORT unsigned pasrocm_shim_abi_version(void);
+PASROCM_EXPORT const char* pasrocm_shim_build_info(void);
 PASROCM_EXPORT hipError_t rocprim_reduce_int(
     int* d_out,
     const int* d_in,
