@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Version-generic builder for librocprim_shim.so
+# Version-generic builder for libpasrocm_shim_<gfx>.so
 #
 #   ./build.sh                                  # auto-detect ROCm and the current GPU(s)
 #   ROCM_PATH=/opt/rocm/core-10.1 ./build.sh    # force a specific install
@@ -50,7 +50,7 @@
 # is compiled once and cannot know the device. The shim refuses to build without
 # it, and refuses to run when the device disagrees (DESIGN.md section 12.3).
 #
-# Compiles BOTH translation units; the resulting librocprim_shim.so lands in
+# Compiles BOTH translation units; the resulting per-target library lands in
 # OUT_DIR (default: next to the Pascal units in src/rocprim/, which is where
 # pasrocm.cfg, test.sh and setup_env.sh expect it).
 set -euo pipefail

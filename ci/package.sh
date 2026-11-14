@@ -94,8 +94,9 @@ GPU target: ${TARGET} (wavefront ${BUILD_WAVEFRONT}, widths mask ${BUILD_WIDTHS_
 1. Install ROCm ${CFG_SDK_LINE} (or a newer release that still provides
    \`libamdhip64.so\`). The package never bundles AMD runtime or driver files.
 2. Load \`lib/${LIB_FILE}\` for ${TARGET}: the Pascal loader picks the file that
-   matches the detected GPU. Put \`lib/\` on \`LD_LIBRARY_PATH\` if the loader
-   needs a search path.
+   matches the detected GPU. Point \`PASROCM_SHIM_DIR\` at \`lib/\`, or put the
+   file next to your executable, or under \`~/.local/lib/pasrocm\`.
+   \`PASROCM_SHIM=<full path>\` overrides the search entirely.
 3. Copy \`pascal/*.pas\` over \`src/rocprim/\` if they differ from your checkout.
 
 The build is compile-verified and ABI-checked; it has **not** been run on a GPU

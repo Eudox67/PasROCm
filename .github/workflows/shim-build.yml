@@ -55,6 +55,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Validate manifest
         run: python3 ci/manifest.py validate
+      - name: Check generated bindings are current
+        # The ABI specification is hand-edited; the two Pascal units are
+        # generated. A stale unit is a review finding, not an ABI change.
+        run: python3 ci/gen-shim-bindings.py --check
       - name: Choose profile
         id: profile
         env:
