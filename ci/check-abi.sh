@@ -34,7 +34,7 @@ usage() {
     cat <<'EOF'
 usage: ci/check-abi.sh (--lib <path> | --update) [--strict]
 
-  --lib <path>  shared library to inspect
+  --lib <path>  shared library to inspect (default: the one in src/rocprim)
   --update      rewrite ci/abi-expected.txt from the Pascal declarations
   --strict      treat unexpected rocprim_* exports as errors
   -h, --help    this text
@@ -92,6 +92,18 @@ if ! diff -u "$EXPECTED" "$TMP/declared" >"$TMP/contract.diff"; then
     exit 1
 fi
 
+if [[ -z "$LIB" && -z "$UPDATE" ]]; then
+    # One library per target, so a checkout with exactly one build needs no
+    # argument. More than one means the caller must say which.
+    shopt -s nullglob
+    CANDIDATES=("$ROOT"/src/rocprim/libpasrocm_shim_*.so)
+    shopt -u nullglob
+    case ${#CANDIDATES[@]} in
+        1) LIB="${CANDIDATES[0]}" ;;
+        0) usage >&2; die "no library in src/rocprim -- run 'cd src/rocprim && ./build.sh' first, or pass --lib" ;;
+        *) usage >&2; die "${#CANDIDATES[@]} libraries in src/rocprim -- name one with --lib" ;;
+    esac
+fi
 [[ -n "$LIB" ]] || { usage >&2; die "--lib is required (or pass --update)"; }
 [[ -f "$LIB" ]] || die "no such library: $LIB"
 
