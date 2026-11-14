@@ -34,6 +34,18 @@ jobs:
         run: |
           python3 ci/gen-shim-bindings.py --check
           python3 ci/gen-shim-header.py --check
+      - name: Check the tag matches the shim version
+        # The version is compiled into build_info() and into every package name,
+        # so a tag that disagrees with the manifest would publish assets whose
+        # bytes differ from the ones a hardware run validated.
+        run: |
+          EXPECTED="$(python3 -c 'import json; print(json.load(open("ci/supported-builds.json"))["shim"]["version"])')"
+          if [[ "${GITHUB_REF_NAME#v}" != "$EXPECTED" ]]; then
+            echo "tag '$GITHUB_REF_NAME' does not match shim version '$EXPECTED'" >&2
+            exit 1
+          fi
+          echo "== tag $GITHUB_REF_NAME matches shim version $EXPECTED"
+
       - name: Plan full matrix
         id: plan
         run: python3 ci/manifest.py matrix --profile full --github-output

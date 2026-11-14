@@ -10,7 +10,7 @@
 #   COMPILER_KIND=hipcc ./build.sh              # hipcc (ROCm 6.x / 7.x)
 #   COMPILER_KIND=clang ./build.sh              # amdclang++ -x hip (ROCm 10.x)
 #   OUT_DIR=/tmp/shim ./build.sh                # keep src/ clean
-#   VERSION=1.2.3 GIT_COMMIT=abc1234 ./build.sh # stamp the binary
+#   VERSION=0.1.0 GIT_COMMIT=abc1234 ./build.sh # stamp the binary
 #   DRY_RUN=1 ./build.sh                        # print the resolved toolchain only
 #   NO_STRIP=1 ./build.sh                       # keep debug info
 #
@@ -62,7 +62,7 @@ SOURCES=(rocprim_shim.cpp rocprim_shim_math_kernels.cpp)
 # expansion early, truncating the name to "libpasrocm_shim_{gfx".
 LIB_PATTERN="${LIB_PATTERN:-}"
 [[ -n "$LIB_PATTERN" ]] || LIB_PATTERN='libpasrocm_shim_{gfx}.so'
-VERSION="${VERSION:-1.0.0}"
+VERSION="${VERSION:-0.1.0}"
 GIT_COMMIT="${GIT_COMMIT:-$(git -C "$SRC_DIR" rev-parse --short=12 HEAD 2>/dev/null || true)}"
 
 die() { echo "ERROR: $*" >&2; exit 1; }

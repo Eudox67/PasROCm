@@ -15,7 +15,7 @@
   "shim": {
     "name": "pasrocm_shim",
     "library": "libpasrocm_shim_{gfx}.so",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "abi_version": 1
   },
 
