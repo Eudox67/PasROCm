@@ -50,14 +50,16 @@ Each unit wraps one ROCm library, so you import only the parts you need.
 Under `src/rocprim/`, the rocPRIM Pascal layer is split into small units, one
 topic each: `rocprim_types`, `rocprim_core`, `rocprim_block`, `rocprim_device`,
 `rocprim_warp`, `rocprim_thread`, `rocprim_intrinsics` and `rocprim_iterator`.
-Three low-level units — `rocprim_bindings`, `hip_bindings` and
-`hip_specialized` — link against `librocprim_shim.so`.
+Three low-level units exist beside them: `rocprim_bindings` (the shim API),
+`hip_bindings` (the HIP runtime) and `hip_specialized` (host-only type
+conversions). Nothing links against the shim: `rocprim_shim_loader` opens the
+matching `libpasrocm_shim_<gfx>.so` at run time.
 
 The rocPRIM algorithms are C++ templates, and Free Pascal cannot call C++
 templates directly. A small C++ shim in `src/rocprim/` solves this. The shim
 wraps every template as a plain C function (`extern "C"`), and the Pascal units
-call those functions. You build `librocprim_shim.so` once and keep it on the
-library search path; the shim section below shows the steps.
+call those functions. You build one shim per GPU target and put it where the
+loader looks; the shim section below shows the steps.
 
 ## Requirements
 
@@ -189,7 +191,7 @@ fpc @pasrocm.cfg my_rocm_program.pas
 ```
 
 `pasrocm.cfg` supplies `-Mobjfpc -Sh`, `-Fu src`, `-Fu src/rocprim`,
-`-Fl src/rocprim`, `-Fl /opt/rocm/lib`, `-Fl /opt/rocm/lib64` and `-I src`.
+`-Fl /opt/rocm/lib`, `-Fl /opt/rocm/lib64` and `-I src`.
 Its paths are relative, so run `fpc` from the PasROCm root (as above), or add
 your own absolute `-Fu`/`-Fl` paths. Later flags override earlier flags, so you
 can correct a non-standard ROCm prefix easily:
@@ -249,7 +251,7 @@ only through the `.lpk`, an unrelated CLI project keeps using the units that
 
 ## Building the rocPRIM native shim
 
-You build `librocprim_shim.so` yourself, once per ROCm/GPU combination. None of
+You build `libpasrocm_shim_<gfx>.so` yourself, one per ROCm/GPU combination. None of
 the three install options installs it, because the correct binary depends on
 your GPU and your ROCm version.
 
@@ -317,10 +319,9 @@ by hand:
 quickest way to confirm which install a build would use.
 
 The shim sources and `build.sh` live next to the Pascal units they serve, and
-the build writes `librocprim_shim.so` into that same directory. Your tools
-already know this place: `pasrocm.cfg` points there with `-Fl src/rocprim`,
-`test.sh` with `-Fl` plus an rpath (a library search path stored inside the
-executable), and `setup_env.sh` with `LD_LIBRARY_PATH`. A CMake path
+the build writes `libpasrocm_shim_<gfx>.so` into that same directory. Nothing
+links it: `test.sh` exports `PASROCM_SHIM_DIR`, `setup_env.sh` puts the folder on
+`LD_LIBRARY_PATH`, and the loader also looks there in a checkout. A CMake path
 (`CMakeLists.txt`) is also there for IDE integration, and it builds the same
 sources.
 
@@ -328,6 +329,49 @@ Take the HIP headers only from your selected ROCm install. A copied `hip/`
 header set next to the shim does not work well: mixed header versions do not
 compile together with the installed `hip/amd_detail/*.h` internals. On ROCm 7.x
 this appeared as `unknown type name 'hipDriverEntryPointQueryResult'`.
+
+## The shim loader
+
+The shim is built once per GPU target and is never linked against. On the first
+rocPRIM call, `rocprim_shim_loader.pas` runs a fixed sequence and refuses
+anything that does not belong to this machine:
+
+1. read the device's architecture from HIP (`hipGetDeviceProperties`, or
+   `PASROCM_EXPECT_GFX` for host-only checks);
+2. find and open `libpasrocm_shim_<gfx>.so`;
+3. read `pasrocm_shim_target`, `_wavefront_size`, `_rocm_version` and
+   `_wavefront_widths_mask` — pure exports, no kernels involved;
+4. refuse the library if the target or the wavefront width disagrees with the
+   device;
+5. resolve all 149 entry points, and publish them only if every one resolves.
+
+A wrong library therefore raises `EShimIdentityError` naming both targets,
+instead of launching kernels with the wrong geometry. There is no
+nil-function window: a failure is latched, and every later call repeats it.
+
+| Variable | Meaning |
+|---|---|
+| `PASROCM_SHIM` | exact file to open; overrides the search, no fallback |
+| `PASROCM_SHIM_DIR` | directory holding `libpasrocm_shim_<gfx>.so` |
+| `PASROCM_DEVICE` | device index to detect (default `0`) |
+| `PASROCM_EXPECT_GFX` | trust this target instead of querying HIP (CI) |
+| `PASROCM_EXPECT_ROCM` | require the shim's SDK stamp to start with this |
+| `PASROCM_STRICT_ROCM` | turn an SDK-line warning into a fatal error |
+
+Without `PASROCM_SHIM` or `PASROCM_SHIM_DIR` the loader also looks next to the
+executable, in `lib/` above it, in `~/.local/lib/pasrocm`, in
+`/usr/local/lib/pasrocm` and `/usr/lib{,64}/pasrocm`, in `./src/rocprim` (a
+checkout), and finally by bare file name, so `LD_LIBRARY_PATH` keeps working as
+it always did.
+
+`PASROCM_EXPECT_GFX` is also how the loader's tests prove the refusal path
+without a second GPU: point `PASROCM_SHIM` at the real library and claim a
+different target.
+
+The ABI itself lives in `src/rocprim/rocprim_shim_abi.inc`. The two units
+`rocprim_shim_api.pas` and `rocprim_bindings.pas` are generated from it: edit
+the specification, then run `python3 ci/gen-shim-bindings.py` (CI rejects a
+stale pair).
 
 ## Continuous integration
 
@@ -364,7 +408,8 @@ repository can execute gfx9xx kernels, so every gfx908/gfx90a/gfx942/gfx950
 package carries `validation.gpu_runtime: not-run` in its `manifest.json`. Their
 wavefront handling is proven at build time (guards, identity self-test) and the
 launch geometry is proven by construction, but real kernel execution on MI
-hardware is unverified until a self-hosted or rented runner exists.
+hardware stays unverified until the one-off rented-MI proof in
+`ci/DESIGN.md` §13.6 runs and its result is written into the package manifest.
 
 A configuration claims a range of patches it can back up: `7.2` claims
 `7.2.0-7.2.4` because the rocPRIM headers are identical in both channels, while
@@ -382,15 +427,20 @@ Compile the one you need:
 ```bash
 mkdir -p bin/examples
 fpc -Mobjfpc \
-    -Fusrc -Fusrc/rocprim -Flsrc/rocprim \
+    -Fusrc -Fusrc/rocprim \
     -Fl"$ROCM_PATH/lib" -Fl"$ROCM_PATH/lib64" \
     -FUbin/examples -FEbin/examples \
     examples/rocprim/test_reduce.pas
 
-LD_LIBRARY_PATH="src/rocprim:$ROCM_PATH/lib:$ROCM_PATH/lib64" \
+PASROCM_SHIM_DIR=src/rocprim \
+LD_LIBRARY_PATH="$ROCM_PATH/lib:$ROCM_PATH/lib64" \
   ./bin/examples/test_reduce
 # -> SUCCESS: GPU result matches CPU result.
 ```
+
+Notice what is *not* there: no `-Flsrc/rocprim` and no `librocprim_shim.so`
+symlink. The executable depends on HIP only; `rocprim_shim_loader.pas` opens
+`libpasrocm_shim_<gfx>.so` on the first rocPRIM call.
 
 Always pass `-FUbin/examples` (the unit output folder). Without it, FPC writes
 `.ppu` and `.o` files next to the `.pas` sources; with it, your source tree
@@ -409,25 +459,26 @@ registers the test unit of every subsystem.
 
 `test.sh` does the housekeeping for you: it builds the shim when it is missing,
 compiles `tests/TestRunner.pas` into `bin/` (units in `bin/units/`), exports
-`LD_LIBRARY_PATH` for ROCm and the shim, embeds an rpath, and runs the binary
-with your extra flags.
+`LD_LIBRARY_PATH` for ROCm, points `PASROCM_SHIM_DIR` at the shim directory,
+embeds an rpath for ROCm, and runs the binary with your extra flags.
 
 The equivalent manual build:
 
 ```bash
 fpc @pasrocm.cfg tests/TestRunner.pas -FEbin -FUbin/units
-LD_LIBRARY_PATH="src/rocprim:$ROCM_PATH/lib:$ROCM_PATH/lib64" \
+PASROCM_SHIM_DIR=src/rocprim \
+LD_LIBRARY_PATH="$ROCM_PATH/lib:$ROCM_PATH/lib64" \
   ./bin/TestRunner --all --format=plain
 ```
 
-Current status on ROCm 10.1 (HIP 7.16, MIOpen 3.6.1, gfx1100): **1683 tests
+Current status on ROCm 10.1 (HIP 7.16, MIOpen 3.6.1, gfx1100): **1701 tests
 run, 0 errors, 0 failures, 16 ignores**, in about 12 s. Each ignore is an
 expected "not supported by this ROCm build" case and quotes the library's real
 return status. So a real regression shows up as a failure — it never hides as a
 silent skip.
 
 > The tests allocate real GPU memory. So they need a working device and — for
-> the rocPRIM suites — a matching `librocprim_shim.so`.
+> the rocPRIM suites — a matching `libpasrocm_shim_<gfx>.so`.
 
 ### Leak checking
 
@@ -440,12 +491,17 @@ leaks, build without `cmem`.
 
 ```
 PasROCm/
-├── src/                  # library units (14) + rocprim/ sub-units (11)
-│   └── rocprim/          # rocPRIM layer + C++ shim
+├── src/                  # library units (14) + rocprim/ sub-units (13)
+│   └── rocprim/          # rocPRIM layer + C++ shim + loader
+│                         #   rocprim_shim_abi.inc  <- ABI spec (not compiled)
+│                         #   rocprim_shim_api.pas  <- generated pointer table
+│                         #   rocprim_bindings.pas  <- generated public API
+│                         #   rocprim_shim_loader.pas <- per-GPU dlopen + checks
 │                         #   rocprim_shim*.cpp, build.sh, CMakeLists.txt
-│                         #   librocprim_shim.so   <- build output
+│                         #   libpasrocm_shim_<gfx>.so  <- build output
 ├── tests/                # FPCUnit tests + TestRunner.pas
 ├── examples/rocprim/     # standalone programs, one per rocPRIM primitive
+├── ci/                   # build matrix, ABI gate, binding generator
 ├── fpmake.pp             # Tier 1: native FPC package installer
 ├── pasrocm.cfg           # Tier 2: FPC response file
 ├── pasrocm.lpk           # Tier 3: Lazarus package
@@ -464,6 +520,12 @@ Contributions are welcome. A few simple rules:
 - Register a new unit in `fpmake.pp` (`P.Targets.AddUnit(...)`) and in
   `pasrocm.lpk` (`<Files>`). `pasrocm.cfg` needs no change, because it adds
   whole directories.
+- Changing the shim's C ABI is a one-file edit: add or change the declaration
+  in `src/rocprim/rocprim_shim_abi.inc`, then run
+  `python3 ci/gen-shim-bindings.py` (it rewrites `rocprim_shim_api.pas` and
+  `rocprim_bindings.pas`), and refresh the golden list with
+  `ci/check-abi.sh --update`. Never edit the two generated units by hand; CI
+  rejects a stale pair.
 - Run `./test.sh` and confirm 0 failures. Then open your pull request — it is
   welcome.
 

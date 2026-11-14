@@ -3,11 +3,12 @@
 **Status:** phases 2, 3 and 5 of §7 are implemented; phase 1 (public header,
 identity functions, closed visibility) is still open, so the ABI is checked but
 not yet *closed*, and phase 4 exists only as the build workflow (no tag-driven
-release and no GPU test workflow).
+release and no GPU test workflow). Phase 7 (GPU runtime) has a decision and a
+procedure — a one-off rented MI instance, §13.6 — but no recorded run yet.
 
-The shim is `src/rocprim/librocprim_shim.so`: the C++/HIP layer that the Pascal
-units call into for the rocPRIM primitives that cannot be expressed as Pascal
-generics. This document defines how it is built, identified, packaged and
+The shim is `src/rocprim/libpasrocm_shim_<gfx>.so`: the C++/HIP layer that the
+Pascal units call into for the rocPRIM primitives that cannot be expressed as
+Pascal generics. This document defines how it is built, identified, packaged and
 validated, and records the upstream facts the configuration policy rests on.
 
 ## 1. Scope
@@ -49,8 +50,9 @@ Out of scope for now:
 | Compiler flags | `-x hip` for the `clang` kind; `--rocm-path` for both; `-mwavefrontsize64` only when the table says 64 |
 | GPU target | exactly one per build: `GFX_ARCH=gfx1100 ./build.sh` → one `--offload-arch` and one `-DPASROCM_WAVEFRONT_SIZE` |
 | Arch inference | `rocm_agent_enumerator`, **disabled** when `REQUIRE_ARCH` is set |
-| Library name | `libpasrocm_shim_<gfx>.so` per target; Pascal still links `librocprimshim` through a dev-only symlink |
-| Layout | flat `src/rocprim/` (11 Pascal units + 2 `.cpp` + `build.sh` + `CMakeLists.txt`) |
+| Library name | `libpasrocm_shim_<gfx>.so` per target, opened at run time by `rocprim_shim_loader.pas`; nothing links it (the dev symlink is gone) |
+| Pascal binding mechanism | `rocprim_shim_abi.inc` (hand-edited spec) → generated `rocprim_shim_api.pas` (pointer table) and `rocprim_bindings.pas` (149 wrappers); no symbol is resolved at link time |
+| Layout | flat `src/rocprim/` (13 Pascal units incl. 2 generated + 1 spec `.inc` + 2 `.cpp` + `build.sh` + `CMakeLists.txt`) |
 | CI | `.github/workflows/shim-build.yml`, matrix from `ci/supported-builds.json` |
 | CI scripts | `ci/gfx-targets.json`, `ci/manifest.py`, `ci/install-rocm.sh`, `ci/build-linux.sh`, `ci/package.sh`, `ci/check-abi.sh` |
 | Local toolchain | `/opt/rocm` → ROCm **10.1.0**, HIP 7.16.26385, AMD clang 24.0.0 |
@@ -126,11 +128,12 @@ Required, in order (phase 1, still open):
 3. `-fvisibility=hidden` plus explicit `PASROCM_EXPORT` on exported functions;
    `-Wl,-soname,librocprim_shim.so.1`.
 4. `ci/abi-expected.txt` — the golden export list. **Done**: it is generated
-   from the Pascal declarations, so it is the contract rather than a snapshot
-   of whatever the compiler emitted.
+   from the ABI specification (`src/rocprim/rocprim_shim_abi.inc`), so it is the
+   contract rather than a snapshot of whatever the compiler emitted.
 5. Two gates — **done** in `ci/check-abi.sh`: the declaration set must match the
-   golden list, and every declaration must resolve in the built library. Extra
-   exports are a warning today and become an error (`--strict`) with item 3.
+   golden list, and every declaration must resolve in the built library. It also
+   rejects a generated unit that is stale with respect to the specification.
+   Extra exports are a warning today and become an error (`--strict`) with item 3.
 
 Names stay as they are for the API: symbol prefix `rocprim_*`, library base name
 `pasrocm_shim_<gfx>`. Two exceptions are now part of the ABI and are recorded
@@ -209,7 +212,7 @@ reached, and `manifest.json` records exactly which ones ran.
 | 4. Workflows | `shim-build.yml` (matrix from the manifest), `shim-release.yml` (tag → assets), `shim-gpu-tests.yml` (self-hosted, manual) | a PR run produces one package per enabled configuration; a tag run attaches them | **partly done** — `shim-build.yml` with `pr`/`smoke`/`full`; no release or GPU workflow |
 | 5. Documentation | Supported-configuration table derived from the manifest; local reproduction notes | table matches the manifest exactly | **done** — §5 mirrors the manifest; `validate` rejects structural drift |
 | 6. Wavefront correctness | table-driven width injection, hardware guards, runtime gate, identity self-test | no CDNA build can be wave32, and a wrong library refuses to run | **done** — see §12.3 |
-| 7. GPU runtime | self-hosted AMD runner, `./test.sh` | named OS/GPU/runtime passes | **not started** — no runner available |
+| 7. GPU runtime | one-off rented MI instance (§13.6), `./test.sh` against the gfx942 package | named OS/GPU/runtime passes and the result is written into `manifest.json` | **decided, not run** — rental procedure recorded; every gfx9xx package stays `validation.gpu_runtime = not-run` until the run is logged |
 
 Actions in workflows are pinned by commit SHA. Substantive build logic lives in
 `ci/*.sh` and `build.sh`, not in YAML, so a failed CI build can be reproduced
@@ -305,7 +308,8 @@ installation being present, exactly as `libamdhip64.so.N` implies.
 | 3 | GPU runners | **resolved for now** — none; runtime tests stay manual/self-hosted (phase 7) |
 | 4 | Symbol prefix | **resolved** — keep `rocprim_*`; the five `pasrocm_*` identity symbols are a recorded, deliberate exception (§4) |
 | 5 | Layout | **resolved** — keep flat `src/rocprim/`, `ci/` beside it, `ci/gfx-targets.json` as the shared table |
-| 6 | CDNA runtime execution | **open, deliberately deferred** — nothing local can run gfx9xx. Decide between a self-hosted MI runner and a rented MI instance before any release claims CDNA support; until then every gfx9xx package is labelled `validation.gpu_runtime = not-run` |
+| 6 | CDNA runtime execution | **resolved: one-off rented MI instance** for the first execution proof, procedure in §13.6. A self-hosted MI runner is reconsidered only when CDNA becomes a release-gating tier. Until the run is logged, every gfx9xx package is labelled `validation.gpu_runtime = not-run` |
+| 7 | One meaning for the SDK stamp | **open follow-up, issue #1** — a local `build.sh` still stamps the HIP version while CI stamps the SDK line; stamp the line when detectable, or require `ROCM_VERSION` locally. Until then the loader treats it as reported metadata (§13.3) |
 
 ## 11. Reproduce a build locally
 
@@ -442,3 +446,170 @@ the runtime measurement that makes an equality check wrong on dual-width parts.
    `__global__` kernel in the dynamic symbol table) and `rocprim_set_warp_size`.
    Both disappear with `-fvisibility=hidden` plus the export macro in §4 item 3;
    until then `ci/check-abi.sh` reports them as warnings.
+
+## 13. The Pascal loader (runtime binding)
+
+The shim is never linked. `rocprim_shim_loader.pas` opens the library for the
+GPU that is present, on the first rocPRIM call, and `rocprim_bindings.pas`
+dispatches through a pointer table that the loader fills.
+
+| File | Role |
+|---|---|
+| `src/rocprim/rocprim_shim_abi.inc` | hand-edited ABI specification; never compiled, read by the generator and by `ci/check-abi.sh` |
+| `src/rocprim/rocprim_shim_api.pas` | **generated**: 149 typed pointers, symbol-name table, slot table, `ROCPRIM_SHIM_SYMBOL_COUNT` |
+| `src/rocprim/rocprim_bindings.pas` | **generated**: the 149 public wrappers with the original names and signatures |
+| `src/rocprim/rocprim_shim_loader.pas` | hand-written: device detection, dlopen, identity gate, binding, `TShimLoadInfo` |
+| `ci/gen-shim-bindings.py` | generates the two units; `--check` is a CI gate |
+
+Dependency direction: `bindings` (interface: types + wrappers) ← `api`
+(interface: pointers) and `bindings` (implementation) → `loader` → `api`. The
+edge back from `api` to `bindings` is the only cycle and it is
+implementation-only on the `bindings` side, which FPC accepts (verified on
+3.3.1).
+
+Why `rocprim_bindings.pas` is generated instead of a two-line re-export: **FPC
+does not re-export identifiers from an `interface uses` clause** (measured on
+3.3.1 with a three-unit probe; Delphi does). A unit that merely `uses` the
+pointer table would not keep `uses rocprim_bindings; rocprim_reduce_int(...)`
+compiling, so the 149 names have to be declared in the unit callers already
+use. Generating them from one specification keeps the names, the pointer table
+and the golden ABI list from drifting apart.
+
+### 13.1 Load sequence
+
+Fixed order; each step can refuse, and none of them launches a kernel.
+
+1. **Device.** `hipGetDeviceProperties(prop, index)`; index from
+   `PASROCM_DEVICE` (default 0). Gfx target = `prop.gcnArchName` normalized
+   (strip from `:` on, lowercase). `PASROCM_EXPECT_GFX` replaces the query for
+   host-only checks.
+2. **File.** `PASROCM_SHIM` (authoritative, no fallback), then
+   `PASROCM_SHIM_DIR`, then beside the executable / `../lib` / `../../lib`,
+   `~/.local/lib/pasrocm`, `/usr/local/lib/pasrocm`, `/usr/lib{,64}/pasrocm`,
+   `./src/rocprim`, then the bare file name (so `LD_LIBRARY_PATH` still works).
+   Only `PASROCM_SHIM` failing to exist is an error before the search.
+3. **Identity.** Bind the five `pasrocm_*` exports by index and read target,
+   compiled width, widths mask and SDK stamp. This happens *before* any other
+   pointer is written.
+4. **Gate.** `PasROCmClassifyIdentity` in Pascal decides the verdict from the
+   values plus the shim's own `pasrocm_wavefront_compatible()` result, which is
+   passed in and never re-implemented (single source of truth, already covered
+   by the C self-test in `pasrocm_shim_info.c`).
+5. **Bind.** Resolve all 149 into a temporary array and publish only when none
+   is missing: the table is never half-bound.
+6. **Latch.** Success stores `TShimLoadInfo`; failure stores the message and
+   every later call raises it again instead of retrying a broken load.
+
+Every wrapper calls the loader first, so the first rocPRIM call is the one that
+opens the library; a program that imports the unit but never calls rocPRIM pays
+nothing.
+
+### 13.2 What each identity export gates
+
+| Export | Check | Failure |
+|---|---|---|
+| `pasrocm_shim_target` | equals the detected gfx (case-insensitive) | `EShimIdentityError`, both targets in the message |
+| `pasrocm_shim_wavefront_size` | is 32 or 64, and its bit is in the mask | `EShimIdentityError` |
+| `pasrocm_shim_wavefront_widths_mask` | 1..3, covers the compiled width | `EShimIdentityError` |
+| `pasrocm_wavefront_compatible` | returns 1 for (compiled, reported, mask) | `EShimIdentityError` with the three numbers |
+| `pasrocm_shim_rocm_version` | see 13.3 | warning by default |
+
+`reported` is `prop.warpSize`; with `PASROCM_EXPECT_GFX` and no device it is
+derived from the mask when the mask is single-valued (1 → 32, 2 → 64), the same
+reasoning the C self-test uses. Dual-width hardware (mask 3) accepts either
+width, per §9.
+
+### 13.3 The SDK stamp is reported, not guessed
+
+`pasrocm_shim_rocm_version()` is read into `TShimLoadInfo` and compared only
+where a comparison is real. It is **not** a default hard gate, for four
+measured reasons:
+
+- ROCm 10.1 ships HIP 7.16 (`hipRuntimeGetVersion` → 71626385), so the HIP
+  version does not identify the SDK line;
+- 7.2 and 10.1 share `libamdhip64.so.7`, so a 7.2 artifact *loads* under 10.1;
+- the ROCm 10.x install layout has no `/opt/rocm/.info/version` (checked on the
+  development machine), so there is no reliable on-disk SDK line to compare to;
+- a local `build.sh` without `ROCM_VERSION` stamps the **HIP** version
+  (`7.16.26385-0000000`), while CI stamps the SDK line (`10.1.0`).
+
+What the loader does instead: `PASROCM_EXPECT_ROCM=<prefix>` makes the stamp an
+identity gate; otherwise a stamp whose major maps to a different HIP major than
+the running one (`6.x → 6`, `7.x → 7`, `10.x → 7`) becomes a warning recorded in
+`TShimLoadInfo.Warnings`, and `PASROCM_STRICT_ROCM=1` turns that warning into a
+fatal error. The HIP major itself is still enforced by `DT_NEEDED`.
+
+**Follow-up, tracked as issue #1 (not silently dropped):** make a local `build.sh`
+stamp the SDK line when it can be detected, or require `ROCM_VERSION` for local
+builds, so one export stops returning two kinds of value. Until then this
+section is the contract. A package sidecar — `libpasrocm_shim_<gfx>.so.info`
+with `rocm=<line>` — would let the loader compare against the artifact instead
+of the install, and is the second option if a hard gate is wanted.
+
+### 13.4 Memory ordering
+
+The steady state is one test of `GState` per shim call. That is safe on x86_64:
+an aligned 32-bit load is atomic and the store that publishes `ssLoaded` is
+ordered after the slot writes (TSO), so a reader that sees `ssLoaded` sees a
+complete table. On a weakly ordered target (aarch64) this must become a barrier
+or an unconditional `PasROCmShimLoad`; an uncontended critical section is
+negligible next to a kernel launch, so the simple fix is available. The fast
+path is documented at the point of use as well.
+
+### 13.5 Limits and tracked follow-ups
+
+- **One library per process.** A process opens the shim for `PASROCM_DEVICE`
+  (default 0). A machine with two GPUs of different architectures cannot use
+  both through one process, which is inherent to one-library-per-target and is
+  recorded here rather than discovered at run time.
+- **The live environment is what counts.** The loader reads the environment with
+  `getenv`, not FPC's `GetEnvironmentVariable`: measured on 3.3.1, the latter
+  snapshots the environment at start-up, so a host program that sets
+  `PASROCM_SHIM_DIR` after start would be ignored.
+- **`rocprim_device.pas` cannot link.** It still declares 27 procedures with a
+  bare `external;` (no library, no shim counterpart). Any program that uses the
+  `rocprim` facade would fail to link. Tracked as issue #2: map those names onto
+  the 149-symbol API or retire the unit. It deliberately does not ride along
+  with this change.
+- **Two exports outside the contract.** `rocprim_fill_kernel_int` and
+  `rocprim_set_warp_size` remain exported-but-undeclared (§12.4). They fold into
+  the phase-1 `-fvisibility=hidden` work; the public surface should end at
+  exactly 149 symbols plus the SONAME.
+- **Local SDK stamp.** §13.3 follow-up, issue #1: stamp the SDK line, or
+  require `ROCM_VERSION`, so `pasrocm_shim_rocm_version()` has one meaning.
+
+### 13.6 CDNA execution proof: rented, one-off (decided)
+
+**Decision.** The first execution proof for gfx942 runs on a **one-off rented
+MI instance**, not a self-hosted runner. There is no MI hardware in the project,
+the gap is a single correctness question — do the wave64 kernels run and match
+the CPU reference? — and a rental keeps the cost bounded without owning and
+maintaining a runner. A self-hosted MI runner is reconsidered only if CDNA
+becomes a release-gating tier, i.e. if every release must re-prove gfx9xx
+instead of once per SDK line.
+
+**Scope.** One thing only: turn `validation.gpu_runtime = not-run` into a
+recorded `pass` (or a real defect) for the 10.1 / gfx942 package. Not a
+benchmark, not a compatibility sweep.
+
+**Procedure** — the checklist the run follows, so the next one is not an
+adventure:
+
+1. Rent an MI300X-class instance (gfx942) with Ubuntu 24.04 + ROCm 10.1.0,
+   matching `ci/supported-builds.json` (`ubuntu-24.04-rocm10.1`).
+2. Confirm the hardware before anything else: `rocm_agent_enumerator` prints
+   `gfx942`, `hipconfig --version` reports HIP 7.16.
+3. Take the CI artifact for that configuration, or build it on the instance:
+   `COMPILER_KIND=clang GFX_ARCH=gfx942 REQUIRE_ARCH=1 ./src/rocprim/build.sh`.
+4. Run the Pascal suite against the package's `lib/`:
+   `PASROCM_SHIM_DIR=<pkg>/lib ./test.sh --all --format=plain`.
+5. Freeze the evidence: test count, failures, `rocminfo` gfx target, SDK
+   version, the shim's `TShimLoadInfo` (target, wavefront, mask) and the
+   artifact's `manifest.json`.
+6. Flip `validation.gpu_runtime` from `not-run` to `pass` in that manifest and
+   record date + SDK + instance class in the package notes. Until step 6, the
+   labels do not move and no README or release note claims CDNA support.
+
+**If it fails**, it is a shim/wave64 defect, not a packaging one. File it with
+the numbers from step 5 — `compiled` width, `props.warpSize`, widths mask — the
+three values that distinguish "wrong library" from "wrong kernel".
