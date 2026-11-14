@@ -28,6 +28,7 @@ release asset and from `git archive` output; a `git clone` still contains it.
 ```bash
 ci/manifest.sh validate                   # self-check
 ci/manifest.sh matrix --profile smoke     # what CI would run
+ci/manifest.sh meta                       # shim name/version/abi, eval-safe
 ci/install-rocm.sh --config ubuntu-24.04-rocm10.1 --dry-run
 ci/build-linux.sh --config ubuntu-24.04-rocm10.1 --target gfx1100
 ```
