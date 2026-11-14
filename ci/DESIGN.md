@@ -164,6 +164,9 @@ separates what we *claim* from what we *compile against*:
   because a **compile-probe** configuration builds against `apt/6.4`
   (rocPRIM 3.4.0) alongside the 6.4.4 build (3.4.1).
 - A new SDK release is a **reviewed manifest change**, never an automatic bump.
+- Distro repositories carry ROCm 5.0-era packages under AMD's names with higher
+  version strings, so `install-rocm.sh` pins the AMD origin above them and then
+  verifies the device-bitcode tree; see §12.5.
 - One build produces one GPU target; CI sets `REQUIRE_ARCH=1` so inference can
   never run there, because compiler acceptance of a `gfx…` target does not
   establish runtime support. A family keyword that expands to several targets is
@@ -446,6 +449,44 @@ the runtime measurement that makes an equality check wrong on dual-width parts.
    `__global__` kernel in the dynamic symbol table) and `rocprim_set_warp_size`.
    Both disappear with `-fvisibility=hidden` plus the export macro in §4 item 3;
    until then `ci/check-abi.sh` reports them as warnings.
+
+### 12.5 Provisioning defect found by the first CI run (2026-11-14)
+
+The first `smoke` run built every 10.1 job and failed every 6.4 and 7.2 job —
+on both Ubuntu releases and both GPU targets — with:
+
+```text
+clang++: error: cannot find ROCm device library; provide its path via
+  '--rocm-path' or '--rocm-device-lib-path', or pass '-nogpulib'
+```
+
+`build.sh` does pass `--rocm-path=$ROCM_ROOT`; the device bitcode itself was
+wrong. Measured from the run's apt log and the repository indexes:
+
+| source | `rocm-device-libs` version |
+|---|---|
+| `repo.radeon.com/rocm/apt/6.4.4` | `1.0.0.60404-129~22.04` |
+| `repo.radeon.com/rocm/apt/7.2.4` | `1.0.0.70204-93~22.04` |
+| Ubuntu `jammy/universe` | `5.0.0-1` |
+
+AMD versions the package `1.0.0.<rocm-build>`; the distro copy is `5.0.0-1`, so
+**plain apt prefers the distro package** and installs ROCm 5.0-era bitcode that
+does not live under `--rocm-path`. `rocminfo` collides the same way (both
+`5.0.0-1`). The 10.1 configurations were unaffected because their packages are
+named `amdrocm-*` and have no distro namesake.
+
+Fixed in `ci/install-rocm.sh`, in the `radeon-apt` branch only:
+
+1. `/etc/apt/preferences.d/rocm.pref` pins `origin repo.radeon.com` at priority
+   1001 for every package name the AMD repository publishes, so the version
+   scheme cannot lose the race again (this also fixes `rocminfo`);
+2. after resolving `ROCM_ROOT`, the script requires a bitcode tree containing
+   `ockl.bc` and fails with the installed `rocm-device-libs` version and the pin
+   file's path if it is absent — the collision cannot silently come back.
+
+This is an install/provisioning defect, not a target rejection: no `min_rocm`
+entry changes. It is also not proof that 6.4/7.2 compile — that is what the next
+`smoke` run measures.
 
 ## 13. The Pascal loader (runtime binding)
 

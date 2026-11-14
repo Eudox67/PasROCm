@@ -95,6 +95,19 @@ case "$PIN_KIND" in
         printf 'deb [arch=amd64 signed-by=%s] %s %s main\n' \
             "$KEYRING" "$PIN_REPO" "$PIN_SUITE" \
             | write_file /etc/apt/sources.list.d/rocm.list
+        # The distro repositories publish ROCm 5.0-era packages under the same
+        # names as AMD's, and their version strings sort HIGHER: measured
+        # 2026-11-14, jammy/universe ships rocm-device-libs 5.0.0-1 and
+        # rocminfo 5.0.0-1, while AMD's 6.4.4 repo ships rocm-device-libs
+        # 1.0.0.60404-129~22.04. Plain apt therefore installs the distro copy,
+        # and the build dies with "cannot find ROCm device library" because
+        # 5.0 bitcode does not live under --rocm-path. Prefer the AMD origin
+        # for every name it publishes; the repo carries ROCm packages only.
+        write_file /etc/apt/preferences.d/rocm.pref <<'PREF'
+Package: *
+Pin: origin repo.radeon.com
+Pin-Priority: 1001
+PREF
         ;;
     amdrocm-stable)
         KEYRING=/etc/apt/keyrings/amdrocm.gpg
@@ -164,6 +177,24 @@ fi
 ROCM_ROOT="$(probe_rocm_root)" || die "no ROCm install found after installing $CFG_SDK_VERSION"
 [[ -d "$ROCM_ROOT/include/hip" ]] || die "missing HIP headers under $ROCM_ROOT/include/hip"
 
+# The compiler needs the device bitcode, and apt can silently hand back the
+# distro's 5.0-era rocm-device-libs instead of AMD's 1.0.0.<sdk> (the
+# radeon-apt pin above prevents it; this proves it). A bitcode tree without
+# ockl.bc is not one clang can use for --rocm-path.
+DEVICE_LIBS=""
+for candidate in "$ROCM_ROOT/amdgcn/bitcode" \
+                 "$ROCM_ROOT/lib/llvm/amdgcn/bitcode" \
+                 "$ROCM_ROOT/llvm/amdgcn/bitcode"; do
+    if [[ -f "$candidate/ockl.bc" ]]; then
+        DEVICE_LIBS="$candidate"
+        break
+    fi
+done
+if [[ -z "$DEVICE_LIBS" ]]; then
+    DEVLIBS_VER="$(dpkg-query -W -f='${Version}' rocm-device-libs 2>/dev/null || true)"
+    die "no ROCm device bitcode (ockl.bc) under $ROCM_ROOT, but rocm-device-libs is '${DEVLIBS_VER:-<not installed>}'. The distro package (5.0.0-1) cannot serve a 6.x/7.x build; apt must take AMD's 1.0.0.<sdk> through /etc/apt/preferences.d/rocm.pref."
+fi
+
 export ROCM_PATH="$ROCM_ROOT"
 export HIP_PLATFORM=amd
 export HIP_PATH="$ROCM_ROOT"
@@ -176,6 +207,7 @@ case ":${PATH}:" in
 esac
 
 echo "== ROCm root   : $ROCM_ROOT"
+echo "== device libs : $DEVICE_LIBS"
 for pkg in $PIN_PACKAGES; do
     version="$(dpkg-query -W -f='${Version}' "$pkg" 2>/dev/null || true)"
     printf '== installed   : %-30s %s\n' "$pkg" "${version:-<missing>}"
