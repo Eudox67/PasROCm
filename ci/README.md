@@ -5,7 +5,7 @@ Python. Every script is shell and reads its data from the two `.conf` files.
 
 | file | job |
 |---|---|
-| `gfx-targets.conf` | GPU target → wavefront width, runnable widths, minimum SDK line |
+| `../targets.conf` | GPU target → wavefront width, runnable widths, minimum SDK line (at the repo root: `build.sh` reads it too) |
 | `supported-builds.conf` | Ubuntu/ROCm pins, profiles (`pr`/`smoke`/`full`), patch claims |
 | `manifest.sh` | queries: `validate`, `matrix`, `env`, `wave`, `mask`, `targets`, `meta` |
 | `install-rocm.sh` | install a pinned SDK (`--config <id>`, `--dry-run` first) |
@@ -15,11 +15,15 @@ Python. Every script is shell and reads its data from the two `.conf` files.
 | `gpu-runtime-evidence.json` | what was actually executed on real GPU hardware |
 | `gen-shim-bindings.py` | generates `rocprim_shim_api.pas`, `rocprim_bindings.pas` |
 | `gen-shim-header.py` | generates `rocprim_shim.h`, `rocprim_shim.map` |
-| `DESIGN.md` | decisions, measured upstream facts, risks, tooling rules (§14) |
+| `DESIGN.md` | maintainer notes: decisions, measured upstream facts, risks, tooling rules (§14). Excluded from the source download |
 
 Data files are authoritative. The workflow matrices are produced by
 `manifest.sh`, so adding a configuration is a one-line edit plus a
 `./ci/manifest.sh validate`.
+
+This directory is maintainer tooling. `.gitattributes` marks it
+`export-ignore`, so it is absent from the `pasrocm-<version>-src.tar.gz`
+release asset and from `git archive` output; a `git clone` still contains it.
 
 ```bash
 ci/manifest.sh validate                   # self-check

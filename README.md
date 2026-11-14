@@ -165,12 +165,12 @@ depends on a rocPRIM feature that only arrived after 3.4:
 
 Everything else in the 151-function surface is available on all three. The
 symbol is always exported, so this is a capability gap the caller can see and
-test, not a missing symbol at load time (`ci/DESIGN.md` §12.6).
+test, not a missing symbol at load time.
 
 Target coverage follows `ci/gfx-targets.conf`. `gfx950` (CDNA4) needs ROCm 7.2
 or newer: the 6.4 rocPRIM cannot compile it (no 128-bit atomics for that
 architecture), which is a rocPRIM capability floor rather than compiler support
-(`ci/DESIGN.md` §12.7).
+(a rocPRIM capability floor, not a compiler one).
 
 **One target per build.** `GFX_ARCH` names exactly one GPU target, for example
 `gfx1100` (RDNA 3 — Radeon RX 7000) or `gfx942` (CDNA 3 — MI300). A family
@@ -212,7 +212,8 @@ bindings. Failures print per-test; the exit code is the count.
 
 Heaptrc is enabled by default for test builds. Because `cmem` and heaptrc
 disagree about who owns the heap, leak checking runs without `cmem` — the
-`cfgmgr`/`-gh` workflow is described in `ci/DESIGN.md` §13.4.
+`cfgmgr`/`-gh` workflow: build and run without `cmem` (`cthreads` alone is
+enough for the pool), fix the leaks, then add `cmem` back for release builds.
 
 ## Project layout
 
@@ -221,7 +222,8 @@ src/                    Pascal units (rocprim.pas, rocprim_*.pas)
 src/rocprim/            the C++ shim: sources, build.sh, generated ABI units
 src/test/pascal/        1,702 assertions (FPCUnit)
 examples/               standalone programs
-ci/                     build matrix, ABI gate, packages, design notes
+targets.conf            GPU target table: wavefront width, usable widths
+ci/                     build matrix, ABI gate, packages (maintainer tooling)
 docs/                   installation and CI detail
 ```
 
@@ -231,7 +233,6 @@ docs/                   installation and CI detail
   package, per-SDK capability notes, diagnostics.
 - `docs/CI.md` — the build matrix, job profiles and billed minutes, validation
   levels, and the release flow.
-- `ci/DESIGN.md` — design decisions, measured upstream facts, risk register.
 
 ## Contributing
 

@@ -54,7 +54,7 @@ Out of scope for now:
 | Pascal binding mechanism | `rocprim_shim_abi.inc` (hand-edited spec) → generated `rocprim_shim_api.pas` (pointer table) and `rocprim_bindings.pas` (149 wrappers); no symbol is resolved at link time |
 | Layout | flat `src/rocprim/` (13 Pascal units incl. 2 generated + 1 spec `.inc` + 2 `.cpp` + `build.sh` + `CMakeLists.txt`) |
 | CI | `.github/workflows/shim-build.yml`, matrix from `ci/supported-builds.json` |
-| CI scripts | `ci/gfx-targets.conf`, `ci/supported-builds.conf`, `ci/manifest.sh`, `ci/install-rocm.sh`, `ci/build-linux.sh`, `ci/package.sh`, `ci/check-abi.sh` |
+| CI scripts | `targets.conf`, `ci/supported-builds.conf`, `ci/manifest.sh`, `ci/install-rocm.sh`, `ci/build-linux.sh`, `ci/package.sh`, `ci/check-abi.sh` |
 | Local toolchain | `/opt/rocm` → ROCm **10.1.0**, HIP 7.16.26385, AMD clang 24.0.0 |
 
 `/opt/rocm-6.3.2` and `/opt/rocm-7.0.2` exist as directories but are **not
@@ -219,7 +219,7 @@ reached, and `manifest.json` records exactly which ones ran.
 |---|---|---|---|
 | 1. ABI identity | `rocprim_shim.h`, hidden visibility, SONAME | `ci/check-abi.sh` passes with `--strict` | **done** — generated header, `-fvisibility=hidden` plus a generated version script (149 exports, 0 others), SONAME = on-disk name, strict gate by default, real gfx1100 run. `rocprim_shim_abi_version()`/`build_info()` remain (§4) |
 | 2. CI-callable build | `COMPILER_KIND`/`COMPILER`, `OUT_DIR`, `VERSION`/`GIT_COMMIT`/`ROCM_VERSION`, `REQUIRE_ARCH`, one target per build | `REQUIRE_ARCH=1 ./src/rocprim/build.sh` without `GFX_ARCH` exits non-zero; a multi-target `GFX_ARCH` exits non-zero | **done** — both compiler kinds and both wavefront widths built locally |
-| 3. Manifest + driver | `ci/gfx-targets.conf`, `ci/supported-builds.conf`, `ci/manifest.sh`, `ci/install-rocm.sh`, `ci/build-linux.sh`, `ci/package.sh` | two consecutive builds of one config produce identical package contents | **done** — 55-job `full` matrix; byte-identical packaging |
+| 3. Manifest + driver | `targets.conf`, `ci/supported-builds.conf`, `ci/manifest.sh`, `ci/install-rocm.sh`, `ci/build-linux.sh`, `ci/package.sh` | two consecutive builds of one config produce identical package contents | **done** — 55-job `full` matrix; byte-identical packaging |
 | 4. Workflows | `shim-build.yml` (matrix from the manifest), `shim-release.yml` (tag → assets), `shim-gpu-tests.yml` (self-hosted, manual) | a PR run produces one package per enabled configuration; a tag run attaches them | **partly done** — `shim-build.yml` (`pr`/`smoke`/`full`) and `shim-release.yml` (tag → full rebuild, one artifact per (line, target), SHA256SUMS, per-target manifests, gpu_runtime in the notes); no GPU workflow |
 | 5. Documentation | Supported-configuration table derived from the manifest; local reproduction notes | table matches the manifest exactly | **done** — §5 mirrors the manifest; `validate` rejects structural drift |
 | 6. Wavefront correctness | table-driven width injection, hardware guards, runtime gate, identity self-test | no CDNA build can be wave32, and a wrong library refuses to run | **done** — see §12.3 |
@@ -786,13 +786,31 @@ three values that distinguish "wrong library" from "wrong kernel".
 
 | fact | file | read by |
 |---|---|---|
-| GPU target, wavefront width, widths the hardware can run, minimum SDK line | `ci/gfx-targets.conf` | `build.sh`, `manifest.sh`, CMake |
+| GPU target, wavefront width, widths the hardware can run, minimum SDK line | `targets.conf` (repository root) | `build.sh`, `manifest.sh`, CMake |
 | Ubuntu/ROCm pins, profiles, patch claims | `ci/supported-builds.conf` | `manifest.sh`, both workflows |
 
 No second copy of either table exists: `gen-shim-bindings.py` and
 `gen-shim-header.py` read the declaration list from
 `src/rocprim/rocprim_shim_abi.inc`, and the workflows read their matrices by
 asking `ci/manifest.sh` rather than by building one in YAML.
+
+### 14.1a What ships, and what does not
+
+`.gitattributes` marks `/.github/`, `/ci/` and `/docs/dev/` as `export-ignore`,
+and the release attaches `pasrocm-<version>-src.tar.gz`, produced with
+`git archive`, which therefore contains the Pascal units, the shim sources,
+`targets.conf`, `examples/` and `docs/` -- and nothing from the build
+machinery. The publish job asserts that no `ci/` or `.github/` path survived
+before it creates the release.
+
+This is why `targets.conf` sits at the root: a checkout must build with zero
+files from `ci/`. It is also the honest limit of the mechanism -- a `git clone`
+contains every tracked file, so anyone who clones the source can read the
+maintainer tooling. Only hosting the tooling in a different repository changes
+that, at the cost of CI on community pull requests, which is not worth it
+here: the matrix, the ABI gate and the packaging are evidence of quality, not
+secrets. What is kept out of the download is the internal register of risks and
+open defects (`DESIGN.md` itself).
 
 ### 14.2 No interpreter on the user path
 

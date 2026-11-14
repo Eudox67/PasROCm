@@ -14,7 +14,19 @@ one-file change.
 | SDK provisioning | `ci/install-rocm.sh --config <id>` |
 | build, ABI check, package | `ci/build-linux.sh --config <id> --arch-group <group>` |
 | ABI gate | `ci/check-abi.sh` |
-| design, measured upstream facts, risks | `ci/DESIGN.md` |
+| design, measured upstream facts, risks | `ci/DESIGN.md` (maintainer notes, not shipped) |
+
+## CI is maintainer tooling, not part of the product
+
+Nothing a user downloads contains this directory. `.gitattributes` marks `ci/`
+and `.github/` `export-ignore`, and the release attaches
+`pasrocm-<version>-src.tar.gz`, built with `git archive`, which holds the Pascal
+units, the shim sources, `targets.conf`, `examples/` and `docs/` only. The
+release job asserts that absence before publishing.
+
+A `git clone` does contain `ci/` and `.github/` -- that is a property of git,
+not a setting that can be switched off, and it is why `targets.conf` lives at
+the repository root: a checkout builds with no file from this directory.
 
 ## Profiles
 
@@ -31,7 +43,8 @@ Profiles keep a private repository inside its Actions allowance, measured on
 That is about 1,640 minutes a month against the 2,000-minute allowance, leaving
 room for pull requests and manual dispatches. A manual run can request any
 profile; nightly `full` would be ~3,800 minutes and needs a public repository or
-a bigger plan (`ci/DESIGN.md` §9).
+a bigger plan. On a public repository standard runners are unmetered, so
+the nightly run can be `full`.
 
 ```bash
 ci/manifest.sh validate                    # self-check the data files
@@ -58,8 +71,8 @@ repository executes gfx9xx kernels, so every gfx908/gfx90a/gfx942/gfx950
 package carries `validation.gpu_runtime: not-run`. Their wavefront handling is
 proven at build time (guards, identity self-test) and the launch geometry is
 proven by construction, but real kernel execution on MI hardware stays
-unverified until the one-off rented-MI proof in `ci/DESIGN.md` §13.6 runs and
-its result is written into the package manifest.
+unverified until a one-off rented-MI run exercises those kernels and its
+result is written into the package manifest.
 
 ## Patch ranges
 
@@ -85,7 +98,8 @@ Nothing in a package depends on the build machine: no timestamps, no absolute
 paths, and `built_at` is deliberately absent, so a rebuild of the same inputs
 produces the same file names and the same library hash. That hash is the
 invariant to compare across a rebuild — the tarball itself changes if you flip
-`gpu_runtime` in the evidence file (`ci/DESIGN.md` §12.1).
+`gpu_runtime` in the evidence file: the library hash is the invariant, the
+tarball is not.
 
 ## Local gates
 

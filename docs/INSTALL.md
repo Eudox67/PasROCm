@@ -20,6 +20,18 @@ wavefront width, the rocPRIM version the shim was compiled against, the exact
 compiler and version string, the library SHA256, and a `validation` block saying
 how far the package was proven (see `docs/CI.md`).
 
+## Which download do I need?
+
+| download | contains | use it when |
+|---|---|---|
+| `pasrocm-shim-<os>-<rocm>-<gfx>.tar.gz` | `lib/`, `include/`, `manifest.json`, `INSTALL.md`, `LICENSE` | you want the prebuilt library |
+| `pasrocm-<version>-src.tar.gz` | units, shim sources, `targets.conf`, `examples/`, `docs/` | you want to build the shim yourself |
+| `git clone` | everything, including `ci/` and `.github/` | you are contributing to PasROCm |
+
+The source archive is produced with `git archive`, so it honours
+`.gitattributes` and contains no CI. A clone always contains every tracked
+file; that is how git works, not a configuration choice.
+
 ## Where the loader looks
 
 On the first rocPRIM call, `rocprim_shim_loader.pas` runs a fixed sequence and
@@ -84,11 +96,11 @@ Edit the specification, not the generated files.
 
 Everything else in the 151-function surface is available on all three lines.
 The symbol is always exported, so the gap is visible to the caller at run time
-rather than a missing symbol at load time (`ci/DESIGN.md` §12.6).
+rather than a missing symbol at load time.
 
 `gfx950` (CDNA4) requires ROCm 7.2 or newer: the 6.4 rocPRIM cannot compile for
 that architecture (no 128-bit atomics), which is a rocPRIM floor, not a
-compiler gap (`ci/DESIGN.md` §12.7).
+compiler gap.
 
 ## Reading a build log
 
