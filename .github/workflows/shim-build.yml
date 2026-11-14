@@ -1,0 +1,144 @@
+name: shim-build
+
+# Compile the rocPRIM C++ shim against every supported (Ubuntu, ROCm) pair and
+# every GPU architecture group, one artifact per (configuration, arch group).
+#
+#   pull_request  -> profile "pr"    : 1 configuration, 3 arch groups (~3 jobs)
+#   push to main  -> profile "smoke" : all configurations, one arch group (9 jobs)
+#   schedule      -> profile "full"  : all configurations, all arch groups (45 jobs)
+#   manual        -> profile chosen in the "Run workflow" dialog
+#
+# Everything about the matrix comes from ci/supported-builds.json; this file only
+# says where to run it. See ci/DESIGN.md sections 5 and 7.
+
+on:
+  pull_request:
+    paths:
+      - 'src/rocprim/**'
+      - 'ci/**'
+      - '.github/workflows/shim-build.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/rocprim/**'
+      - 'ci/**'
+      - '.github/workflows/shim-build.yml'
+  schedule:
+    # Weekly, so a new AMD patch release or a runner image change is noticed
+    # without waiting for a pull request.
+    - cron: '0 4 * * 0'
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Matrix profile to run
+        type: choice
+        options: [pr, smoke, full]
+        default: pr
+
+permissions:
+  contents: read
+
+concurrency:
+  # A pull request only needs its newest run; main/scheduled runs are kept.
+  group: shim-build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  plan:
+    name: plan matrix
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      count: ${{ steps.plan.outputs.count }}
+      profile: ${{ steps.profile.outputs.profile }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Validate manifest
+        run: python3 ci/manifest.py validate
+      - name: Choose profile
+        id: profile
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_PROFILE: ${{ inputs.profile }}
+        run: |
+          case "$EVENT" in
+            pull_request) PROFILE=pr ;;
+            push)         PROFILE=smoke ;;
+            schedule)     PROFILE=full ;;
+            *)            PROFILE="${INPUT_PROFILE:-pr}" ;;
+          esac
+          echo "profile=$PROFILE" >> "$GITHUB_OUTPUT"
+          echo "== profile: $PROFILE"
+      - name: Plan matrix
+        id: plan
+        run: |
+          python3 ci/manifest.py matrix \
+            --profile "${{ steps.profile.outputs.profile }}" \
+            --github-output
+      - name: Summarize plan
+        run: |
+          {
+            echo "### shim build plan"
+            echo
+            echo "| field | value |"
+            echo "|---|---|"
+            echo "| event | \`${{ github.event_name }}\` |"
+            echo "| profile | \`${{ steps.profile.outputs.profile }}\` |"
+            echo "| jobs | ${{ steps.plan.outputs.count }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: ${{ matrix.config }} / ${{ matrix.target }}
+    needs: plan
+    if: needs.plan.outputs.count != '0'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Provision ROCm ${{ matrix.sdk_line }} (${{ matrix.sdk_version }})
+        run: ci/install-rocm.sh --config "${{ matrix.config }}"
+
+      - name: Build, self-test and ABI-check (${{ matrix.target }}, wave ${{ matrix.wavefront }})
+        run: |
+          ci/build-linux.sh \
+            --config "${{ matrix.config }}" \
+            --target "${{ matrix.target }}" \
+            --skip-install
+
+      - name: Upload package
+        if: matrix.artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ matrix.config }}__${{ matrix.target }}
+          path: |
+            dist/*.tar.gz
+            dist/*.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Summarize job
+        if: always()
+        run: |
+          {
+            echo "### ${{ matrix.config }} / ${{ matrix.target }}"
+            echo
+            echo "| field | value |"
+            echo "|---|---|"
+            echo "| mode | \`${{ matrix.mode }}\` |"
+            echo "| ROCm | \`${{ matrix.sdk_line }}\` (\`${{ matrix.sdk_version }}\`) |"
+            echo "| compiler | \`${{ matrix.compiler }}\` |"
+            echo "| target | \`${{ matrix.target }}\` |"
+            echo "| wavefront | \`${{ matrix.wavefront }}\` (widths \`${{ matrix.widths }}\`) |"
+            if compgen -G "dist/*.tar.gz" >/dev/null; then
+              echo
+              echo '```'
+              sha256sum dist/*.tar.gz || true
+              ls -lh dist/*.tar.gz || true
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
