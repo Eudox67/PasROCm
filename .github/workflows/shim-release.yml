@@ -41,11 +41,20 @@ jobs:
         run: |
           eval "$(ci/manifest.sh meta)"
           EXPECTED="$SHIM_VERSION"
-          if [[ "${GITHUB_REF_NAME#v}" != "$EXPECTED" ]]; then
-            echo "tag '$GITHUB_REF_NAME' does not match shim version '$EXPECTED'" >&2
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          # A pre-release tag (v0.1.0-rc.1) is allowed: it publishes the same
+          # bytes under a name that says "not final". Anything else is a typo.
+          if [[ "$TAG_VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+)(-(rc|beta|alpha)\.[0-9]+)?$ ]]; then
+            BASE="${BASH_REMATCH[1]}"
+          else
+            echo "tag '$GITHUB_REF_NAME' is not a version (want vX.Y.Z or vX.Y.Z-rc.N)" >&2
             exit 1
           fi
-          echo "== tag $GITHUB_REF_NAME matches shim version $EXPECTED"
+          if [[ "$BASE" != "$EXPECTED" ]]; then
+            echo "tag '$GITHUB_REF_NAME' does not match project version '$EXPECTED' (VERSION)" >&2
+            exit 1
+          fi
+          echo "== tag $GITHUB_REF_NAME matches project version $EXPECTED"
 
       - name: Plan full matrix
         id: plan
@@ -101,7 +110,8 @@ jobs:
 
       - name: Select one artifact per (SDK line, target) and write the notes
         run: |
-          python3 - <<'PY'
+          eval "$(ci/manifest.sh meta)"
+          python3 - "$SHIM_ABI_VERSION" <<'PY'
           import hashlib
           import json
           import pathlib
@@ -109,7 +119,7 @@ jobs:
           import tarfile
 
           dist = pathlib.Path("dist")
-          expected_abi = json.load(open("ci/supported-builds.json", encoding="utf-8"))["shim"]["abi_version"]
+          expected_abi = int(sys.argv[1])   # PASROCM_ABI_REVISION, via manifest.sh meta
           # The oldest supported Ubuntu per line is the artifact; newer OSes
           # rebuild a smoke set to prove the userland, not to ship duplicates.
           order = {"ubuntu-22.04": 0, "ubuntu-24.04": 1, "ubuntu-26.04": 2}

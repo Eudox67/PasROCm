@@ -14,7 +14,7 @@ name: shim-build
 # month) does not fit a private repository's 2,000-minute allowance, while
 # nightly smoke + weekly full (~1,620) does. See docs/CI.md.
 #
-# Everything about the matrix comes from ci/supported-builds.json; this file only
+# Everything about the matrix comes from ci/supported-builds.conf; this file only
 # says where to run it. See docs/CI.md.
 
 on:

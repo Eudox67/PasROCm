@@ -61,11 +61,26 @@ SOURCES=(rocprim_shim.cpp rocprim_shim_math_kernels.cpp)
 # expansion early, truncating the name to "libpasrocm_shim_{gfx".
 LIB_PATTERN="${LIB_PATTERN:-}"
 [[ -n "$LIB_PATTERN" ]] || LIB_PATTERN='libpasrocm_shim_{gfx}.so'
-VERSION="${VERSION:-0.1.0}"
 GIT_COMMIT="${GIT_COMMIT:-$(git -C "$SRC_DIR" rev-parse --short=12 HEAD 2>/dev/null || true)}"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 log() { echo "== $*"; }
+
+# One file at the repository root owns the project version, so stamping a build
+# needs nothing from ci/. VERSION=... still overrides it for a local experiment.
+VERSION_FILE="$(cd "$SRC_DIR/../.." && pwd)/VERSION"
+if [[ -z "${VERSION:-}" ]]; then
+    [[ -f "$VERSION_FILE" ]] \
+        || die "missing $VERSION_FILE -- the project version ships with the repository"
+    VERSION="$(head -n1 "$VERSION_FILE" | tr -d '[:space:]')"
+fi
+[[ -n "$VERSION" ]] || die "empty project version ($VERSION_FILE)"
+
+# The ABI revision is owned by the specification, not by this script.
+ABI_SPEC="$SRC_DIR/rocprim_shim_abi.inc"
+[[ -f "$ABI_SPEC" ]] || die "missing $ABI_SPEC"
+ABI_REVISION="$(sed -n 's/^[[:space:]]*PASROCM_ABI_REVISION[[:space:]]*=[[:space:]]*\([0-9][0-9]*\).*/\1/p' "$ABI_SPEC" | head -n1)"
+[[ -n "$ABI_REVISION" ]] || die "cannot read PASROCM_ABI_REVISION from $ABI_SPEC"
 
 
 # --- 1. Locate a ROCm root -------------------------------------------
@@ -293,6 +308,7 @@ log "compiler  : $CC_REAL  [$COMPILER_KIND]"
 [[ -n "$HIP_VER" ]]    && log "HIP ver   : $HIP_VER"
 log "lib dir   : $LIB_DIR"
 log "target    : $TARGET  (wavefront $WAVEFRONT)"
+log "version   : $VERSION  (abi $ABI_REVISION)"
 log "output    : $LIB_PATH"
 if [[ "$WAVEFRONT" == "64" ]]; then
     log "wave flag : -mwavefrontsize64"

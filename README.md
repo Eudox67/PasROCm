@@ -88,12 +88,20 @@ other shared library. So you need the search path, and nothing else. Pick one:
 Install once, then any project can `uses rocprim;`:
 
 ```bash
-cd src && fpmake install
+fpc fpmake.pp          # build the installer (once, from the repository root)
+./fpmake install       # into this FPC's unit directory
 ```
 
+That writes into the compiler's own unit directory, so it needs write access
+there. To keep it user-local, choose the directory yourself:
+
 ```bash
-fpc -Fu$(fpc -iTP)-$(fpc -iTS) program.pas
+./fpmake install -B ~/pasrocm
+fpc -Mobjfpc -Fu~/pasrocm/units/x86_64-linux/pasrocm -Fl/opt/rocm/lib program.pas
 ```
+
+`-Mobjfpc` is required (the units carry no `{$mode}` of their own) and `-Fl`
+points the linker at the HIP runtime.
 
 Usage:
 

@@ -65,6 +65,7 @@ done
 set -a
 . "$BUILD_INFO"
 eval "$("$ROOT/ci/manifest.sh" env --id "$CONFIG")"
+eval "$("$ROOT/ci/manifest.sh" meta)"
 set +a
 
 VERSION="${BUILD_VERSION:-0.0.0}"
@@ -111,16 +112,14 @@ The build is compile-verified and ABI-checked; it has **not** been run on a GPU
 EOF
 
 export PKG_STEM TARGET LIB_FILE
-python3 - "$STAGE/manifest.json" "$ROOT/ci/supported-builds.json" "$ROOT/ci/gpu-runtime-evidence.json" <<'PY'
+python3 - "$STAGE/manifest.json" "$ROOT/ci/gpu-runtime-evidence.json" <<'PY'
 import datetime
 import json
 import os
 import subprocess
 import sys
 
-destination, manifest_path = sys.argv[1], sys.argv[2]
-with open(manifest_path, encoding="utf-8") as handle:
-    supported = json.load(handle)
+destination = sys.argv[1]
 
 
 def dpkg_version(package):
@@ -160,11 +159,18 @@ def rocprim_version(root):
 
 env = os.environ
 packages = {name: dpkg_version(name) for name in env.get("PIN_PACKAGES", "").split()}
-shim = supported["shim"]
+# Identity comes from ci/manifest.sh meta (VERSION + the ABI specification),
+# exported above -- not from a second copy in a data file.
+shim = {
+    "name": env["SHIM_NAME"],
+    "library": env["SHIM_LIBRARY"],
+    "version": env["SHIM_VERSION"],
+    "abi_version": int(env["SHIM_ABI_VERSION"]),
+}
 
 runtime_verdict = {"gpu_runtime": "not-run"}
 try:
-    with open(sys.argv[3], encoding="utf-8") as handle:
+    with open(sys.argv[2], encoding="utf-8") as handle:
         recorded = json.load(handle).get("validated", [])
 except FileNotFoundError:
     recorded = []

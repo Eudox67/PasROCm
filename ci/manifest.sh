@@ -315,18 +315,28 @@ cmd_matrix() {
 }
 
 cmd_meta() {
-    # The shim's own identity, straight from the data file: the release workflow
-    # asserts the tag against SHIM_VERSION and every package's abi against
-    # SHIM_ABI_VERSION. Printed as key=value so a caller can `eval` it.
-    parse_supported
+    # The shim's identity, from the two files that own it: VERSION at the root
+    # for the project version, and PASROCM_ABI_REVISION in the ABI specification
+    # for the revision. Neither is copied into a data file, so neither can drift.
+    # Printed as key=value so a caller can `eval` it.
+    local version_file="$ROOT/VERSION"
+    local spec="$ROOT/src/rocprim/rocprim_shim_abi.inc"
+    local version abi
 
-    [[ -n "${SHIM[version]:-}" ]] || die "supported-builds.conf: shim.version is missing"
-    [[ -n "${SHIM[abi_version]:-}" ]] || die "supported-builds.conf: shim.abi_version is missing"
+    [[ -f "$version_file" ]] || die "missing $version_file"
+    version="$(head -n1 "$version_file" | tr -d '[:space:]')"
+    [[ -n "$version" ]] || die "empty version in $version_file"
+
+    [[ -f "$spec" ]] || die "missing $spec"
+    abi="$(sed -n 's/^[[:space:]]*PASROCM_ABI_REVISION[[:space:]]*=[[:space:]]*\([0-9][0-9]*\).*/\1/p' "$spec" | head -n1)"
+    [[ -n "$abi" ]] || die "cannot read PASROCM_ABI_REVISION from $spec"
+
+    parse_supported
 
     echo "SHIM_NAME=${SHIM[name]:-}"
     echo "SHIM_LIBRARY=${SHIM[library]:-}"
-    echo "SHIM_VERSION=${SHIM[version]}"
-    echo "SHIM_ABI_VERSION=${SHIM[abi_version]}"
+    echo "SHIM_VERSION=$version"
+    echo "SHIM_ABI_VERSION=$abi"
 }
 
 cmd_env() {

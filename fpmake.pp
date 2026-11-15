@@ -6,7 +6,37 @@ uses
 {$ifdef unix}
   cthreads,
 {$endif}
-  fpmkunit;
+  SysUtils, fpmkunit;
+
+{ The project version lives in one file at the repository root, next to this
+  program. Reading it here keeps fpmake, build.sh and ci/manifest.sh reporting
+  the same number instead of each carrying its own copy. }
+function ProjectVersion: string;
+var
+  Candidates: array[0..1] of string;
+  I: Integer;
+  VersionFile: TextFile;
+  Line: string;
+begin
+  Candidates[0] := 'VERSION';
+  Candidates[1] := IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0))) + 'VERSION';
+  for I := 0 to High(Candidates) do
+    if FileExists(Candidates[I]) then
+    begin
+      AssignFile(VersionFile, Candidates[I]);
+      Reset(VersionFile);
+      try
+        ReadLn(VersionFile, Line);
+      finally
+        CloseFile(VersionFile);
+      end;
+      Result := Trim(Line);
+      if Result <> '' then
+        Exit;
+    end;
+  WriteLn('fpmake: cannot read VERSION -- run this from the repository root');
+  Halt(1);
+end;
 
 var
   P: TPackage;
@@ -14,7 +44,7 @@ begin
   with Installer do
   begin
     P := AddPackage('pasrocm');
-    P.Version := '1.0.0';
+    P.Version := ProjectVersion;
     P.Author := 'PasROCm Contributors';
     P.License := 'MIT / BSD-3-Clause';
     P.Description := 'Pascal bindings for AMD ROCm libraries';

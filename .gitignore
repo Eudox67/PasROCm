@@ -21,6 +21,9 @@
 /fpmake
 /fpmake.o
 /*.fpm
+/manifest.xml
+/*.source.zip
+/pkg-*.lst
 /pasrocm.pas
 
 # CI output: build-linux.sh/package.sh write here, build.sh writes its

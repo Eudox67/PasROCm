@@ -32,6 +32,40 @@ The source archive is produced with `git archive`, so it honours
 `.gitattributes` and contains no CI. A clone always contains every tracked
 file; that is how git works, not a configuration choice.
 
+## Versioning and compatibility
+
+The project version lives in one file: **`VERSION`** at the repository root.
+`build.sh` stamps it into the library, `fpmake` reports it, and
+`ci/manifest.sh meta` hands it to the release workflow. There is no second copy
+to drift.
+
+The first public release is **0.1.0**, and the project stays on 0.x until two
+things are true:
+
+1. **Recorded hardware evidence for CDNA.** Every gfx9xx package carries
+   `validation.gpu_runtime: not-run`: those kernels compile and pass the ABI
+   gate, but no MI machine has executed them. `1.0.0` would read as "supported".
+2. **The Pascal API has an external consumer.** The `rocprim_*` signatures
+   mirror rocPRIM's C ABI and are generated from one specification, so they are
+   stable by construction. What is new is everything around them -- the loader's
+   exception types, `TShimLoadInfo`, the environment variables, the search order
+   -- and those are the parts a second user is most likely to want changed.
+
+**What 1.0.0 will freeze:** the `rocprim_*` signatures, the exception types, and
+the loader's environment-variable names.
+
+**What stays free at any version:** new functions, additions to the search
+order, which SDK lines are supported, and the shim ABI revision.
+
+The ABI revision is a *separate* number: `PASROCM_ABI_REVISION` in
+`src/rocprim/rocprim_shim_abi.inc`. The loader compares it before binding
+anything, so a units/library mismatch is a named exception, never a crash. That
+is why an ABI change is safe to make even after 1.0 -- it cannot be silent.
+
+Pre-release tags are allowed: `v0.1.0-rc.1` publishes the same bytes under a name
+that says "not final". The release workflow compares the tag's base version with
+`VERSION` and rejects anything else.
+
 ## Where the loader looks
 
 On the first rocPRIM call, `rocprim_shim_loader.pas` runs a fixed sequence and
