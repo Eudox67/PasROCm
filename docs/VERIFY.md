@@ -55,14 +55,45 @@ Install cosign from <https://docs.sigstore.dev/cosign/system_config/installation
 
 ## 4. The source tree
 
+Git tags and commits are signed with the maintainer's **SSH key**, whose public
+half is committed here as [`SIGNING-KEY.pub`](../SIGNING-KEY.pub). Unlike GPG
+there is no keyserver to fetch from, so tell git who is allowed to sign:
+
 ```bash
+# one line: <email> <public key>
+echo "145217249+Eudox67@users.noreply.github.com $(cat SIGNING-KEY.pub)" > allowed_signers
+git config gpg.ssh.allowedSignersFile "$PWD/allowed_signers"
+
 git verify-tag v0.1.0
-git checkout v0.1.0
 ```
+
+Expected output:
+
+```text
+Good "git" signature for 145217249+Eudox67@users.noreply.github.com
+with ED25519 key SHA256:Zw+/YJ2dBpc6zNbf1HoowngdlNNRI4ONYWmQSfQG60M
+```
+
+Check that fingerprint against the one published in `SECURITY.md` before
+trusting the file you just downloaded -- a replaced repository would carry a
+replaced key.
 
 A tag signature covers the commit, and the commit covers every file in the tree,
 so this is the strongest statement about the *source*: not just "these bytes are
 intact" but "this exact tree is what the maintainer signed".
+
+## Two signing systems, deliberately separate
+
+| | Git tags and commits | Release artifacts |
+|---|---|---|
+| signed by | the maintainer's SSH key | GitHub's OIDC identity for this repository |
+| key material | one personal key, public half in `SIGNING-KEY.pub` | none -- keyless, nothing to store or rotate |
+| proves | *who wrote this source* | *which workflow built this binary* |
+| verified with | `git verify-tag` | `gh attestation verify`, `cosign verify-blob` |
+
+They answer different questions and are not interchangeable. A signed tag says
+nothing about whether a published `.so` was built from it; an attestation says
+nothing about whether a human approved the source. Use both.
 
 ## The library checks itself at load time
 

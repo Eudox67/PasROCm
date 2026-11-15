@@ -18,13 +18,30 @@ seriously even when it needs an unusual input to trigger.
 | every release asset | GitHub build provenance attestation | `gh attestation verify <file> --repo Eudox67/PasROCm` |
 | `SHA256SUMS` | keyless cosign signature + transparency-log entry | `cosign verify-blob --bundle SHA256SUMS.bundle …` |
 | each library in a package | `.sha256` sidecar, checked by the loader at run time | automatic |
-| release tags | maintainer's signed tag | `git verify-tag v0.1.0` |
+| release tags and commits | maintainer's SSH key (public half: `SIGNING-KEY.pub`) | `git verify-tag v0.1.0` |
 
 `docs/VERIFY.md` has the exact commands and explains what each one proves.
 
-Nothing in the release pipeline uses a long-lived signing key: the identity is
-the repository's own OIDC token, scoped to the publishing job. There is no key
-to steal from CI, and no key to rotate.
+### Two identities, kept apart
+
+**Source** is signed by a person: the maintainer's SSH key. Its public half is
+committed as `SIGNING-KEY.pub`, fingerprint:
+
+```text
+SHA256:Zw+/YJ2dBpc6zNbf1HoowngdlNNRI4ONYWmQSfQG60M  (ED25519)
+```
+
+The private half never leaves the maintainer's machine and is never committed,
+copied into a package, or used by CI.
+
+**Artifacts** are signed by a machine: the repository's own OIDC token, scoped
+to the publishing job. There is no long-lived key in the pipeline -- nothing to
+steal from CI and nothing to rotate. The personal key above plays no part in
+producing or signing a release, and CI never sees it.
+
+Keeping them separate means a compromised runner cannot forge the maintainer's
+authorship, and a lost personal key does not invalidate the provenance of
+already-published binaries.
 
 ## Repository hardening
 
