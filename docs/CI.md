@@ -8,7 +8,7 @@ one-file change.
 
 | layer | file |
 |---|---|
-| GPU targets, wavefront widths, minimum ROCm | `ci/gfx-targets.conf` |
+| GPU targets, wavefront widths, minimum ROCm | `targets.conf` |
 | SDK pins, profiles | `ci/supported-builds.conf` |
 | queries (matrix, env, wavefront, mask) | `ci/manifest.sh` |
 | SDK provisioning | `ci/install-rocm.sh --config <id>` |
@@ -87,7 +87,7 @@ never built.
 A configuration claims a range of patches it can back up: `7.2` claims
 `7.2.0-7.2.4` because the rocPRIM headers are identical in both channels, while
 `6.4` claims `6.4.0-6.4.4` only because dedicated probe jobs compile against the
-6.4.0 channel as well. `min_rocm` in `ci/gfx-targets.conf` means "the oldest
+6.4.0 channel as well. `min_rocm` in `targets.conf` means "the oldest
 SDK line that produces a working package for this target", not the oldest that
 can be made to compile.
 
@@ -113,7 +113,7 @@ tarball is not.
 
 | command | what it proves |
 |---|---|
-| `./test.sh` | 1,702 assertions, including the loader's refusal paths |
+| `./test.sh` | 1,702 FPCUnit tests, including the loader's refusal paths |
 | `ci/check-abi.sh --strict` | 151 exports, nothing else |
 | `ci/manifest.sh validate` | the data files parse and are consistent |
 | `./src/rocprim/build.sh` | one target builds and links against the SDK |

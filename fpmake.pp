@@ -46,7 +46,7 @@ begin
     P := AddPackage('pasrocm');
     P.Version := ProjectVersion;
     P.Author := 'PasROCm Contributors';
-    P.License := 'MIT / BSD-3-Clause';
+    P.License := 'MIT';
     P.Description := 'Pascal bindings for AMD ROCm libraries';
 
     P.OSes := [linux];

@@ -6,13 +6,23 @@ order, and what a release package contains.
 
 ## What a package contains
 
+The asset is named `pasrocm-shim-<version>-linux-x86_64-rocm-<line>-<gfx>.tar.gz`,
+for example `pasrocm-shim-0.1.0-linux-x86_64-rocm-7.2-gfx1100.tar.gz`. It has no
+top-level directory, so unpack it into one:
+
+```bash
+mkdir pasrocm-shim
+tar xzf pasrocm-shim-0.1.0-linux-x86_64-rocm-7.2-gfx1100.tar.gz -C pasrocm-shim
+```
+
 ```text
-pasrocm-shim-<ubuntu>-<rocm>-<gfx>/
-  lib/libpasrocm_shim_<gfx>.so   the shim; soname equals the file name
-  include/rocprim_shim.h         the complete exported C surface (151 symbols)
-  manifest.json                  provenance: toolchain, rocPRIM version, claims
-  INSTALL.md                     this file
-  LICENSE
+lib/libpasrocm_shim_<gfx>.so   the shim; soname equals the file name
+include/rocprim_shim.h         the complete exported C surface (151 symbols)
+pascal/*.pas                   the units, including the generated ABI pair
+manifest.json                  provenance: toolchain, rocPRIM version, claims
+SHA256SUMS                     hashes of the files above
+INSTALL.md                     package-specific install notes
+LICENSE
 ```
 
 `manifest.json` records the Ubuntu and ROCm coordinates, the GPU target and its
@@ -24,7 +34,7 @@ how far the package was proven (see `docs/CI.md`).
 
 | download | contains | use it when |
 |---|---|---|
-| `pasrocm-shim-<os>-<rocm>-<gfx>.tar.gz` | `lib/`, `include/`, `manifest.json`, `INSTALL.md`, `LICENSE` | you want the prebuilt library |
+| `pasrocm-shim-<version>-linux-x86_64-rocm-<line>-<gfx>.tar.gz` | `lib/`, `include/`, `pascal/`, `manifest.json`, `SHA256SUMS`, `INSTALL.md`, `LICENSE` | you want the prebuilt library |
 | `pasrocm-<version>-src.tar.gz` | units, shim sources, `targets.conf`, `examples/`, `docs/` | you want to build the shim yourself |
 | `git clone` | everything, including `ci/` and `.github/` | you are contributing to PasROCm |
 
@@ -167,7 +177,7 @@ compiler produced this `.so`?" without following symlinks by hand:
 | `EShimIdentityError: library is gfx942, device is gfx1100` | one library per target; the wrong file was found | set `PASROCM_SHIM` or `PASROCM_SHIM_DIR` |
 | `ABI revision mismatch` | Pascal units and shim from different revisions | rebuild both from one checkout |
 | `unknown type name 'hipDriverEntryPointQueryResult'` | mixed HIP headers (a copied `hip/` next to the shim) | take the headers only from the selected ROCm install |
-| `hipErrorInvalidDevice` on the first kernel | wavefront width mismatch: the library was built for the other width | rebuild with the machine's target from `ci/gfx-targets.conf` |
+| `hipErrorInvalidDevice` on the first kernel | wavefront width mismatch: the library was built for the other width | rebuild with the machine's target from `targets.conf` |
 | a `6.4` package refuses `gfx950` | rocPRIM 3.4.x has no CDNA4 atomics | use a 7.2 or 10.1 package |
 
 ## Using the library without the shim sources

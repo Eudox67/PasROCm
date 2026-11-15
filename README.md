@@ -1,48 +1,63 @@
 # PasROCm
 
 Pascal bindings for [rocPRIM](https://github.com/ROCm/rocPRIM) — AMD's GPU
-parallel primitives library — for counting, radix, merge sort and block
-operations, driven from Free Pascal on AMD Radeon and Instinct GPUs.
+parallel primitives library — for reduction, scan, radix and merge sort, and
+block operations, driven from Free Pascal on AMD Radeon and Instinct GPUs.
 
-No C++ translation layer: Pascal calls the same multi-TB/s primitives that
-rocPRIM's own tests measure.
+No reimplementation: Pascal calls rocPRIM's own primitives through a thin
+generated shim, at the throughput rocPRIM's own tests measure.
+
+**Status:** 0.1.0, pre-1.0. RDNA packages are exercised on real hardware; CDNA
+(gfx9xx) packages are compile- and ABI-verified only. `docs/INSTALL.md` records
+what 1.0.0 will freeze.
 
 ## Coverage
 
 rocPRIM's primitives are exposed as plain Pascal calls. The verbs you would
 expect from a parallel unit are all here:
 
-| primitive | Pascal caller | underlying operation |
-|---|---|---|
-| `rocprim_reduce_int` | `RocPRIMReduce` | device-wide associative reduction |
-| `rocprim_scan_int` | `RocPRIMScan` | exclusive / inclusive prefix sum |
-| `rocprim_radix_sort_int` | `RocPRIMRadixSort` | stable LSD key sort |
-| `rocprim_radix_sort_pairs_int` | `RocPRIMRadixSortPairs` | key/value sort |
-| `rocprim_merge_sort_int` | `RocPRIMMergeSort` | comparison sort |
-| `rocprim_run_length_encode_int` | `RocPRIMRunLengthEncode` | run detection |
-| `rocprim_count_int` | `RocPRIMCount` | predicate count |
-| `rocprim_find_first_of_int` | `RocPRIMFindFirstOf` | intersection probe |
-| `rocprim_merge_int` | `RocPRIMMerge` | sorted merge |
-| `rocprim_binary_search_int` | `RocPRIMBinarySearch` | lower bound per element |
-| `rocprim_segmented_reduce_int` | `RocPRIMSegmentedReduce` | per-segment reduction |
-| `rocprim_inclusive_scan_per_segment_int` | `RocPRIMInclusiveScanPerSegment` | scan that restarts at each segment |
-| `rocprim_histogram_even_int` | `RocPRIMHistogramEven` | equal-width binning |
+| primitive | operation |
+|---|---|
+| `rocprim_reduce_int` | device-wide associative reduction |
+| `rocprim_inclusive_scan_int`, `rocprim_exclusive_scan_int` | prefix sum |
+| `rocprim_radix_sort_keys_int` | stable LSD key sort |
+| `rocprim_radix_sort_pairs_int` | key/value sort |
+| `rocprim_merge_sort_keys_int` | comparison sort |
+| `rocprim_run_length_encode_int` | run detection |
+| `rocprim_find_first_of_int` | intersection probe |
+| `rocprim_merge_int` | sorted merge |
+| `rocprim_binary_search_int` | lower bound per element |
+| `rocprim_segmented_reduce_int` | per-segment reduction |
+| `rocprim_segmented_inclusive_scan_int` | scan that restarts at each segment |
+| `rocprim_histogram_even_int` | equal-width binning |
+| `rocprim_block_reduce_int`, `rocprim_warp_reduce_int32` | block- and warp-level variants |
 
-Every entry follows the same shape: `(input, count, output, stream)` returns a
-HIP status; you allocate nothing, the shim does the GPU planning. The other 138
-functions of the 151-symbol surface — `rocprim_*_double`,
-`_float`, `_uint`, `_uint8`, `_uint64`, radix-digit variants, pairs variants —
-are available with the same signature convention; the set is fixed by
+Device-wide entries take the **output pointer first**, then the input, the
+element count, any initial value, and the stream, and return a `hipError_t`:
+
+```pascal
+function rocprim_reduce_int(d_out: PCint; d_in: PCint; num_items: csize_t;
+  initial_value: cint; stream: hipStream_t): hipError_t;
+```
+
+You allocate the input and output buffers with `hipMalloc`; the shim allocates
+and frees rocPRIM's temporary storage. Block and warp variants add their
+geometry parameters. The full surface is **144 rocPRIM entry points plus 7
+identity exports** -- `rocprim_*_double`, `_float`, `_uint`, `_uint8`, `_uint64`,
+radix-digit and pairs variants among them -- fixed by
 `src/rocprim/rocprim_shim_abi.inc`.
 
 ## Requirements
 
 - Free Pascal 3.2.2 or newer (`fpc`)
-- AMD GPU: RDNA 3/4 or CDNA 3/4 — MI300-class Instinct, or Radeon RX 7000 and
-  up, or newer
+- AMD GPU: RDNA 1–4 (including 3.5) or CDNA 1–4 — the 19 targets in
+  `targets.conf`, from `gfx1010` and `gfx908` to `gfx1201` and `gfx950`
 - ROCm 6.4, 7.2 or 10.1 — with the ROCm versions you install
   (`hipcc`/`amdclang++` and `libamdhip64`)
 - The rocPRIM native shim (below) — one shared library per GPU target
+
+CDNA (`gfx9xx`) packages are compile- and ABI-verified only: no MI hardware has
+executed them yet. RDNA packages run on real GPUs.
 
 `pacman -S fpc`, `apt install fpc`, or `dnf install fpc` is enough for FPC.
 You need `hipcc` and the HIP runtime, not a full ROCm install; on most systems
@@ -59,8 +74,9 @@ cd ../.. && ./test.sh        # run the test suite
 `./build.sh` needs nothing but FPC and ROCm. It prints the toolchain it
 selected, the detected target, and the library it produced.
 
-Only one thing can fail without a GPU: the step that checks the build. Skip it
-with `DRY_RUN=1` and the script stops before compiling.
+No GPU in this machine? Name the target instead of detecting it:
+`GFX_ARCH=gfx1100 ./build.sh`. Add `DRY_RUN=1` to print the resolved toolchain
+and stop before compiling.
 
 ## Environment setup
 
@@ -103,14 +119,23 @@ fpc -Mobjfpc -Fu~/pasrocm/units/x86_64-linux/pasrocm -Fl/opt/rocm/lib program.pa
 `-Mobjfpc` is required (the units carry no `{$mode}` of their own) and `-Fl`
 points the linker at the HIP runtime.
 
-Usage:
+Usage — the shape of a call, from `examples/rocprim/test_reduce.pas`:
 
 ```pascal
-uses rocprim;
-begin
-  RocPRIMReduce(@Data, Count, @Total, nil);
-end.
+uses ctypes, hip_bindings, rocprim_bindings;
+
+hipStreamCreate(@stream);
+hipMalloc(@d_in, num_items * sizeof(cint));
+hipMalloc(@d_out, sizeof(cint));
+hipMemcpy(d_in, @h_in[0], num_items * sizeof(cint), hipMemcpyHostToDevice);
+
+rocprim_reduce_int(d_out, d_in, num_items, 0, stream);   // 0 = initial value
+
+hipMemcpy(@h_out, d_out, sizeof(cint), hipMemcpyDeviceToHost);
 ```
+
+Every call returns a `hipError_t`; the example checks each one and compares the
+GPU result with a CPU computation.
 
 ### Option 2 — response file, no install (`pasrocm.cfg`)
 
@@ -121,13 +146,15 @@ anything or touching `~/.fpc.cfg`:
 fpc @pasrocm.cfg program.pas
 ```
 
-`pasrocm.cfg` contains a `-Fu` line for the units plus `-Fl` for
-`src/rocprim`, which is where `build.sh` puts `libpasrocm_shim_<gfx>.so`.
+`pasrocm.cfg` sets `-Fusrc -Fusrc/rocprim -Isrc` for the units and
+`-Fl/opt/rocm/lib -Fl/opt/rocm/lib64` for the HIP runtime. The shim is never
+linked: the loader opens it at run time.
 
 ### Option 3 — Lazarus package (`pasrocm.lpk`)
 
 Open `pasrocm.lpk` in Lazarus and click *Use → Add to Project*. The package
-registers the units and the `-Fl` path, so the IDE build finds the shim.
+registers `src` and `src/rocprim` as unit paths and sets `-Mobjfpc -Sh`, so the
+IDE build compiles the units. The shim is found at run time, not linked.
 
 ### Can I use more than one?
 
@@ -142,14 +169,17 @@ primitives callable from Pascal. Two ways to get it:
 
 ### Option A — use a pre-built package
 
-Download `pasrocm-shim-ubuntu-24.04-rocm7.2-gfx1100.tar.gz` (the asset names
-list all four coordinates) from the releases page, unpack it, and put its `lib/`
-on the search path:
+Download `pasrocm-shim-0.1.0-linux-x86_64-rocm-7.2-gfx1100.tar.gz` from the
+releases page — the name carries the version, platform, SDK line and GPU target —
+unpack it into a directory, and point the loader at its `lib/`:
 
 ```bash
-tar xzf pasrocm-shim-ubuntu-24.04-rocm7.2-gfx1100.tar.gz
-export PASROCM_SHIM_DIR=$PWD/pasrocm-shim-ubuntu-24.04-rocm7.2-gfx1100/lib
+mkdir pasrocm-shim
+tar xzf pasrocm-shim-0.1.0-linux-x86_64-rocm-7.2-gfx1100.tar.gz -C pasrocm-shim
+export PASROCM_SHIM_DIR=$PWD/pasrocm-shim/lib
 ```
+
+The archive has no top-level directory of its own, so unpack it into one.
 
 ### Option B — build it locally
 
@@ -175,10 +205,9 @@ Everything else in the 151-function surface is available on all three. The
 symbol is always exported, so this is a capability gap the caller can see and
 test, not a missing symbol at load time.
 
-Target coverage follows `ci/gfx-targets.conf`. `gfx950` (CDNA4) needs ROCm 7.2
-or newer: the 6.4 rocPRIM cannot compile it (no 128-bit atomics for that
-architecture), which is a rocPRIM capability floor rather than compiler support
-(a rocPRIM capability floor, not a compiler one).
+Target coverage follows `targets.conf`. `gfx950` (CDNA4) needs ROCm 7.2 or
+newer: the 6.4 rocPRIM cannot compile it (no 128-bit atomics for that
+architecture) -- a rocPRIM capability floor, not a compiler one.
 
 **One target per build.** `GFX_ARCH` names exactly one GPU target, for example
 `gfx1100` (RDNA 3 — Radeon RX 7000) or `gfx942` (CDNA 3 — MI300). A family
@@ -203,8 +232,14 @@ decide which target the artifact contains.
 
 ## Examples
 
-Compile-ready programs are in `examples/` — reduction, sort, and a GPU vs CPU
-cross-check. Each is a complete program; run it with the shim path set.
+64 compile-ready programs live in `examples/rocprim/`, one per primitive. Most
+cross-check the GPU result against a CPU computation. Each is a complete
+program; build one with `pasrocm.cfg` and run it with the shim path set:
+
+```bash
+fpc @pasrocm.cfg -FEbin examples/rocprim/test_reduce.pas
+PASROCM_SHIM_DIR=src/rocprim ./bin/test_reduce
+```
 
 ## Running the test suite
 
@@ -212,9 +247,9 @@ cross-check. Each is a complete program; run it with the shim path set.
 ./test.sh
 ```
 
-The suite compiles the units, the shim-aware tests, and the 1,702 assertions
-that cover the primitives, the loader's refusal paths, and the generated
-bindings. Failures print per-test; the exit code is the count.
+The suite compiles the units and runs 1,702 FPCUnit tests covering the
+primitives, the loader's refusal paths, and the generated bindings. Failures
+print per-test; the exit code is the failure count.
 
 ### Leak checking
 
@@ -226,11 +261,13 @@ enough for the pool), fix the leaks, then add `cmem` back for release builds.
 ## Project layout
 
 ```text
-src/                    Pascal units (rocprim.pas, rocprim_*.pas)
+src/                    Pascal units (hip_*.pas, rocprim.pas, roc*.pas)
 src/rocprim/            the C++ shim: sources, build.sh, generated ABI units
-src/test/pascal/        1,702 assertions (FPCUnit)
-examples/               standalone programs
+tests/                  1,702 FPCUnit tests
+test.sh                 builds and runs them
+examples/rocprim/       64 standalone programs, one per primitive
 targets.conf            GPU target table: wavefront width, usable widths
+VERSION                 the project version, read by build.sh and fpmake
 ci/                     build matrix, ABI gate, packages (maintainer tooling)
 docs/                   installation and CI detail
 ```
