@@ -56,18 +56,37 @@ In place:
 - Builds are deterministic: no timestamps, no absolute paths, fixed archive
   order and ownership. The library SHA256 is the invariant across a rebuild.
 
-Applied when the repository is made public (GitHub requires a public repo or a
-paid plan for these):
+### Checklist for the public repository
 
-- Branch protection on `main`: pull request required, the `plan` check required,
-  no force-push, linear history.
-- Protected `v*` tags, so a release tag cannot be moved or deleted.
-- Secret scanning and push protection.
-- Dependabot for the pinned GitHub Actions.
-- `CODEOWNERS` covering `.github/` and `ci/`, so changes to the pipeline need
-  maintainer review.
-- A `release` environment with required reviewers, so a stolen token still
-  cannot publish without a human approval.
+These need a public repo (or a paid plan). Tick them off; none is a prerequisite
+for publishing a release, but each closes a specific hole.
+
+| # | setting | what it prevents | how |
+|---|---|---|---|
+| 1 | Secret scanning + push protection | a token committed by accident | Settings → Code security → enable both |
+| 2 | Protected `v*` tags | a published release tag being moved or deleted | Settings → Rules → New tag ruleset, pattern `v*` |
+| 3 | Dependabot for Actions | a pinned action going stale and unpatched | `.github/dependabot.yml` (committed) |
+| 4 | `CODEOWNERS` on `.github/` and `ci/` | a pipeline change slipping through review | `.github/CODEOWNERS` (committed) |
+| 5 | `release` environment with required reviewers | a stolen token publishing without a human | Settings → Environments → New `release`, required reviewers |
+| 6 | Branch protection on `main` | a direct push bypassing CI | Settings → Branches → require PR + the `plan` check |
+
+**Note on #6:** requiring pull requests also blocks the maintainer's own direct
+pushes to `main`. Choose it deliberately -- it is a workflow change, not only a
+security setting.
+
+### Publishing a release
+
+The only trigger is a signed tag:
+
+```bash
+git tag -s v0.1.0 -m "PasROCm 0.1.0"
+git push origin v0.1.0
+```
+
+`shim-release.yml` then builds every (SDK line, target) pair, refuses any
+package whose ABI check failed, attests each asset, signs `SHA256SUMS`, and
+publishes. A pre-release tag (`v0.1.0-rc.1`) runs the identical path and marks
+the release as a pre-release -- use it to rehearse.
 
 ## Scope
 

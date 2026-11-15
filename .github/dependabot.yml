@@ -1,0 +1,14 @@
+# Keep the pinned GitHub Actions current. Every action in these workflows is
+# pinned by commit SHA, which is deliberate -- but a pin nobody revisits is a
+# pin that silently misses security fixes. Dependabot opens the bump PRs.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: 'ci'
+    groups:
+      actions:
+        patterns: ['*']

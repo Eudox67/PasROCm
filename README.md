@@ -1,5 +1,6 @@
 # PasROCm
 
+[![shim CI](https://img.shields.io/github/actions/workflow/status/Eudox67/PasROCm/shim-build.yml?branch=main&label=shim%20CI)](https://github.com/Eudox67/PasROCm/actions/workflows/shim-build.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Free Pascal 3.2.2+](https://img.shields.io/badge/Free%20Pascal-3.2.2%2B-blue)](https://www.freepascal.org/)
 [![Lazarus package](https://img.shields.io/badge/Lazarus-package-blueviolet)](pasrocm.lpk)

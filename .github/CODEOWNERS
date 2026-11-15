@@ -1,0 +1,9 @@
+# Changes to the build pipeline and the security surface need maintainer review.
+# This file only takes effect once branch protection requires code-owner review.
+
+/.github/       @Eudox67
+/ci/            @Eudox67
+/SECURITY.md    @Eudox67
+/SIGNING-KEY.pub @Eudox67
+/VERSION        @Eudox67
+/targets.conf   @Eudox67
