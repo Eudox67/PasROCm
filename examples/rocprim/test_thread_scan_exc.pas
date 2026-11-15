@@ -1,3 +1,15 @@
+{------------------------------------------------------------------------------
+  PasROCm - Free Pascal bindings for the AMD ROCm libraries.
+  Copyright (c) 2024-2026 Eudox67. MIT License (see LICENSE).
+
+  A supporting program for the rocPRIM examples; it uses the HIP
+  runtime directly rather than a rocPRIM primitive.
+
+  Build and run from the repository root:
+    fpc @pasrocm.cfg -FEbin examples/rocprim/test_thread_scan_exc.pas
+    PASROCM_SHIM_DIR=src/rocprim ./bin/test_thread_scan_exc
+------------------------------------------------------------------------------}
+
 program test_thread_scan_exc;
 
 {$mode objfpc}{$H+}

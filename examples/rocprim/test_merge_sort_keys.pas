@@ -1,3 +1,15 @@
+{------------------------------------------------------------------------------
+  PasROCm - Free Pascal bindings for the AMD ROCm libraries.
+  Copyright (c) 2024-2026 Eudox67. MIT License (see LICENSE).
+
+  Demonstrates rocprim_merge_sort_keys_int: allocates device buffers with HIP, calls the
+  primitive through rocprim_bindings, and checks the result.
+
+  Build and run from the repository root:
+    fpc @pasrocm.cfg -FEbin examples/rocprim/test_merge_sort_keys.pas
+    PASROCM_SHIM_DIR=src/rocprim ./bin/test_merge_sort_keys
+------------------------------------------------------------------------------}
+
 program test_merge_sort_keys;
 
 {$mode objfpc}{$H+}

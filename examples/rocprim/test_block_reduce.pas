@@ -1,9 +1,21 @@
+{------------------------------------------------------------------------------
+  PasROCm - Free Pascal bindings for the AMD ROCm libraries.
+  Copyright (c) 2024-2026 Eudox67. MIT License (see LICENSE).
+
+  Demonstrates rocprim_block_reduce_int: allocates device buffers with HIP, calls the
+  primitive through rocprim_bindings, and checks the result.
+
+  Build and run from the repository root:
+    fpc @pasrocm.cfg -FEbin examples/rocprim/test_block_reduce.pas
+    PASROCM_SHIM_DIR=src/rocprim ./bin/test_block_reduce
+------------------------------------------------------------------------------}
+
 program test_block_reduce;
 
 {$mode objfpc}{$H+}
 
 uses
-  ctypes, hip_runtime, rocprim_bindings;
+  ctypes, hip_error, hip_types, hip_runtime, rocprim_bindings;
 
 const
   NUM_ITEMS = 1024;

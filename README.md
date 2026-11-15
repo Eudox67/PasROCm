@@ -297,7 +297,7 @@ decide which target the artifact contains.
 
 ## Examples
 
-64 compile-ready programs live in `examples/rocprim/`, one per primitive. Most
+59 compile-ready programs live in `examples/rocprim/`, one per primitive. Most
 cross-check the GPU result against a CPU computation:
 
 ```bash
@@ -342,7 +342,7 @@ src/                    the bindings: hip_*, rocblas, rocsolver, rocsparse,
 src/rocprim/            the rocPRIM shim: C++ sources, build.sh, loader, ABI units
 tests/                  1,702 FPCUnit tests across all libraries
 test.sh                 builds and runs them
-examples/rocprim/       64 standalone programs, one per primitive
+examples/rocprim/       59 standalone programs, one per primitive
 targets.conf            GPU target table for the shim
 VERSION                 the project version, read by build.sh and fpmake
 ci/                     build matrix, ABI gate, packages (maintainer tooling)

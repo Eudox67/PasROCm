@@ -1,3 +1,15 @@
+{------------------------------------------------------------------------------
+  PasROCm - Free Pascal bindings for the AMD ROCm libraries.
+  Copyright (c) 2024-2026 Eudox67. MIT License (see LICENSE).
+
+  Demonstrates rocprim_radix_sort_keys_int_asc: allocates device buffers with HIP, calls the
+  primitive through rocprim_bindings, and checks the result.
+
+  Build and run from the repository root:
+    fpc @pasrocm.cfg -FEbin examples/rocprim/test_radix_sort_keys_asc.pas
+    PASROCM_SHIM_DIR=src/rocprim ./bin/test_radix_sort_keys_asc
+------------------------------------------------------------------------------}
+
 program test_radix_sort_keys_asc;
 
 {$mode objfpc}{$H+}
@@ -23,7 +35,9 @@ var
   h_keys_output: array[0..7] of cint;
   cpu_keys_output: array[0..7] of cint;
 
-  d_keys_input, d_keys_output, d_temp_storage: Pointer = nil;
+  d_keys_input: Pointer = nil;
+  d_keys_output: Pointer = nil;
+  d_temp_storage: Pointer = nil;
 
   size, temp_storage_size: csize_t;
   begin_bit, end_bit: cuint;

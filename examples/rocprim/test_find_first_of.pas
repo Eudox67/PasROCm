@@ -1,3 +1,15 @@
+{------------------------------------------------------------------------------
+  PasROCm - Free Pascal bindings for the AMD ROCm libraries.
+  Copyright (c) 2024-2026 Eudox67. MIT License (see LICENSE).
+
+  Demonstrates rocprim_find_first_of_int: allocates device buffers with HIP, calls the
+  primitive through rocprim_bindings, and checks the result.
+
+  Build and run from the repository root:
+    fpc @pasrocm.cfg -FEbin examples/rocprim/test_find_first_of.pas
+    PASROCM_SHIM_DIR=src/rocprim ./bin/test_find_first_of
+------------------------------------------------------------------------------}
+
 program test_find_first_of;
 
 {$mode objfpc}{$H+}
