@@ -1,5 +1,11 @@
 # PasROCm
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Free Pascal 3.2.2+](https://img.shields.io/badge/Free%20Pascal-3.2.2%2B-blue)](https://www.freepascal.org/)
+[![Lazarus package](https://img.shields.io/badge/Lazarus-package-blueviolet)](pasrocm.lpk)
+[![Platform: Linux x86_64](https://img.shields.io/badge/platform-Linux%20x86__64-lightgrey)](#requirements)
+[![ROCm 6.4 | 7.2 | 10.1](https://img.shields.io/badge/ROCm-6.4%20%7C%207.2%20%7C%2010.1-red)](#what-each-sdk-line-supports)
+
 Pascal bindings for the **AMD ROCm libraries** — HIP, rocBLAS, MIOpen,
 rocSPARSE, rocSOLVER, rocFFT, rocRAND, RCCL and rocPRIM — for Free Pascal on AMD
 Radeon and Instinct GPUs.
