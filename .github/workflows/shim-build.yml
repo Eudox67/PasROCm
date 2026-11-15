@@ -22,12 +22,16 @@ on:
     paths:
       - 'src/rocprim/**'
       - 'ci/**'
+      - 'targets.conf'   # the wavefront/width table the build reads
+      - 'VERSION'        # stamped into every library and package name
       - '.github/workflows/shim-build.yml'
   push:
     branches: [main]
     paths:
       - 'src/rocprim/**'
       - 'ci/**'
+      - 'targets.conf'   # the wavefront/width table the build reads
+      - 'VERSION'        # stamped into every library and package name
       - '.github/workflows/shim-build.yml'
   schedule:
     # Nightly smoke keeps every SDK line honest; the weekly full matrix is the
