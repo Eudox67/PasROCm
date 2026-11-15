@@ -150,21 +150,27 @@ fi
 # --- resolve the install root -----------------------------------------
 # 10.x installs into /opt/rocm/core-<ver> behind the /opt/rocm symlink; 6.x/7.x
 # use /opt/rocm-<ver>. Either way the compiler and headers must be reachable.
+# One predicate for every branch: hipcc (6.x/7.x) or amdclang++ (10.x, where a
+# minimal install ships no hipcc at all). The fallback loops used to check only
+# hipcc, so a 10.x tree without the /opt/rocm alternatives symlinks was invisible.
+has_compiler() {
+    [[ -x "$1/bin/hipcc" ]] ||
+    [[ -x "$1/lib/llvm/bin/amdclang++" ]] ||
+    [[ -x "$1/llvm/bin/amdclang++" ]]
+}
+
 probe_rocm_root() {
-    if [[ -d /opt/rocm ]] && {
-            [[ -x /opt/rocm/bin/hipcc ]] ||
-            [[ -x /opt/rocm/lib/llvm/bin/amdclang++ ]] ||
-            [[ -x /opt/rocm/llvm/bin/amdclang++ ]]; }; then
+    if [[ -d /opt/rocm ]] && has_compiler /opt/rocm; then
         echo /opt/rocm
         return 0
     fi
     local candidate
     # 10.x tree without the alternatives symlinks, then 6.x/7.x installs.
     while IFS= read -r candidate; do
-        [[ -x "$candidate/bin/hipcc" ]] && { echo "$candidate"; return 0; }
+        has_compiler "$candidate" && { echo "$candidate"; return 0; }
     done < <(compgen -G '/opt/rocm/core-[0-9]*' | sort -Vr)
     while IFS= read -r candidate; do
-        [[ -x "$candidate/bin/hipcc" ]] && { echo "$candidate"; return 0; }
+        has_compiler "$candidate" && { echo "$candidate"; return 0; }
     done < <(compgen -G '/opt/rocm-[0-9]*' | sort -Vr)
     return 1
 }

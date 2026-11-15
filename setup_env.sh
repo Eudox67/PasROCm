@@ -14,24 +14,41 @@
 # ---------------------------------------------------------------------------
 
 # 1. ROCm installation (honour an existing ROCM_PATH / ROCM_HOME)
+#
+# A tree can BUILD if it has hipcc (6.x/7.x) or amdclang++ (10.x, where hipcc is
+# deprecated and a minimal install may not ship it at all). Checking only for
+# hipcc made this script blind to ROCm 10.1 -- reported by a user 2026-11-15.
+_pasrocm_has_compiler() {
+    [ -x "$1/bin/hipcc" ] ||
+    [ -x "$1/lib/llvm/bin/amdclang++" ] ||
+    [ -x "$1/llvm/bin/amdclang++" ]
+}
+_pasrocm_has_runtime() {
+    ls "$1"/lib*/libamdhip64.so* >/dev/null 2>&1
+}
+
 if [ -z "${ROCM_PATH:-}" ]; then
     if [ -n "${ROCM_HOME:-}" ]; then
         ROCM_PATH="$ROCM_HOME"
-    elif [ -d /opt/rocm ]; then
+    elif [ -d /opt/rocm ] && _pasrocm_has_compiler /opt/rocm; then
         ROCM_PATH=/opt/rocm
     else
-        # Prefer the newest versioned tree that can actually BUILD (bin/hipcc),
-        # then one that can at least RUN (libamdhip64), so runtime-only installs
-        # still work for tests. Header-only /opt/rocm-<ver> leftovers are never
-        # selected: they have no compiler and no libraries.
-        for _pasrocm_cand in $(ls -1d /opt/rocm-[0-9]* 2>/dev/null | sort -Vr); do
-            if [ -x "$_pasrocm_cand/bin/hipcc" ]; then
+        # Prefer the newest tree that can BUILD: 10.x core-<ver> first (it may
+        # exist without the /opt/rocm alternatives symlinks), then 6.x/7.x.
+        for _pasrocm_cand in \
+            $(ls -1d /opt/rocm/core-[0-9]* 2>/dev/null | sort -Vr) \
+            $(ls -1d /opt/rocm-[0-9]* 2>/dev/null | sort -Vr); do
+            if _pasrocm_has_compiler "$_pasrocm_cand"; then
                 ROCM_PATH="$_pasrocm_cand"; break
             fi
         done
+        # Then one that can at least RUN, so runtime-only installs still work
+        # for the test suite. Header-only leftovers are never selected.
         if [ -z "${ROCM_PATH:-}" ]; then
-            for _pasrocm_cand in $(ls -1d /opt/rocm-[0-9]* 2>/dev/null | sort -Vr); do
-                if ls "$_pasrocm_cand"/lib*/libamdhip64.so* >/dev/null 2>&1; then
+            for _pasrocm_cand in /opt/rocm \
+                $(ls -1d /opt/rocm/core-[0-9]* 2>/dev/null | sort -Vr) \
+                $(ls -1d /opt/rocm-[0-9]* 2>/dev/null | sort -Vr); do
+                if _pasrocm_has_runtime "$_pasrocm_cand"; then
                     ROCM_PATH="$_pasrocm_cand"; break
                 fi
             done
@@ -52,7 +69,18 @@ fi
 export HIP_PLATFORM=amd
 export HIP_PATH="$ROCM_PATH"
 export HIP_CLANG_PATH="$ROCM_PATH/llvm/bin"
-export HIP_CC="${HIP_CC:-hipcc}"
+if [ -z "${HIP_CC:-}" ]; then
+    if [ -x "$ROCM_PATH/bin/hipcc" ]; then
+        HIP_CC=hipcc
+    elif [ -x "$ROCM_PATH/lib/llvm/bin/amdclang++" ]; then
+        HIP_CC="$ROCM_PATH/lib/llvm/bin/amdclang++"
+    elif [ -x "$ROCM_PATH/llvm/bin/amdclang++" ]; then
+        HIP_CC="$ROCM_PATH/llvm/bin/amdclang++"
+    else
+        HIP_CC=hipcc
+    fi
+fi
+export HIP_CC
 if [ -d "$ROCM_PATH/include/hsa" ]; then
     export HSA_PATH="$ROCM_PATH/include/hsa"
 fi
@@ -60,7 +88,7 @@ fi
 # 3. Tools on PATH (idempotent)
 case ":$PATH:" in
     *":$ROCM_PATH/bin:"*) ;;
-    *) export PATH="$ROCM_PATH/bin:$ROCM_PATH/llvm/bin:$PATH" ;;
+    *) export PATH="$ROCM_PATH/bin:$ROCM_PATH/llvm/bin:$ROCM_PATH/lib/llvm/bin:$PATH" ;;
 esac
 
 # 4. Device bitcode library (layout differs between ROCm releases)
@@ -96,5 +124,15 @@ if ! command -v fpc >/dev/null 2>&1; then
     echo "[PasROCm][WARNING] 'fpc' is not on PATH - install Free Pascal 3.2.2 or newer." >&2
 fi
 
-echo "[PasROCm] ROCm at $ROCM_PATH | device bitcode: ${HIP_DEVICE_LIB_PATH:-<not found>}"
+if _pasrocm_has_compiler "$ROCM_PATH"; then
+    _pasrocm_cc="$HIP_CC"
+else
+    _pasrocm_cc="<none: runtime-only install, cannot build the shim>"
+    echo "[PasROCm][WARNING] no hipcc or amdclang++ under $ROCM_PATH - building the" >&2
+    echo "[PasROCm]         rocPRIM shim needs one. Running tests still works." >&2
+fi
+
+echo "[PasROCm] ROCm at $ROCM_PATH | compiler: $_pasrocm_cc | device bitcode: ${HIP_DEVICE_LIB_PATH:-<not found>}"
+unset _pasrocm_cc
+unset -f _pasrocm_has_compiler _pasrocm_has_runtime
 

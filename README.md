@@ -93,7 +93,10 @@ and stop before compiling.
 ## Environment setup
 
 ROCm is usually installed already (for PyTorch, or the distro's `rocm` package).
-You need `hipcc` on `PATH` and the ROCm libraries findable:
+You need a HIP compiler on `PATH` — `hipcc` on ROCm 6.x/7.x, `amdclang++` on
+ROCm 10.x, where `hipcc` is deprecated and a minimal install may not ship it.
+Both live in `$ROCM_PATH/bin` (10.x also puts `amdclang++` in `lib/llvm/bin`).
+The ROCm libraries must be findable:
 
 ```bash
 export ROCM_PATH=/opt/rocm     # only if /opt/rocm is not the actual path
@@ -101,9 +104,11 @@ export PATH="$ROCM_PATH/bin:$PATH"
 source setup_env.sh            # or let this do it
 ```
 
-`setup_env.sh` detects `/opt/rocm` (and `/opt/rocm-<ver>`, and ROCm 10.x's
-`/opt/rocm/core-<ver>`), verifies `hipcc` and the HIP library, then prints the
-result. It does not modify files. `rocm-smi` or `rocminfo` confirms the GPU:
+`setup_env.sh` detects `/opt/rocm`, ROCm 10.x's `/opt/rocm/core-<ver>`, and
+`/opt/rocm-<ver>`, accepting a tree that has **either** `hipcc` or `amdclang++`.
+It sets `HIP_CC` to whichever exists, warns if neither does (a runtime-only
+install can still run the tests), and prints what it found. It does not modify
+files. `rocm-smi` or `rocminfo` confirms the GPU:
 RDNA 3 is `gfx1100`, RDNA 4 `gfx1200`, CDNA 3 `gfx942`, CDNA 4 `gfx950`.
 
 ## How to use PasROCm
