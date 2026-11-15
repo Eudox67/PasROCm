@@ -80,6 +80,17 @@ jobs:
           python3 ci/gen-shim-header.py --check
           ci/check-env.sh
           ci/check-docs.sh
+
+      - name: Install Free Pascal
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends fpc
+          fpc -iV
+
+      - name: Every example compiles
+        # No ROCm here, so compile without linking. This is the gate that was
+        # missing: a unit refactor broke 14 examples and nothing noticed.
+        run: ci/check-examples.sh --no-link
       - name: Choose profile
         id: profile
         env:
