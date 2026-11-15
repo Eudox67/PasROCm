@@ -94,6 +94,10 @@
         <UnitName Value="rocprim_shim_api"/>
       </Item>
       <Item>
+        <Filename Value="src/rocprim/rocprim_shim_hash.pas"/>
+        <UnitName Value="rocprim_shim_hash"/>
+      </Item>
+      <Item>
         <Filename Value="src/rocprim/rocprim_shim_loader.pas"/>
         <UnitName Value="rocprim_shim_loader"/>
       </Item>

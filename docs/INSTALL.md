@@ -17,6 +17,7 @@ tar xzf pasrocm-shim-0.1.0-linux-x86_64-rocm-7.2-gfx1100.tar.gz -C pasrocm-shim
 
 ```text
 lib/libpasrocm_shim_<gfx>.so   the shim; soname equals the file name
+lib/libpasrocm_shim_<gfx>.so.sha256  integrity pin, checked by the loader
 include/rocprim_shim.h         the complete exported C surface (151 symbols)
 pascal/*.pas                   the units, including the generated ABI pair
 manifest.json                  provenance: toolchain, rocPRIM version, claims
@@ -90,7 +91,9 @@ refuses anything that does not belong to this machine:
 4. refuse the library if its ABI revision differs from the one the Pascal units
    were generated for, or if the target or the wavefront width disagrees with
    the device;
-5. resolve all 151 entry points, and publish them only if every one resolves.
+5. if a `.sha256` sidecar or `PASROCM_SHIM_SHA256` is present, hash the file and
+   refuse it on a mismatch;
+6. resolve all 151 entry points, and publish them only if every one resolves.
 
 A wrong library therefore raises `EShimIdentityError` naming both targets,
 instead of launching kernels with the wrong geometry. There is no nil-function
@@ -104,6 +107,7 @@ window: a failure is latched, and every later call repeats it.
 | `PASROCM_EXPECT_GFX` | trust this target instead of querying HIP (CI) |
 | `PASROCM_EXPECT_ROCM` | require the shim's SDK stamp to start with this |
 | `PASROCM_STRICT_ROCM` | turn an SDK-line warning into a fatal error |
+| `PASROCM_SHIM_SHA256` | expected hash of the library; overrides the `.sha256` sidecar |
 
 Without `PASROCM_SHIM` or `PASROCM_SHIM_DIR` the loader also looks next to the
 executable, in `lib/` above it, in `~/.local/lib/pasrocm`, in

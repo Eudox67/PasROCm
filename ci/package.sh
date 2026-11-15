@@ -77,6 +77,9 @@ mkdir -p "$STAGE/lib" "$STAGE/pascal"
 
 LIB_FILE="${BUILD_LIBRARY:-libpasrocm_shim_${TARGET}.so}"
 cp "$LIB" "$STAGE/lib/$LIB_FILE"
+# Integrity pin: the loader refuses the library if this sidecar is present and
+# the file does not match. sha256sum's own format, so `sha256sum -c` works on it.
+( cd "$STAGE/lib" && sha256sum "$LIB_FILE" >"$LIB_FILE.sha256" )
 # Phase 1: the header exists for every build and is the complete exported
 # surface, so a missing one is an error, not a silent omission.
 [[ -f "$ROOT/src/rocprim/rocprim_shim.h" ]] \

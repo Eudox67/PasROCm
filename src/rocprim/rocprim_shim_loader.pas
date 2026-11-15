@@ -168,7 +168,16 @@ function PasROCmShimLastError: string;
 implementation
 
 uses
-  dynlibs, syncobjs, hip_types, hip_error, hip_runtime, rocprim_shim_api;
+  dynlibs, syncobjs, hip_types, hip_error, hip_runtime, rocprim_shim_api,
+  rocprim_shim_hash;
+
+const
+  { Expected SHA256 of the library file; overrides the .sha256 sidecar.
+    Deliberately NOT in the interface: adding a constant to this unit's
+    interface makes FPC 3.3.1 abort with 'Internal error 200611011' while
+    compiling rocprim_bindings.pas (measured 2026-11-15, bisected to the
+    interface declaration alone). Keep new loader declarations here. }
+  SHIM_ENV_SHA256 = 'PASROCM_SHIM_SHA256';
 
 {$IFDEF UNIX}
 { Read the live environment. Measured on FPC 3.3.1: GetEnvironmentVariable
@@ -488,6 +497,45 @@ begin
       [AShimVersion, ExpectedMajor, ActualMajor]);
 end;
 
+{ The hash this library is expected to have, or '' when nobody asked for one.
+  PASROCM_SHIM_SHA256 wins; otherwise a `<file>.sha256` sidecar next to the
+  library, which is what a release package ships. A local build has no sidecar,
+  so building from source is unaffected. }
+function ExpectedShimSHA256(const APath: string): string;
+var
+  FromEnv: string;
+  Sidecar: TextFile;
+  Line: string;
+  Sep: Integer;
+begin
+  FromEnv := Trim(EnvStr(SHIM_ENV_SHA256));
+  if FromEnv <> '' then
+    Exit(LowerCase(FromEnv));
+
+  Result := '';
+  if (APath = '') or (not FileExists(APath + '.sha256')) then
+    Exit;
+
+  AssignFile(Sidecar, APath + '.sha256');
+  Reset(Sidecar);
+  try
+    if Eof(Sidecar) then
+      Exit;
+    ReadLn(Sidecar, Line);
+  finally
+    CloseFile(Sidecar);
+  end;
+
+  { Accept both "<hash>" and sha256sum's "<hash>  <name>". }
+  Line := Trim(Line);
+  Sep := Pos(' ', Line);
+  if Sep = 0 then
+    Sep := Pos(#9, Line);
+  if Sep > 0 then
+    Line := Copy(Line, 1, Sep - 1);
+  Result := LowerCase(Trim(Line));
+end;
+
 function PasROCmShimLoad: Boolean;
 var
   Handle: TLibHandle;
@@ -515,6 +563,8 @@ var
   IdentityMissing: string;
   WarningText: string;
   Searched: string;
+  ExpectedHash: string;
+  ActualHash: string;
 
   procedure Fail(AException: EShimError);
   begin
@@ -611,6 +661,31 @@ begin
         + 'Or point %s at the directory holding %s.%sSearched:%s',
         [Gfx, LineEnding, Gfx, LineEnding, SHIM_ENV_DIR,
          PasROCmShimLibraryFileName(Gfx), LineEnding, Searched]));
+
+    { --- 2b. Integrity pin (optional) ----------------------------------
+      A release package ships `<file>.so.sha256`; PASROCM_SHIM_SHA256 overrides
+      it. Neither exists for a local build, so nothing is hashed then. This
+      closes the hole the identity gate cannot: a library built for the right
+      target by someone else, earlier in the search path. }
+    ExpectedHash := ExpectedShimSHA256(Chosen);
+    if ExpectedHash <> '' then
+    begin
+      if not FileExists(Chosen) then
+        Fail(EShimIdentityError.CreateFmt(
+          'PasROCm: a SHA256 was requested for %s, but the loader only has the '
+          + 'bare name "%s" (dlopen resolved it). Name the file with %s or its '
+          + 'directory with %s so it can be hashed.',
+          [Gfx, Chosen, SHIM_ENV_FILE, SHIM_ENV_DIR]));
+      ActualHash := PasROCmShimFileSHA256(Chosen);
+      if ActualHash <> ExpectedHash then
+        Fail(EShimIdentityError.CreateFmt(
+          'PasROCm: %s does not match its expected SHA256.%s'
+          + '  expected: %s%s  actual:   %s%s'
+          + 'Refusing to load it. If you built this library yourself, unset %s '
+          + 'and remove the .sha256 sidecar.',
+          [Chosen, LineEnding, ExpectedHash, LineEnding, ActualHash,
+           LineEnding, SHIM_ENV_SHA256]));
+    end;
 
     { --- 3. Identity, through the pure exports only -------------------- }
     IdentityMissing := '';

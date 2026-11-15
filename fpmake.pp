@@ -95,6 +95,7 @@ begin
     P.Targets.AddUnit('hip_bindings.pas');
     P.Targets.AddUnit('hip_specialized.pas');
     P.Targets.AddUnit('rocprim_shim_api.pas');
+    P.Targets.AddUnit('rocprim_shim_hash.pas');
     P.Targets.AddUnit('rocprim_shim_loader.pas');
     P.Targets.AddUnit('rocprim_bindings.pas');
     P.Targets.AddUnit('rocprim_block.pas');

@@ -50,7 +50,7 @@ interface
 
 uses
   SysUtils, fpcunit, testregistry,
-  rocprim_shim_loader, rocprim_shim_api, rocprim_bindings;
+  rocprim_shim_loader, rocprim_shim_api, rocprim_bindings, rocprim_shim_hash;
 
 type
   TTestShimLoader = class(TTestCase)
@@ -65,6 +65,10 @@ type
     procedure TestNormalizeGfxStripsFeatures;
     procedure TestNormalizeGfxOfEmptyAndNoise;
     procedure TestLibraryFileNameCarriesTarget;
+    { Integrity pin: the file hash must equal what sha256sum prints. }
+    procedure TestShimFileHashKnownVector;
+    procedure TestShimFileHashOfEmptyFile;
+    procedure TestShimFileHashAcrossBlockBoundary;
     procedure TestCandidatePathsPreferExplicitDirectory;
     procedure TestCandidatePathsPreferExplicitFile;
     procedure TestCandidatePathsEndWithBareName;
@@ -428,6 +432,81 @@ begin
   AssertEquals('same library after reload', Before.LibraryPath,
     Reloaded.LibraryPath);
   AssertEquals('same target after reload', Before.Target, Reloaded.Target);
+end;
+
+{ ---- Integrity pin: file hashing ---------------------------------------- }
+
+function HashTestFile(const AName: string): string;
+begin
+  Result := IncludeTrailingPathDelimiter(GetTempDir(False)) + AName;
+end;
+
+procedure TTestShimLoader.TestShimFileHashKnownVector;
+var
+  Path: string;
+  Handle: file of Byte;
+  Bytes: array[0..2] of Byte;
+begin
+  Path := HashTestFile('pasrocm_hash_abc.bin');
+  Bytes[0] := Ord('a');
+  Bytes[1] := Ord('b');
+  Bytes[2] := Ord('c');
+  AssignFile(Handle, Path);
+  Rewrite(Handle);
+  BlockWrite(Handle, Bytes, SizeOf(Bytes));
+  CloseFile(Handle);
+  try
+    AssertEquals('sha256("abc")',
+      'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+      PasROCmShimFileSHA256(Path));
+  finally
+    DeleteFile(Path);
+  end;
+end;
+
+procedure TTestShimLoader.TestShimFileHashOfEmptyFile;
+var
+  Path: string;
+  Handle: file of Byte;
+begin
+  Path := HashTestFile('pasrocm_hash_empty.bin');
+  AssignFile(Handle, Path);
+  Rewrite(Handle);
+  CloseFile(Handle);
+  try
+    AssertEquals('sha256("")',
+      'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      PasROCmShimFileSHA256(Path));
+  finally
+    DeleteFile(Path);
+  end;
+end;
+
+procedure TTestShimLoader.TestShimFileHashAcrossBlockBoundary;
+const
+  MILLION_A = 'cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0';
+var
+  Path: string;
+  Handle: file of Byte;
+  Chunk: array[0..9999] of Byte;
+  I, Block: Integer;
+begin
+  { One million 'a' bytes: larger than the loader''s 64 KiB read buffer, so the
+    block loop and the final partial block are both exercised. }
+  Path := HashTestFile('pasrocm_hash_million.bin');
+  for I := 0 to High(Chunk) do
+    Chunk[I] := Ord('a');
+  AssignFile(Handle, Path);
+  Rewrite(Handle);
+  for Block := 1 to 100 do
+    BlockWrite(Handle, Chunk, SizeOf(Chunk));
+  CloseFile(Handle);
+  try
+    AssertEquals('sha256(1000000 x "a")', MILLION_A,
+      PasROCmShimFileSHA256(Path));
+  finally
+    DeleteFile(Path);
+  end;
 end;
 
 initialization

@@ -348,6 +348,8 @@ docs/                   installation and CI detail
   inside a package, per-SDK capability notes, versioning, diagnostics.
 - `docs/CI.md` — the build matrix, job profiles, validation levels and the
   release flow.
+- `docs/VERIFY.md` — how to check that a download is genuine: checksums, build
+  provenance, the checksum signature, and the loader's own integrity pin.
 
 ## Contributing
 
