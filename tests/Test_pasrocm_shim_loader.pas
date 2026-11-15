@@ -87,6 +87,10 @@ type
     procedure TestRefusesForeignTarget;
     procedure TestRefusesNonShimLibrary;
     procedure TestUnloadAllowsReload;
+    { The SDK stamp must be an SDK line, never a HIP version (issue #1). }
+    procedure TestSdkStampIsNotAHipVersion;
+    procedure TestExpectRocmAcceptsReportedLine;
+    procedure TestExpectRocmRejectsAnotherLine;
   end;
 
 implementation
@@ -506,6 +510,100 @@ begin
       PasROCmShimFileSHA256(Path));
   finally
     DeleteFile(Path);
+  end;
+end;
+
+
+{ ---- SDK stamp semantics (issue #1) ------------------------------------- }
+
+{ An SDK line looks like 6.4.4 / 7.2.4 / 10.1.0. A HIP version looks like
+  7.16.26385-0000000: it carries a suffix and a component far above 999. }
+function SdkShaped(const AValue: string): Boolean;
+var
+  I, Start, Value: Integer;
+  Component: string;
+begin
+  Result := False;
+  if (AValue = '') or (Pos('-', AValue) > 0) then
+    Exit;
+  Start := 1;
+  for I := 1 to Length(AValue) + 1 do
+    if (I > Length(AValue)) or (AValue[I] = '.') then
+    begin
+      Component := Copy(AValue, Start, I - Start);
+      if (Component = '') or (not TryStrToInt(Component, Value))
+        or (Value > 999) then
+        Exit;
+      Start := I + 1;
+    end;
+  Result := True;
+end;
+
+procedure TTestShimLoader.TestSdkStampIsNotAHipVersion;
+var
+  Stamp: string;
+begin
+  if not EnsureShimOrIgnore then
+    Exit;
+  Stamp := PasROCmShimInfo.RocmVersion;
+  AssertTrue('the SDK stamp is an SDK line or explicitly unknown, got "' +
+    Stamp + '"', SameText(Stamp, 'unknown') or SdkShaped(Stamp));
+end;
+
+procedure TTestShimLoader.TestExpectRocmAcceptsReportedLine;
+var
+  LibPath, Stamp: string;
+begin
+  if not EnsureShimOrIgnore then
+    Exit;
+  LibPath := PasROCmShimInfo.LibraryPath;
+  Stamp := PasROCmShimInfo.RocmVersion;
+  if (Stamp = '') or SameText(Stamp, 'unknown') then
+  begin
+    Ignore('shim carries no SDK stamp to pin');
+    Exit;
+  end;
+
+  PasROCmShimUnload;
+  SetEnv(SHIM_ENV_FILE, LibPath);
+  SetEnv(SHIM_ENV_EXPECT_ROCM, Stamp);
+  try
+    AssertTrue('pinning the reported SDK line loads the shim',
+      PasROCmShimEnsureLoaded);
+    AssertEquals('the stamp is unchanged by the pin', Stamp,
+      PasROCmShimInfo.RocmVersion);
+  finally
+    UnsetEnv(SHIM_ENV_FILE);
+    UnsetEnv(SHIM_ENV_EXPECT_ROCM);
+    PasROCmShimUnload;
+  end;
+end;
+
+procedure TTestShimLoader.TestExpectRocmRejectsAnotherLine;
+var
+  LibPath: string;
+  Raised: Boolean;
+begin
+  if not EnsureShimOrIgnore then
+    Exit;
+  LibPath := PasROCmShimInfo.LibraryPath;
+
+  PasROCmShimUnload;
+  SetEnv(SHIM_ENV_FILE, LibPath);
+  SetEnv(SHIM_ENV_EXPECT_ROCM, '1.0');
+  try
+    Raised := False;
+    try
+      PasROCmShimEnsureLoaded;
+    except
+      on E: EShimIdentityError do
+        Raised := True;
+    end;
+    AssertTrue('a different SDK line raises EShimIdentityError', Raised);
+  finally
+    UnsetEnv(SHIM_ENV_FILE);
+    UnsetEnv(SHIM_ENV_EXPECT_ROCM);
+    PasROCmShimUnload;  { clear the latched failure }
   end;
 end;
 

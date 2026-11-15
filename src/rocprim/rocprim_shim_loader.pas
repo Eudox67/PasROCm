@@ -565,6 +565,7 @@ var
   Searched: string;
   ExpectedHash: string;
   ActualHash: string;
+  ExpectRocm: string;
 
   procedure Fail(AException: EShimError);
   begin
@@ -757,9 +758,14 @@ begin
         ;  { the only path that continues }
     end;
 
-    WarningText := CheckRocmLine(RocmVersion, EnvStr(SHIM_ENV_EXPECT_ROCM),
-      HipRuntime);
-    if (WarningText <> '') and (EnvStr(SHIM_ENV_STRICT_ROCM) <> '') then
+    { An explicit PASROCM_EXPECT_ROCM is a requirement, so a mismatch is
+      fatal on its own. PASROCM_STRICT_ROCM only upgrades the *inferred*
+      warning (the stamp's SDK line against the runtime's HIP major), which
+      is a heuristic and must stay advisory by default. }
+    ExpectRocm := EnvStr(SHIM_ENV_EXPECT_ROCM);
+    WarningText := CheckRocmLine(RocmVersion, ExpectRocm, HipRuntime);
+    if (WarningText <> '')
+      and ((ExpectRocm <> '') or (EnvStr(SHIM_ENV_STRICT_ROCM) <> '')) then
       Fail(EShimIdentityError.CreateFmt('PasROCm: %s: %s',
         [Chosen, WarningText]));
 

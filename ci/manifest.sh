@@ -426,7 +426,7 @@ cmd_env() {
     echo "CFG_OS=$(quote "${CFG_OS[$config_id]}")"
     echo "CFG_SDK_LINE=$(quote "$line")"
     echo "CFG_SDK_VERSION=$(quote "$version")"
-    echo "CFG_SHIM_VERSION=$(quote "${SHIM[version]}")"
+    echo "CFG_SHIM_VERSION=$(quote "$(head -n1 "$ROOT/VERSION" | tr -d '[:space:]')")"
     echo "CFG_TARGETS=$(quote "${targets[*]}")"
     echo "CFG_UBUNTU=$(quote "${CFG_UBUNTU[$config_id]}")"
     echo "PIN_EXACT=$(quote "$exact_space")"

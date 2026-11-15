@@ -105,8 +105,8 @@ window: a failure is latched, and every later call repeats it.
 | `PASROCM_SHIM_DIR` | directory holding `libpasrocm_shim_<gfx>.so` |
 | `PASROCM_DEVICE` | device index to detect (default `0`) |
 | `PASROCM_EXPECT_GFX` | trust this target instead of querying HIP (CI) |
-| `PASROCM_EXPECT_ROCM` | require the shim's SDK stamp to start with this |
-| `PASROCM_STRICT_ROCM` | turn an SDK-line warning into a fatal error |
+| `PASROCM_EXPECT_ROCM` | require the shim's SDK stamp to start with this; a mismatch is fatal |
+| `PASROCM_STRICT_ROCM` | turn the *inferred* SDK-line warning into a fatal error |
 | `PASROCM_SHIM_SHA256` | expected hash of the library; overrides the `.sha256` sidecar |
 
 Without `PASROCM_SHIM` or `PASROCM_SHIM_DIR` the loader also looks next to the

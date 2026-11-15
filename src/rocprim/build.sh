@@ -277,7 +277,40 @@ case "$WIDTHS_MASK" in
     *) die "targets.conf yields width mask '$WIDTHS_MASK' for $TARGET" ;;
 esac
 
-ROCM_VERSION="${ROCM_VERSION:-${HIP_VER:-unknown}}"
+# The SDK line, never the HIP version. They are different facts: ROCm 10.1
+# ships HIP 7.16, and 7.2 and 10.1 share libamdhip64.so.7, so a HIP version in
+# this export would be a consumer trap (one export, two meanings).
+#
+# Detection order, all measured on real installs:
+#   <root>/.info/version                 6.x/7.x direct installs
+#   <root>/core/.info/version            10.x alternatives layout
+#   <resolved lib dir>/../.info/version  same tree, if 'core' is absent
+#   the versioned directory name         /opt/rocm-7.2.4, .../core-10.1
+# Nothing found -> 'unknown', which the loader reports as "no SDK stamp".
+detect_sdk_version() {
+    local root="$1" candidate resolved
+    for candidate in \
+        "$root/.info/version" \
+        "$(readlink -f "$root/core" 2>/dev/null)/.info/version" \
+        "$(dirname "$(readlink -f "$root/lib" 2>/dev/null)" 2>/dev/null)/.info/version"
+    do
+        if [[ -f "$candidate" ]]; then
+            head -n1 "$candidate" | tr -d '[:space:]'
+            return 0
+        fi
+    done
+    resolved="$(readlink -f "$root" 2>/dev/null || echo "$root")"
+    if [[ "$(basename "$resolved")" =~ ^(rocm|core)-([0-9]+\.[0-9]+(\.[0-9]+)?)$ ]]; then
+        printf '%s\n' "${BASH_REMATCH[2]}"
+        return 0
+    fi
+    return 1
+}
+
+if [[ -z "${ROCM_VERSION:-}" ]]; then
+    ROCM_VERSION="$(detect_sdk_version "$ROCM_ROOT" || true)"
+    [[ -n "$ROCM_VERSION" ]] || ROCM_VERSION="unknown"
+fi
 LIB_FILE="${LIB_PATTERN//\{gfx\}/$TARGET}"
 LIB_PATH="$OUT_DIR/$LIB_FILE"
 
@@ -306,6 +339,7 @@ log "ROCm root : $ROCM_ROOT"
 log "compiler  : $CC_REAL  [$COMPILER_KIND]"
 [[ -n "$CC_VERSION" ]] && log "compiler v: $CC_VERSION"
 [[ -n "$HIP_VER" ]]    && log "HIP ver   : $HIP_VER"
+log "SDK line  : $ROCM_VERSION"
 log "lib dir   : $LIB_DIR"
 log "target    : $TARGET  (wavefront $WAVEFRONT)"
 log "version   : $VERSION  (abi $ABI_REVISION)"

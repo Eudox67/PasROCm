@@ -185,6 +185,17 @@ for entry in recorded:
         }
         break
 
+# The configuration's claim and the library's stamp must agree. A package that
+# says 7.2.4 while its library reports something else is the consumer trap this
+# check exists to prevent.
+stamped = env.get("BUILD_ROCM_VERSION") or ""
+if stamped != env["CFG_SDK_VERSION"]:
+    sys.exit(
+        "package: library reports SDK %r but configuration %s claims %r.\n"
+        "         Rebuild with ROCM_VERSION=%s, or package with the matching "
+        "--config." % (stamped or "(nothing)", env["CFG_ID"],
+                       env["CFG_SDK_VERSION"], env["CFG_SDK_VERSION"]))
+
 manifest = {
     "schema": 1,
     "package": env["PKG_STEM"] + ".tar.gz",
@@ -203,6 +214,9 @@ manifest = {
     "sdk": {
         "line": env["CFG_SDK_LINE"],
         "version": env["CFG_SDK_VERSION"],
+        # What pasrocm_shim_rocm_version() actually returns in this library.
+        # Recorded so a reader can compare the claim with the artifact.
+        "stamped_version": env.get("BUILD_ROCM_VERSION") or None,
         "packages": packages,
         "covers": env["CFG_COVERS"],
         "covers_evidence": env["CFG_COVERS_EVIDENCE"],
