@@ -7,12 +7,12 @@ order, and what a release package contains.
 ## What a package contains
 
 The asset is named `pasrocm-shim-<version>-linux-x86_64-rocm-<line>-<gfx>.tar.gz`,
-for example `pasrocm-shim-0.1.0-linux-x86_64-rocm-7.2-gfx1100.tar.gz`. It has no
+for example `pasrocm-shim-0.1.1-linux-x86_64-rocm-7.2-gfx1100.tar.gz`. It has no
 top-level directory, so unpack it into one:
 
 ```bash
 mkdir pasrocm-shim
-tar xzf pasrocm-shim-0.1.0-linux-x86_64-rocm-7.2-gfx1100.tar.gz -C pasrocm-shim
+tar xzf pasrocm-shim-0.1.1-linux-x86_64-rocm-7.2-gfx1100.tar.gz -C pasrocm-shim
 ```
 
 ```text
@@ -50,7 +50,7 @@ The project version lives in one file: **`VERSION`** at the repository root.
 `ci/manifest.sh meta` hands it to the release workflow. There is no second copy
 to drift.
 
-The first public release is **0.1.0**, and the project stays on 0.x until two
+The first public release was **0.1.0**; the project stays on 0.x until two
 things are true:
 
 1. **Recorded hardware evidence for CDNA.** Every gfx9xx package carries
@@ -73,7 +73,7 @@ The ABI revision is a *separate* number: `PASROCM_ABI_REVISION` in
 anything, so a units/library mismatch is a named exception, never a crash. That
 is why an ABI change is safe to make even after 1.0 -- it cannot be silent.
 
-Pre-release tags are allowed: `v0.1.0-rc.1` publishes the same bytes under a name
+Pre-release tags are allowed: `vX.Y.Z-rc.1` publishes the same bytes under a name
 that says "not final". The release workflow compares the tag's base version with
 `VERSION` and rejects anything else.
 

@@ -79,6 +79,7 @@ jobs:
           python3 ci/gen-shim-bindings.py --check
           python3 ci/gen-shim-header.py --check
           ci/check-env.sh
+          ci/check-docs.sh
       - name: Choose profile
         id: profile
         env:

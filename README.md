@@ -17,7 +17,7 @@ These are direct bindings to AMD's own libraries: no reimplementation, no CPU
 fallback. You call `rocblas_sgemm` or `miopenConvolutionForward` and the GPU
 library does the work.
 
-**Status:** 0.1.0, pre-1.0. `docs/INSTALL.md` records what 1.0.0 will freeze.
+**Status:** 0.1.1, pre-1.0. `docs/INSTALL.md` records what 1.0.0 will freeze.
 
 ## Libraries
 
@@ -238,13 +238,13 @@ exports, fixed by `src/rocprim/rocprim_shim_abi.inc`.
 ### Getting the shim
 
 **Option A — a pre-built package.** Download
-`pasrocm-shim-0.1.0-linux-x86_64-rocm-7.2-gfx1100.tar.gz` from the releases page
+`pasrocm-shim-0.1.1-linux-x86_64-rocm-7.2-gfx1100.tar.gz` from the releases page
 (the name carries version, platform, SDK line and GPU target), unpack it into a
 directory, and point the loader at its `lib/`:
 
 ```bash
 mkdir pasrocm-shim
-tar xzf pasrocm-shim-0.1.0-linux-x86_64-rocm-7.2-gfx1100.tar.gz -C pasrocm-shim
+tar xzf pasrocm-shim-0.1.1-linux-x86_64-rocm-7.2-gfx1100.tar.gz -C pasrocm-shim
 export PASROCM_SHIM_DIR=$PWD/pasrocm-shim/lib
 ```
 

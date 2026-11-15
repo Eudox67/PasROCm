@@ -12,6 +12,7 @@ Python. Every script is shell and reads its data from the two `.conf` files.
 | `build-linux.sh` | one CI job: install, build, ABI check, package |
 | `check-abi.sh` | exports vs. `rocprim_shim_abi.inc` (`--strict` also rejects extras); defaults to the library in `src/rocprim` |
 | `check-env.sh` | `setup_env.sh` detection against synthetic ROCm trees (hipcc / amdclang++ / runtime-only) |
+| `check-docs.sh` | concrete asset names in README/docs match `VERSION` |
 | `package.sh` | tarball + `manifest.json` for one coordinate |
 | `gpu-runtime-evidence.json` | what was actually executed on real GPU hardware |
 | `gen-shim-bindings.py` | generates `rocprim_shim_api.pas`, `rocprim_bindings.pas` |

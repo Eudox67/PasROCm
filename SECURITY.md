@@ -18,7 +18,7 @@ seriously even when it needs an unusual input to trigger.
 | every release asset | GitHub build provenance attestation | `gh attestation verify <file> --repo Eudox67/PasROCm` |
 | `SHA256SUMS` | keyless cosign signature + transparency-log entry | `cosign verify-blob --bundle SHA256SUMS.bundle …` |
 | each library in a package | `.sha256` sidecar, checked by the loader at run time | automatic |
-| release tags and commits | maintainer's SSH key (public half: `SIGNING-KEY.pub`) | `git verify-tag v0.1.0` |
+| release tags and commits | maintainer's SSH key (public half: `SIGNING-KEY.pub`) | `git verify-tag vX.Y.Z` |
 
 `docs/VERIFY.md` has the exact commands and explains what each one proves.
 
@@ -79,13 +79,13 @@ security setting.
 The only trigger is a signed tag:
 
 ```bash
-git tag -s v0.1.0 -m "PasROCm 0.1.0"
-git push origin v0.1.0
+git tag -s vX.Y.Z -m "PasROCm X.Y.Z"
+git push origin vX.Y.Z
 ```
 
 `shim-release.yml` then builds every (SDK line, target) pair, refuses any
 package whose ABI check failed, attests each asset, signs `SHA256SUMS`, and
-publishes. A pre-release tag (`v0.1.0-rc.1`) runs the identical path and marks
+publishes. A pre-release tag (`vX.Y.Z-rc.1`) runs the identical path and marks
 the release as a pre-release -- use it to rehearse.
 
 ## Scope

@@ -24,7 +24,7 @@ for.
 ## 2. Build provenance (recommended)
 
 ```bash
-gh attestation verify pasrocm-shim-0.1.0-linux-x86_64-rocm-7.2-gfx1100.tar.gz \
+gh attestation verify pasrocm-shim-0.1.1-linux-x86_64-rocm-7.2-gfx1100.tar.gz \
   --repo Eudox67/PasROCm
 ```
 
@@ -64,7 +64,7 @@ there is no keyserver to fetch from, so tell git who is allowed to sign:
 echo "145217249+Eudox67@users.noreply.github.com $(cat SIGNING-KEY.pub)" > allowed_signers
 git config gpg.ssh.allowedSignersFile "$PWD/allowed_signers"
 
-git verify-tag v0.1.0
+git verify-tag v0.1.1
 ```
 
 Expected output:
