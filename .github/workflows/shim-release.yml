@@ -98,6 +98,10 @@ jobs:
     name: publish assets
     needs: [plan, build]
     runs-on: ubuntu-24.04
+    # Publishing waits for a human: the 'release' environment requires a
+    # reviewer, and admins cannot bypass it. A stolen token can build, but it
+    # cannot publish without approval.
+    environment: release
     # Scoped to this job: the OIDC token that signs the provenance and the
     # cosign bundle is never handed to the build matrix.
     permissions:

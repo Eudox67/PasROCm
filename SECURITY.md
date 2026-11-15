@@ -56,23 +56,22 @@ In place:
 - Builds are deterministic: no timestamps, no absolute paths, fixed archive
   order and ownership. The library SHA256 is the invariant across a rebuild.
 
-### Checklist for the public repository
+### Public-repository hardening (in place)
 
-These need a public repo (or a paid plan). Tick them off; none is a prerequisite
-for publishing a release, but each closes a specific hole.
+| setting | status | what it prevents |
+|---|---|---|
+| Secret scanning + push protection | **enabled** | a token committed by accident |
+| Dependabot alerts + security updates | **enabled** | a known-vulnerable dependency sitting unnoticed |
+| Dependabot for SHA-pinned Actions | **enabled** (`.github/dependabot.yml`) | a pin that silently misses security fixes |
+| Protected `v*` tags | **active** ruleset: `deletion`, `non_fast_forward`, `update` | a published release tag being moved or deleted |
+| `release` environment, required reviewer, admins cannot bypass | **active**; the publish job declares `environment: release` | a stolen token publishing without a human approval |
+| `CODEOWNERS` on `.github/`, `ci/`, `SECURITY.md`, `VERSION`, `targets.conf` | committed | a pipeline change slipping through review (takes effect with branch protection) |
 
-| # | setting | what it prevents | how |
-|---|---|---|---|
-| 1 | Secret scanning + push protection | a token committed by accident | Settings → Code security → enable both |
-| 2 | Protected `v*` tags | a published release tag being moved or deleted | Settings → Rules → New tag ruleset, pattern `v*` |
-| 3 | Dependabot for Actions | a pinned action going stale and unpatched | `.github/dependabot.yml` (committed) |
-| 4 | `CODEOWNERS` on `.github/` and `ci/` | a pipeline change slipping through review | `.github/CODEOWNERS` (committed) |
-| 5 | `release` environment with required reviewers | a stolen token publishing without a human | Settings → Environments → New `release`, required reviewers |
-| 6 | Branch protection on `main` | a direct push bypassing CI | Settings → Branches → require PR + the `plan` check |
-
-**Note on #6:** requiring pull requests also blocks the maintainer's own direct
-pushes to `main`. Choose it deliberately -- it is a workflow change, not only a
-security setting.
+**Not enabled, deliberately:** branch protection requiring pull requests on
+`main`. It would also block the maintainer's own direct pushes, which is a
+workflow change rather than a security setting. `CODEOWNERS` is inert until it
+is turned on. To enable: Settings -> Branches -> require a PR and the `plan`
+check.
 
 ### Publishing a release
 

@@ -50,6 +50,15 @@ link.res
 /docs/*
 !/docs/*.md
 
+# Release archives downloaded into the checkout to verify them, and what they
+# unpack to. Verification is a normal thing to do here; committing the result is
+# not.
+/pasrocm-*-src.tar.gz
+/pasrocm-shim-*.tar.gz
+/pasrocm-[0-9]*/
+/SHA256SUMS
+/SHA256SUMS.bundle
+
 # Compiled CI tooling
 /ci/bin/
 
