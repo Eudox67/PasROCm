@@ -12,7 +12,7 @@ Radeon and Instinct GPUs.
 
 These are direct bindings to AMD's own libraries: no reimplementation, no CPU
 fallback. You call `rocblas_sgemm` or `miopenConvolutionForward` and the GPU
-library AMD ships does the work.
+library does the work.
 
 **Status:** 0.1.0, pre-1.0. `docs/INSTALL.md` records what 1.0.0 will freeze.
 
