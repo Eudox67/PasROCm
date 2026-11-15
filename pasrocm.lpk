@@ -106,16 +106,8 @@
         <UnitName Value="rocprim_bindings"/>
       </Item>
       <Item>
-        <Filename Value="src/rocprim/rocprim_block.pas"/>
-        <UnitName Value="rocprim_block"/>
-      </Item>
-      <Item>
         <Filename Value="src/rocprim/rocprim_core.pas"/>
         <UnitName Value="rocprim_core"/>
-      </Item>
-      <Item>
-        <Filename Value="src/rocprim/rocprim_device.pas"/>
-        <UnitName Value="rocprim_device"/>
       </Item>
       <Item>
         <Filename Value="src/rocprim/rocprim_intrinsics.pas"/>
@@ -132,10 +124,6 @@
       <Item>
         <Filename Value="src/rocprim/rocprim_types.pas"/>
         <UnitName Value="rocprim_types"/>
-      </Item>
-      <Item>
-        <Filename Value="src/rocprim/rocprim_warp.pas"/>
-        <UnitName Value="rocprim_warp"/>
       </Item>
     </Files>
     <RequiredPkgs>

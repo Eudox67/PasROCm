@@ -33,10 +33,7 @@ uses
   rocprim_types,
   rocprim_intrinsics,
   rocprim_iterator,
-  rocprim_thread,
-  rocprim_warp,
-  rocprim_block,
-  rocprim_device;
+  rocprim_thread;
 
 function version: Cardinal;
 

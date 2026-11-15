@@ -66,6 +66,22 @@ else
     echo "check-abi: WARNING: python3 not found; skipping the generated-units staleness check" >&2
 fi
 
+# Check 0b: no unit may declare a bare `external;` without a {$linklib}.
+# Such a declaration compiles and installs cleanly, then fails at link time the
+# first time a caller uses it -- a dormant landmine, not a build error. Three
+# units shipped that way until 2026-11-15 (rocprim_device/warp/block).
+BARE_UNITS=""
+for unit in "$ROOT"/src/*.pas "$ROOT"/src/rocprim/*.pas; do
+    [[ -f "$unit" ]] || continue
+    if grep -q 'external;' "$unit" && ! grep -qi '{\$linklib' "$unit"; then
+        BARE_UNITS="$BARE_UNITS $(basename "$unit")"
+    fi
+done
+if [[ -n "$BARE_UNITS" ]]; then
+    die "bare 'external;' without {\$linklib} in:$BARE_UNITS -- these link-fail on first use"
+fi
+echo "== no unresolved external declarations"
+
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 

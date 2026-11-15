@@ -98,14 +98,11 @@ begin
     P.Targets.AddUnit('rocprim_shim_hash.pas');
     P.Targets.AddUnit('rocprim_shim_loader.pas');
     P.Targets.AddUnit('rocprim_bindings.pas');
-    P.Targets.AddUnit('rocprim_block.pas');
     P.Targets.AddUnit('rocprim_core.pas');
-    P.Targets.AddUnit('rocprim_device.pas');
     P.Targets.AddUnit('rocprim_intrinsics.pas');
     P.Targets.AddUnit('rocprim_iterator.pas');
     P.Targets.AddUnit('rocprim_thread.pas');
     P.Targets.AddUnit('rocprim_types.pas');
-    P.Targets.AddUnit('rocprim_warp.pas');
 
     Run;
   end;
