@@ -31,7 +31,7 @@
 /*
  * GENERATED FILE -- do not edit.
  *   Source:    the definitions in rocprim_shim.cpp and
- *              rocprim_shim_math_kernels.cpp, gated by the 149 names in
+ *              rocprim_shim_math_kernels.cpp, gated by the 151 names in
  *              rocprim_shim_abi.inc (which owns the ABI contract).
  *   Generator: ci/gen-shim-header.py
  *   Regenerate: python3 ci/gen-shim-header.py

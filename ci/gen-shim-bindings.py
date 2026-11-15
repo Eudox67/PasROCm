@@ -6,7 +6,7 @@
 
 Input:  src/rocprim/rocprim_shim_abi.inc   (hand-edited, never compiled)
 Output: src/rocprim/rocprim_shim_api.pas   (internal pointer table)
-        src/rocprim/rocprim_bindings.pas   (the public 149-function surface)
+        src/rocprim/rocprim_bindings.pas   (the public entry-point surface)
 
 The generated units never link the shim. `rocprim_bindings` wraps each entry
 point so that a call cannot reach a nil pointer: the wrapper asks

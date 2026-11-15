@@ -374,7 +374,7 @@ COMPILE_CMD=(
     # -fvisibility=hidden does not hide __global__ kernels (HIP gives their host
     # stubs default visibility so the runtime can register them, measured
     # 2026-11-14), so the version script is what actually closes the dynamic
-    # symbol table to the 149 names. It is generated from the same spec.
+    # symbol table to the spec's names. It is generated from that spec.
     -Wl,--version-script,"$SRC_DIR/rocprim_shim.map"
     -I"$ROCM_ROOT/include"
     -L"$LIB_DIR" -lamdhip64

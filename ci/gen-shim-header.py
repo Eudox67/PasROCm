@@ -8,7 +8,7 @@ Why the prototypes come from the definitions and not from
 rocprim_shim_abi.inc: a public C header must match the definitions exactly,
 including const-ness, and the Pascal declarations do not encode const. The
 specification still owns the *names*: this script refuses to write a header
-unless the definitions cover exactly the 149 names in the spec, in spec order,
+unless the definitions cover exactly the names in the spec, in spec order,
 so a name can never appear in one place and not the other.
 
 The header is also the visibility contract: every prototype carries
@@ -150,7 +150,7 @@ def definitions() -> dict[str, str]:
 
 
 def render_map() -> str:
-    """The linker version script: the same 149 names, everything else local.
+    """The linker version script: the same names as the spec, everything else local.
 
     -fvisibility=hidden alone is not enough. Measured 2026-11-14 on gfx1100:
     every __global__ kernel stayed in the dynamic symbol table (30+ symbols)
@@ -190,7 +190,7 @@ def render() -> str:
     out: list[str] = [license_text(), "", """/*
  * GENERATED FILE -- do not edit.
  *   Source:    the definitions in rocprim_shim.cpp and
- *              rocprim_shim_math_kernels.cpp, gated by the 149 names in
+ *              rocprim_shim_math_kernels.cpp, gated by the @@COUNT@@ names in
  *              rocprim_shim_abi.inc (which owns the ABI contract).
  *   Generator: ci/gen-shim-header.py
  *   Regenerate: python3 ci/gen-shim-header.py
@@ -252,7 +252,8 @@ ENUM_MEMBERS
 #endif
 
 #endif /* PASROCM_ROCprim_SHIM_H */"""]
-    return "\n".join(out) + "\n"
+    # The count comes from the spec, so it cannot drift the way a literal did.
+    return "\n".join(out).replace("@@COUNT@@", str(len(names))) + "\n"
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
