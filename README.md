@@ -5,6 +5,8 @@
 [![Lazarus package](https://img.shields.io/badge/Lazarus-package-blueviolet)](pasrocm.lpk)
 [![Platform: Linux x86_64](https://img.shields.io/badge/platform-Linux%20x86__64-lightgrey)](#requirements)
 [![ROCm 6.4 | 7.2 | 10.1](https://img.shields.io/badge/ROCm-6.4%20%7C%207.2%20%7C%2010.1-red)](#what-each-sdk-line-supports)
+[![shim CI](https://img.shields.io/github/actions/workflow/status/Eudox67/PasROCm/shim-build.yml?branch=main&label=shim%20CI)](https://github.com/Eudox67/PasROCm/actions/workflows/shim-build.yml)
+[![release](https://img.shields.io/github/v/release/Eudox67/PasROCm)](https://github.com/Eudox67/PasROCm/releases)
 
 Pascal bindings for the **AMD ROCm libraries** — HIP, rocBLAS, MIOpen,
 rocSPARSE, rocSOLVER, rocFFT, rocRAND, RCCL and rocPRIM — for Free Pascal on AMD
