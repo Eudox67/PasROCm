@@ -26,19 +26,19 @@
   This is an unofficial project and is not affiliated with or endorsed by AMD.
 
   Superseded draft of the rocBLAS base class; the runner uses
-  test_rocblas_base.pas. Retained unchanged.
+  test_rocblas_base.pas, which supplies the base class and its setup.
 ------------------------------------------------------------------------------}
 
 unit Test_rocblas;
 
 {$mode objfpc}{$H+}
 {$linklib rocblas}
-{$DEFINE ROCM_6_3_2}
+//{$DEFINE ROCM_6_3_2}   { stale: this project supports 6.4, 7.2 and 10.1 }
 
 interface
 
 uses
-  fpcunit, testregistry, rocblas, hip_runtime, SysUtils. rocm_test_utils;
+  fpcunit, testregistry, rocblas, hip_runtime, SysUtils, rocm_test_utils;
 
 
 type
