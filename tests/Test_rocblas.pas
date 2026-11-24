@@ -24,6 +24,9 @@
   THE SOFTWARE.
 
   This is an unofficial project and is not affiliated with or endorsed by AMD.
+
+  Superseded draft of the rocBLAS base class; the runner uses
+  test_rocblas_base.pas. Retained unchanged.
 ------------------------------------------------------------------------------}
 
 unit Test_rocblas;

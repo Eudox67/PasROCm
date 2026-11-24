@@ -24,6 +24,9 @@
   THE SOFTWARE.
 
   This is an unofficial project and is not affiliated with or endorsed by AMD.
+
+  Shared helpers for the signature checks: half and bfloat16 conversion,
+  CopySign and similar value utilities. Declares no tests of its own.
 ------------------------------------------------------------------------------}
 
 unit ROCm_test_utils; // Or include in Test_ROCm.pas

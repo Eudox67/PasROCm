@@ -24,6 +24,9 @@
   THE SOFTWARE.
 
   This is an unofficial project and is not affiliated with or endorsed by AMD.
+
+  Base fixture for the rocBLAS signature checks: creates and destroys the
+  handle. Declares no tests of its own.
 ------------------------------------------------------------------------------}
 
 unit Test_rocblas_base;

@@ -24,6 +24,10 @@
   THE SOFTWARE.
 
   This is an unofficial project and is not affiliated with or endorsed by AMD.
+
+  Signature checks for the HIP runtime bindings: every call is made and its
+  status is asserted, so a changed prototype or a missing symbol fails here
+  first.
 ------------------------------------------------------------------------------}
 
 unit Test_hip_runtime;
