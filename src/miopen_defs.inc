@@ -24,6 +24,10 @@
   THE SOFTWARE.
 
   This is an unofficial project and is not affiliated with or endorsed by AMD.
+
+  Types and constants for the MIOpen binding: opaque handle and descriptor
+  placeholders, aliases onto HIP and C types, and the enum values the API
+  takes. Included by miopen.pas; it declares no functions of its own.
 ------------------------------------------------------------------------------}
 
 type
