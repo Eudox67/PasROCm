@@ -329,10 +329,27 @@ Failures print per-test; the exit code is the failure count.
 
 ### Leak checking
 
-Heaptrc is enabled by default for test builds. Because `cmem` and heaptrc
-disagree about who owns the heap, leak checking runs without `cmem`: build and
-run with `cthreads` alone, fix the leaks, then add `cmem` back for release
-builds.
+Heaptrc is enabled by default for test builds. `cmem` and heaptrc disagree about
+who owns the heap, so a program that wants both must leave `cmem` out when
+heaptrc is linked — and include it otherwise. Name it conditionally and a single
+source file serves both cases:
+
+```pascal
+uses {$if not declared(UseHeapTrace)}cmem,{$endif} SysUtils;
+```
+
+Under `-gh` (or `-glh`) the compiler inserts `heaptrc` as the first unit, so
+`UseHeapTrace` is already declared when the `uses` clause is parsed and `cmem`
+is skipped. In a normal build nothing is declared and `cmem` comes in as usual.
+Leak checking and release builds therefore need no edit to the `uses` clause.
+Where `cthreads` is also required (any program linking PasMP), the two combine:
+
+```pascal
+uses {$if not declared(UseHeapTrace)}cmem,{$endif} cthreads, SysUtils;
+```
+
+PasROCm's own tests do not link `cmem`, so `test.sh` behaves the same either
+way.
 
 ## Project layout
 
